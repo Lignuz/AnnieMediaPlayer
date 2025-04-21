@@ -16,7 +16,7 @@ namespace AnnieMediaPlayer
 
     public static class FFmpegHelper
     {
-        public unsafe static void OpenVideo(string filePath, Action<BitmapSource, int> onFrameDecoded, CancellationToken token)
+        public unsafe static void OpenVideo(string filePath, Action<BitmapSource, int, TimeSpan, TimeSpan> onFrameDecoded, CancellationToken token)
         {
             AVFormatContext* pFormatContext = ffmpeg.avformat_alloc_context();
 
@@ -104,7 +104,10 @@ namespace AnnieMediaPlayer
 
                             bitmap.Dispose();
 
-                            onFrameDecoded(bitmapSource, frameCount++);
+                            TimeSpan currentTime = TimeSpan.FromSeconds(pFrame->pts * ffmpeg.av_q2d(pFormatContext->streams[videoStreamIndex]->time_base));
+                            TimeSpan totalTime = TimeSpan.FromSeconds(pFormatContext->duration / (double)ffmpeg.AV_TIME_BASE);
+
+                            onFrameDecoded(bitmapSource, frameCount++, currentTime, totalTime);
                         }
                     }
                 }

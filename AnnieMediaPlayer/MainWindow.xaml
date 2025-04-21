@@ -5,24 +5,47 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AnnieMediaPlayer"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="600" Width="900">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="30"/>
+            <RowDefinition Height="*" />
+            <!-- 영상 표시 영역 -->
+            <RowDefinition Height="Auto" />
+            <!-- 컨트롤 영역 -->
         </Grid.RowDefinitions>
 
-        <!-- 비디오 표시 영역 -->
-        <Image Name="VideoImage" Stretch="Uniform" Grid.Row="0" />
+        <!-- 🎞 영상 표시 영역 -->
+        <Border Grid.Row="0" Background="Black">
+            <Image Name="VideoImage" Stretch="Uniform" />
+        </Border>
 
-        <!-- 하단 정보 -->
-        <StackPanel Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Left">
-            <TextBlock Text="Frame: " VerticalAlignment="Center"/>
-            <TextBlock Name="FrameLabel" Margin="5,0" VerticalAlignment="Center"/>
+        <!-- 🎛 컨트롤 영역 -->
+        <StackPanel Grid.Row="1" Background="#EEE" Margin="10">
+            <!-- 재생 슬라이더 -->
+            <Slider Name="PlaybackSlider" Minimum="0" Maximum="100" Value="0" Height="20" Margin="0,0,0,4"/>
+
+            <!-- 시간 표시 -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,6">
+                <TextBlock Name="CurrentTimeText" Text="00:00:00" FontWeight="Bold" />
+                <TextBlock Text=" / " />
+                <TextBlock Name="TotalTimeText" Text="00:00:00" />
+            </StackPanel>
+
+            <!-- 버튼 + 속도 컨트롤 -->
+            <DockPanel LastChildFill="False">
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" HorizontalAlignment="Left">
+                    <Button Name="OpenButton" Content="열기" Click="OpenVideo_Click" Width="80" Margin="0,0,10,0"/>
+                    <Button Name="PlayPauseButton" Content="재생" Click="PlayPause_Click" Width="80" Margin="0,0,10,0"/>
+                    <Button Name="StopButton" Content="정지" Click="Stop_Click" Width="80"/>
+                </StackPanel>
+
+                <!-- 재생 속도 -->
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                    <TextBlock Text="속도:" VerticalAlignment="Center" Margin="10,0,4,0"/>
+                    <TextBox Name="SpeedBox" Text="1.0" Width="50" VerticalAlignment="Center"/>
+                    <TextBlock Text="x" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                </StackPanel>
+            </DockPanel>
         </StackPanel>
-
-        <!-- 파일 열기 버튼 -->
-        <Button Content="Open Video" HorizontalAlignment="Right" VerticalAlignment="Top"
-                Margin="10" Click="OpenVideo_Click"/>
     </Grid>
 </Window>
