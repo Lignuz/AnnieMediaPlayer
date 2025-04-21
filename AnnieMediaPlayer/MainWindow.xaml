@@ -7,6 +7,22 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="30"/>
+        </Grid.RowDefinitions>
 
+        <!-- 비디오 표시 영역 -->
+        <Image Name="VideoImage" Stretch="Uniform" Grid.Row="0" />
+
+        <!-- 하단 정보 -->
+        <StackPanel Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Left">
+            <TextBlock Text="Frame: " VerticalAlignment="Center"/>
+            <TextBlock Name="FrameLabel" Margin="5,0" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- 파일 열기 버튼 -->
+        <Button Content="Open Video" HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="10" Click="OpenVideo_Click"/>
     </Grid>
 </Window>

@@ -1,16 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="FFmpeg.AutoGen" Version="7.1.1" />
-    <PackageReference Include="System.Drawing.Common" Version="9.0.4" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="FFmpeg.AutoGen" Version="7.1.1" />
+		<PackageReference Include="System.Drawing.Common" Version="9.0.4" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<FFmpegDlls Include="..\ffmpeg\**\*.*" />
+	</ItemGroup>
+
+	<Target Name="CopyFFmpegDlls" AfterTargets="Build">
+		<Message Importance="high" Text="🔁 FFmpeg DLL 복사 시작..." />
+		<Copy
+		  SourceFiles="@(FFmpegDlls)"
+		  DestinationFiles="@(FFmpegDlls->'$(OutDir)ffmpeg\%(RecursiveDir)%(Filename)%(Extension)')"
+		  SkipUnchangedFiles="true" />
+	</Target>
 
 </Project>
