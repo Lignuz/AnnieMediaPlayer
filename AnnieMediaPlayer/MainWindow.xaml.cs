@@ -35,6 +35,9 @@ namespace AnnieMediaPlayer
             InitializeComponent();
             FFmpegLoader.RegisterFFmpeg();
             UpdateSpeedLabel();
+
+            PlayPauseButton.IsEnabled = false;
+            StopButton.IsEnabled = false;
         }
 
         private async void OpenVideo_Click(object sender, RoutedEventArgs e)
@@ -50,6 +53,10 @@ namespace AnnieMediaPlayer
                 _isPaused = false;
                 _seekRequested = false;
                 _currentFrame = 0;
+
+                PlayPauseButton.IsEnabled = true;
+                StopButton.IsEnabled = true;
+                PlayPauseButton.Content = "일시정지";
 
                 await Task.Run(() =>
                 {
@@ -117,6 +124,7 @@ namespace AnnieMediaPlayer
             _isPlaying = false;
             _isPaused = false;
             _cancellation?.Cancel();
+
             Dispatcher.Invoke(() =>
             {
                 VideoImage.Source = null;
@@ -125,6 +133,8 @@ namespace AnnieMediaPlayer
                 FrameNumberText.Text = "0";
                 PlaybackSlider.Value = 0;
                 PlayPauseButton.Content = "재생";
+                PlayPauseButton.IsEnabled = false;
+                StopButton.IsEnabled = false;
             });
         }
 
