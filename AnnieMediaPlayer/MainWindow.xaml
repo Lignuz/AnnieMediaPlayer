@@ -22,10 +22,15 @@
         <!-- 🎛 컨트롤 영역 -->
         <StackPanel Grid.Row="1" Background="#EEE" Margin="10">
             <!-- 재생 슬라이더 -->
-            <Slider Name="PlaybackSlider" Minimum="0" Maximum="100" Value="0" Height="20" Margin="0,0,0,4"/>
+            <Slider Name="PlaybackSlider"
+                    Minimum="0" Maximum="100" Value="0" Height="20"
+                    Margin="0,0,0,4"
+                    PreviewMouseDown="PlaybackSlider_PreviewMouseDown"
+                    PreviewMouseUp="PlaybackSlider_PreviewMouseUp"
+                    ValueChanged="PlaybackSlider_ValueChanged"/>
 
             <!-- 시간 표시 -->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,6">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                 <TextBlock Name="CurrentTimeText" Text="00:00:00" FontWeight="Bold" />
                 <TextBlock Text=" / " />
                 <TextBlock Name="TotalTimeText" Text="00:00:00" Margin="0,0,10,0"/>

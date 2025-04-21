@@ -1,5 +1,7 @@
-﻿using Microsoft.Win32;
+﻿using FFmpeg.AutoGen;
+using Microsoft.Win32;
 using System.Windows;
+using System.Windows.Input;
 
 namespace AnnieMediaPlayer
 {
@@ -12,7 +14,13 @@ namespace AnnieMediaPlayer
         private CancellationTokenSource _cancellation;
         private bool _isPlaying = false;
         private bool _isPaused = false;
+        private bool _isSliderDragging = false;
         private int _currentFrame = 0;
+        private TimeSpan _videoDuration = TimeSpan.Zero;
+        private long _seekTarget = -1;
+        private AVRational _streamTimeBase;
+        private bool _seekRequested = false;
+
         private TimeSpan[] _playbackSpeeds = new[]
         {
             TimeSpan.FromSeconds(10),
@@ -25,7 +33,7 @@ namespace AnnieMediaPlayer
         public MainWindow()
         {
             InitializeComponent();
-            FFmpegLoader.RegisterFFmpeg(); // FFmpeg 초기화
+            FFmpegLoader.RegisterFFmpeg();
             UpdateSpeedLabel();
         }
 
@@ -34,25 +42,52 @@ namespace AnnieMediaPlayer
             var dialog = new OpenFileDialog();
             if (dialog.ShowDialog() == true)
             {
-                StopPlayback(); // 기존 재생 정지
+                StopPlayback();
 
                 _videoPath = dialog.FileName;
                 _cancellation = new CancellationTokenSource();
                 _isPlaying = true;
                 _isPaused = false;
+                _seekRequested = false;
+                _currentFrame = 0;
 
                 await Task.Run(() =>
                 {
-                    FFmpegHelper.OpenVideo(_videoPath, (frame, frameNumber, currentTime, totalTime) =>
+                    FFmpegHelper.OpenVideo(_videoPath, (frame, frameNumber, currentTime, totalTime, context) =>
                     {
+
+                        unsafe
+                        {
+                            _streamTimeBase = context.FormatContext->streams[context.VideoStreamIndex]->time_base;
+                        }
+
+
+                        if (_seekRequested)
+                        {
+                            unsafe
+                            {
+                                ffmpeg.av_seek_frame(context.FormatContext, context.VideoStreamIndex, _seekTarget, ffmpeg.AVSEEK_FLAG_BACKWARD);
+                                ffmpeg.avcodec_flush_buffers(context.CodecContext);
+                            }
+                            _seekRequested = false;
+                            _currentFrame = 0;
+                            return;
+                        }
+
                         if (_isPaused) return;
+
+                        _videoDuration = totalTime;
 
                         Dispatcher.Invoke(() =>
                         {
                             VideoImage.Source = frame;
                             _currentFrame = frameNumber;
-                            PlaybackSlider.Value = currentTime.TotalSeconds;
-                            CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
+                            if (!_isSliderDragging)
+                            {
+                                PlaybackSlider.Maximum = totalTime.TotalSeconds;
+                                PlaybackSlider.Value = currentTime.TotalSeconds;
+                                CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
+                            }
                             TotalTimeText.Text = totalTime.ToString(@"hh\:mm\:ss");
                             FrameNumberText.Text = frameNumber.ToString();
                         });
@@ -121,6 +156,35 @@ namespace AnnieMediaPlayer
             {
                 int fps = (int)Math.Round(1.0 / speed.TotalSeconds);
                 SpeedLabel.Text = $"{fps}fps";
+            }
+        }
+
+        private void PlaybackSlider_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            _isSliderDragging = true;
+        }
+
+        private void PlaybackSlider_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            _isSliderDragging = false;
+
+            if (_isPlaying)
+            {
+                var seekTime = TimeSpan.FromSeconds(PlaybackSlider.Value);
+
+                var timeBase = _streamTimeBase; // → FFmpegContext에서 전달받거나 전역 저장 필요
+                _seekTarget = (long)(seekTime.TotalSeconds / ffmpeg.av_q2d(timeBase));
+
+                _seekRequested = true;
+            }
+        }
+
+        private void PlaybackSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_isSliderDragging)
+            {
+                var time = TimeSpan.FromSeconds(PlaybackSlider.Value);
+                CurrentTimeText.Text = time.ToString(@"hh\:mm\:ss");
             }
         }
     }
