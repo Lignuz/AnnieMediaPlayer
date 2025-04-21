@@ -55,12 +55,10 @@ namespace AnnieMediaPlayer
                 {
                     FFmpegHelper.OpenVideo(_videoPath, (frame, frameNumber, currentTime, totalTime, context) =>
                     {
-
                         unsafe
                         {
                             _streamTimeBase = context.FormatContext->streams[context.VideoStreamIndex]->time_base;
                         }
-
 
                         if (_seekRequested)
                         {
@@ -74,7 +72,10 @@ namespace AnnieMediaPlayer
                             return;
                         }
 
-                        if (_isPaused) return;
+                        while (_isPaused && !_cancellation.IsCancellationRequested)
+                        {
+                            Thread.Sleep(100);
+                        }
 
                         _videoDuration = totalTime;
 
@@ -93,7 +94,7 @@ namespace AnnieMediaPlayer
                         });
 
                         Thread.Sleep(_playbackSpeeds[_speedIndex]);
-                    }, _cancellation.Token);
+                    }, _cancellation.Token, () => Dispatcher.Invoke(StopPlayback));
                 });
             }
         }

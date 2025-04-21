@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Windows.Media.Imaging;
 using System.Runtime.InteropServices;
+using System.Windows;
 
 namespace AnnieMediaPlayer
 {
@@ -25,7 +26,7 @@ namespace AnnieMediaPlayer
 
     public static class FFmpegHelper
     {
-        public unsafe static void OpenVideo(string filePath, Action<BitmapSource, int, TimeSpan, TimeSpan, FFmpegContext> onFrameDecoded, CancellationToken token)
+        public unsafe static void OpenVideo(string filePath, Action<BitmapSource, int, TimeSpan, TimeSpan, FFmpegContext> onFrameDecoded, CancellationToken token, Action? onCompleted = null)
         {
             AVFormatContext* pFormatContext = ffmpeg.avformat_alloc_context();
             if (ffmpeg.avformat_open_input(&pFormatContext, filePath, null, null) != 0)
@@ -85,42 +86,52 @@ namespace AnnieMediaPlayer
                 VideoStreamIndex = videoStreamIndex
             };
 
-            while (ffmpeg.av_read_frame(pFormatContext, pPacket) >= 0)
+            bool eof = false;
+            while (!token.IsCancellationRequested)
             {
-                if (token.IsCancellationRequested)
-                    break;
-
-                if (pPacket->stream_index == videoStreamIndex)
+                if (!eof && ffmpeg.av_read_frame(pFormatContext, pPacket) >= 0)
                 {
-                    if (ffmpeg.avcodec_send_packet(pCodecContext, pPacket) == 0)
+                    if (pPacket->stream_index == videoStreamIndex)
                     {
-                        while (ffmpeg.avcodec_receive_frame(pCodecContext, pFrame) == 0)
-                        {
-                            ffmpeg.sws_scale(pSwsCtx, pFrame->data, pFrame->linesize, 0, pCodecContext->height,
-                                pFrameRGB->data, pFrameRGB->linesize);
-
-                            using var bitmap = new Bitmap(pCodecContext->width, pCodecContext->height,
-                                pFrameRGB->linesize[0], PixelFormat.Format24bppRgb,
-                                (IntPtr)pFrameRGB->data[0]);
-
-                            IntPtr hBitmap = bitmap.GetHbitmap();
-                            var bitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
-                                hBitmap, IntPtr.Zero, System.Windows.Int32Rect.Empty,
-                                BitmapSizeOptions.FromWidthAndHeight(pCodecContext->width, pCodecContext->height));
-
-                            bitmapSource.Freeze();
-                            DeleteObject(hBitmap);
-
-                            TimeSpan currentTime = TimeSpan.FromSeconds(pFrame->pts * ffmpeg.av_q2d(pFormatContext->streams[videoStreamIndex]->time_base));
-                            TimeSpan totalTime = TimeSpan.FromSeconds(pFormatContext->duration / (double)ffmpeg.AV_TIME_BASE);
-                            int frameIndex = (int)(currentTime.TotalSeconds * pCodecContext->framerate.num / (double)pCodecContext->framerate.den);
-
-                            onFrameDecoded(bitmapSource, frameIndex, currentTime, totalTime, context);
-                        }
+                        ffmpeg.avcodec_send_packet(pCodecContext, pPacket);
                     }
+                    ffmpeg.av_packet_unref(pPacket);
+                }
+                else
+                {
+                    ffmpeg.avcodec_send_packet(pCodecContext, null);
+                    eof = true;
                 }
 
-                ffmpeg.av_packet_unref(pPacket);
+                while (ffmpeg.avcodec_receive_frame(pCodecContext, pFrame) == 0)
+                {
+                    ffmpeg.sws_scale(pSwsCtx, pFrame->data, pFrame->linesize, 0, pCodecContext->height,
+                        pFrameRGB->data, pFrameRGB->linesize);
+
+                    using var bitmap = new System.Drawing.Bitmap(pCodecContext->width, pCodecContext->height,
+                        pFrameRGB->linesize[0], System.Drawing.Imaging.PixelFormat.Format24bppRgb,
+                        (IntPtr)pFrameRGB->data[0]);
+
+                    IntPtr hBitmap = bitmap.GetHbitmap();
+                    var bitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
+                        hBitmap, IntPtr.Zero, Int32Rect.Empty,
+                        BitmapSizeOptions.FromWidthAndHeight(pCodecContext->width, pCodecContext->height));
+
+                    bitmapSource.Freeze();
+                    DeleteObject(hBitmap);
+
+                    TimeSpan currentTime = TimeSpan.FromSeconds(pFrame->pts * ffmpeg.av_q2d(pFormatContext->streams[videoStreamIndex]->time_base));
+                    TimeSpan totalTime = TimeSpan.FromSeconds(pFormatContext->duration / (double)ffmpeg.AV_TIME_BASE);
+
+                    int frameIndex = (int)(currentTime.TotalSeconds * pCodecContext->framerate.num / (double)pCodecContext->framerate.den);
+                    onFrameDecoded(bitmapSource, frameIndex, currentTime, totalTime, context);
+                }
+
+                if (eof)
+                {
+                    onCompleted?.Invoke();
+                    break;
+                }
             }
 
             ffmpeg.av_free(buffer);
