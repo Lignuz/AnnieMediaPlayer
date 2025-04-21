@@ -100,7 +100,23 @@ namespace AnnieMediaPlayer
                             FrameNumberText.Text = frameNumber.ToString();
                         });
 
-                        Thread.Sleep(_playbackSpeeds[_speedIndex]);
+                        var start = DateTime.UtcNow;
+                        while (!_cancellation.IsCancellationRequested)
+                        {
+                            var delay = _playbackSpeeds[_speedIndex];
+                            if (_isPaused)
+                            {
+                                Thread.Sleep(100);
+                                continue;
+                            }
+
+                            var elapsed = DateTime.UtcNow - start;
+                            if (elapsed >= delay)
+                                break;
+
+                            Thread.Sleep(10);
+                        }
+
                     }, _cancellation.Token, () => Dispatcher.Invoke(StopPlayback));
                 });
             }
