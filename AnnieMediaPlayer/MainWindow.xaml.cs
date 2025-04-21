@@ -13,12 +13,20 @@ namespace AnnieMediaPlayer
         private bool _isPlaying = false;
         private bool _isPaused = false;
         private int _currentFrame = 0;
-        private double _playbackSpeed = 1.0;
+        private TimeSpan[] _playbackSpeeds = new[]
+        {
+            TimeSpan.FromSeconds(10),
+            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromMilliseconds(33.3) // 약 30fps
+        };
+        private int _speedIndex = 2;
 
         public MainWindow()
         {
             InitializeComponent();
             FFmpegLoader.RegisterFFmpeg(); // FFmpeg 초기화
+            UpdateSpeedLabel();
         }
 
         private async void OpenVideo_Click(object sender, RoutedEventArgs e)
@@ -33,11 +41,6 @@ namespace AnnieMediaPlayer
                 _isPlaying = true;
                 _isPaused = false;
 
-                if (double.TryParse(SpeedBox.Text, out double speed))
-                {
-                    _playbackSpeed = speed;
-                }
-
                 await Task.Run(() =>
                 {
                     FFmpegHelper.OpenVideo(_videoPath, (frame, frameNumber, currentTime, totalTime) =>
@@ -51,9 +54,10 @@ namespace AnnieMediaPlayer
                             PlaybackSlider.Value = currentTime.TotalSeconds;
                             CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
                             TotalTimeText.Text = totalTime.ToString(@"hh\:mm\:ss");
+                            FrameNumberText.Text = frameNumber.ToString();
                         });
 
-                        Thread.Sleep((int)(1000 / _playbackSpeed));
+                        Thread.Sleep(_playbackSpeeds[_speedIndex]);
                     }, _cancellation.Token);
                 });
             }
@@ -82,9 +86,42 @@ namespace AnnieMediaPlayer
                 VideoImage.Source = null;
                 CurrentTimeText.Text = "00:00:00";
                 TotalTimeText.Text = "00:00:00";
+                FrameNumberText.Text = "0";
                 PlaybackSlider.Value = 0;
                 PlayPauseButton.Content = "재생";
             });
+        }
+
+        private void SpeedDown_Click(object sender, RoutedEventArgs e)
+        {
+            if (_speedIndex > 0)
+            {
+                _speedIndex--;
+                UpdateSpeedLabel();
+            }
+        }
+
+        private void SpeedUp_Click(object sender, RoutedEventArgs e)
+        {
+            if (_speedIndex < _playbackSpeeds.Length - 1)
+            {
+                _speedIndex++;
+                UpdateSpeedLabel();
+            }
+        }
+
+        private void UpdateSpeedLabel()
+        {
+            var speed = _playbackSpeeds[_speedIndex];
+            if (speed.TotalSeconds >= 1)
+            {
+                SpeedLabel.Text = $"{(int)speed.TotalSeconds}초/프레임";
+            }
+            else
+            {
+                int fps = (int)Math.Round(1.0 / speed.TotalSeconds);
+                SpeedLabel.Text = $"{fps}fps";
+            }
         }
     }
 }
