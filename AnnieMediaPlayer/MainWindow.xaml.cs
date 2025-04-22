@@ -66,68 +66,80 @@ namespace AnnieMediaPlayer
                 StopButton.IsEnabled = true;
                 PlayPauseButton.Content = "일시정지";
 
-                await Task.Run(() =>
+                try
                 {
-                    FFmpegHelper.OpenVideo(_videoPath, (frame, frameNumber, currentTime, totalTime, context) =>
+                    await Task.Run(() =>
                     {
-                        unsafe
-                        {
-                            _streamTimeBase = context.FormatContext->streams[context.VideoStreamIndex]->time_base;
-                        }
-
-                        if (_seekRequested)
+                        FFmpegHelper.OpenVideo(_videoPath, (frame, frameNumber, currentTime, totalTime, context) =>
                         {
                             unsafe
                             {
-                                ffmpeg.av_seek_frame(context.FormatContext, context.VideoStreamIndex, _seekTarget, ffmpeg.AVSEEK_FLAG_BACKWARD);
-                                ffmpeg.avcodec_flush_buffers(context.CodecContext);
+                                _streamTimeBase = context.FormatContext->streams[context.VideoStreamIndex]->time_base;
                             }
-                            _seekRequested = false;
-                            _currentFrame = 0;
-                            return;
-                        }
 
-                        while (_isPaused && !_cancellation.IsCancellationRequested)
-                        {
-                            Thread.Sleep(100);
-                        }
-
-                        _videoDuration = totalTime;
-
-                        Dispatcher.Invoke(() =>
-                        {
-                            VideoImage.Source = frame;
-                            VideoImage.Stretch = System.Windows.Media.Stretch.Uniform;
-                            _currentFrame = frameNumber;
-                            if (!_isSliderDragging)
+                            if (_seekRequested)
                             {
-                                PlaybackSlider.Maximum = totalTime.TotalSeconds;
-                                PlaybackSlider.Value = currentTime.TotalSeconds;
-                                CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
+                                unsafe
+                                {
+                                    ffmpeg.av_seek_frame(context.FormatContext, context.VideoStreamIndex, _seekTarget, ffmpeg.AVSEEK_FLAG_BACKWARD);
+                                    ffmpeg.avcodec_flush_buffers(context.CodecContext);
+                                }
+                                _seekRequested = false;
+                                _currentFrame = 0;
+                                return;
                             }
-                            TotalTimeText.Text = totalTime.ToString(@"hh\:mm\:ss");
-                            FrameNumberText.Text = frameNumber.ToString();
-                        });
 
-                        var start = DateTime.UtcNow;
-                        while (!_cancellation.IsCancellationRequested)
-                        {
-                            var delay = _playbackSpeeds[_speedIndex];
-                            if (_isPaused)
+                            while (_isPaused && !_cancellation.IsCancellationRequested)
                             {
                                 Thread.Sleep(100);
-                                continue;
                             }
 
-                            var elapsed = DateTime.UtcNow - start;
-                            if (elapsed >= delay)
-                                break;
+                            _videoDuration = totalTime;
 
-                            Thread.Sleep(10);
-                        }
+                            Dispatcher.Invoke(() =>
+                            {
+                                VideoImage.Source = frame;
+                                VideoImage.Stretch = System.Windows.Media.Stretch.Uniform;
+                                _currentFrame = frameNumber;
+                                if (!_isSliderDragging)
+                                {
+                                    PlaybackSlider.Maximum = totalTime.TotalSeconds;
+                                    PlaybackSlider.Value = currentTime.TotalSeconds;
+                                    CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
+                                }
+                                TotalTimeText.Text = totalTime.ToString(@"hh\:mm\:ss");
+                                FrameNumberText.Text = frameNumber.ToString();
+                            });
 
-                    }, _cancellation.Token, () => Dispatcher.Invoke(StopPlayback));
-                });
+                            var start = DateTime.UtcNow;
+                            while (!_cancellation.IsCancellationRequested)
+                            {
+                                var delay = _playbackSpeeds[_speedIndex];
+                                if (_isPaused)
+                                {
+                                    Thread.Sleep(100);
+                                    continue;
+                                }
+
+                                var elapsed = DateTime.UtcNow - start;
+                                if (elapsed >= delay)
+                                    break;
+
+                                Thread.Sleep(10);
+                            }
+
+                        }, _cancellation.Token, () => Dispatcher.Invoke(StopPlayback));
+                    });
+                }
+                catch (Exception ex)
+                {
+                    // 예외 발생 시 사용자에게 알림
+                    Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show(this, $"비디오를 열 수 없습니다:\n{ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                        StopPlayback();
+                    });
+                }
             }
         }
 
