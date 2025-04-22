@@ -15,15 +15,17 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Remove="Resources\background01.png" />
+		<Resource Include="Resources\background01.png" />
+	</ItemGroup>
+	
+	<ItemGroup>
 		<FFmpegDlls Include="..\ffmpeg\**\*.*" />
 	</ItemGroup>
 
 	<Target Name="CopyFFmpegDlls" AfterTargets="Build">
 		<Message Importance="high" Text="🔁 FFmpeg DLL 복사 시작..." />
-		<Copy
-		  SourceFiles="@(FFmpegDlls)"
-		  DestinationFiles="@(FFmpegDlls->'$(OutDir)ffmpeg\%(RecursiveDir)%(Filename)%(Extension)')"
-		  SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(FFmpegDlls)" DestinationFiles="@(FFmpegDlls->'$(OutDir)ffmpeg\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
 	</Target>
 
 </Project>

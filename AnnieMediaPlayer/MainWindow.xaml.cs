@@ -2,6 +2,7 @@
 using Microsoft.Win32;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 
 namespace AnnieMediaPlayer
 {
@@ -36,6 +37,7 @@ namespace AnnieMediaPlayer
             FFmpegLoader.RegisterFFmpeg();
             UpdateSpeedLabel();
 
+            StopPlayback();
             PlayPauseButton.IsEnabled = false;
             StopButton.IsEnabled = false;
         }
@@ -89,6 +91,7 @@ namespace AnnieMediaPlayer
                         Dispatcher.Invoke(() =>
                         {
                             VideoImage.Source = frame;
+                            VideoImage.Stretch = System.Windows.Media.Stretch.Uniform;
                             _currentFrame = frameNumber;
                             if (!_isSliderDragging)
                             {
@@ -143,7 +146,9 @@ namespace AnnieMediaPlayer
 
             Dispatcher.Invoke(() =>
             {
-                VideoImage.Source = null;
+                // VideoImage.Source = null;
+                VideoImage.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/background01.png"));
+                VideoImage.Stretch = System.Windows.Media.Stretch.UniformToFill;
                 CurrentTimeText.Text = "00:00:00";
                 TotalTimeText.Text = "00:00:00";
                 FrameNumberText.Text = "0";
