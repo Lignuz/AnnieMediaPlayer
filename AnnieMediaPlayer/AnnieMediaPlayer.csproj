@@ -8,6 +8,11 @@
 		<UseWPF>true</UseWPF>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<ApplicationIcon>Resources\AnnieMediaPlayer.ico</ApplicationIcon>
+		<Authors>Lignuz</Authors>
+		<Company>Annie Choi</Company>
+		<VersionPrefix>0.8.1.0</VersionPrefix>
+		<RepositoryUrl>https://github.com/Lignuz/AnnieMediaPlayer.git</RepositoryUrl>
+		<Copyright>Copyright 2025 Annie Choi, All Rights Reserved.</Copyright>
 	</PropertyGroup>
 
 	<ItemGroup>
