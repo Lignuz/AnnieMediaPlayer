@@ -5,7 +5,17 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AnnieMediaPlayer"
         mc:Ignorable="d"
-        Title="MainWindow" Height="600" Width="900">
+        Title="Annie Media Player" Height="600" Width="900"
+        PreviewKeyDown="Window_PreviewKeyDown"
+        >
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Focusable" Value="False"/>
+        </Style>
+        <Style TargetType="Slider">
+            <Setter Property="Focusable" Value="False"/>
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />

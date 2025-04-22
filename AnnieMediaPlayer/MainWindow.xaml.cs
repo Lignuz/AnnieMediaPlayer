@@ -24,12 +24,14 @@ namespace AnnieMediaPlayer
 
         private TimeSpan[] _playbackSpeeds = new[]
         {
+            TimeSpan.FromSeconds(100),
+            TimeSpan.FromSeconds(50),
             TimeSpan.FromSeconds(10),
             TimeSpan.FromSeconds(5),
             TimeSpan.FromSeconds(1),
             TimeSpan.FromMilliseconds(33.3) // 약 30fps
         };
-        private int _speedIndex = 2;
+        private int _speedIndex = 4;
 
         public MainWindow()
         {
@@ -217,6 +219,23 @@ namespace AnnieMediaPlayer
             {
                 var time = TimeSpan.FromSeconds(PlaybackSlider.Value);
                 CurrentTimeText.Text = time.ToString(@"hh\:mm\:ss");
+            }
+        }
+
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Space)
+            {
+                if (_isPlaying)
+                {
+                    PlayPause_Click(null, null);
+                    e.Handled = true; // 포커스를 가진 다른 컨트롤로 전달되지 않게 막음
+                }
+                else
+                {
+                    OpenVideo_Click(null, null);
+                    e.Handled = true;
+                }
             }
         }
     }
