@@ -46,7 +46,11 @@ namespace AnnieMediaPlayer
 
         private async void OpenVideo_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFileDialog();
+            var dialog = new OpenFileDialog
+            {
+                Title = "비디오 파일 열기",
+                Filter = "비디오 파일 (*.mp4;*.avi;*.mov;*.mkv;*.wmv)|*.mp4;*.avi;*.mov;*.mkv;*.wmv|모든 파일 (*.*)|*.*"
+            };
             if (dialog.ShowDialog() == true)
             {
                 StopPlayback();
