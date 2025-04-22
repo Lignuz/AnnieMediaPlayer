@@ -7,11 +7,16 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<ApplicationIcon>Resources\AnnieMediaPlayer.ico</ApplicationIcon>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="FFmpeg.AutoGen" Version="7.1.1" />
 		<PackageReference Include="System.Drawing.Common" Version="9.0.4" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Include="Resources\AnnieMediaPlayer.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
