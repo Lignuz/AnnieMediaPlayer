@@ -6,16 +6,7 @@
         xmlns:local="clr-namespace:AnnieMediaPlayer"
         mc:Ignorable="d"
         Title="Annie Media Player" Height="600" Width="900"
-        PreviewKeyDown="Window_PreviewKeyDown"
-        >
-    <Window.Resources>
-        <Style TargetType="Button">
-            <Setter Property="Focusable" Value="False"/>
-        </Style>
-        <Style TargetType="Slider">
-            <Setter Property="Focusable" Value="False"/>
-        </Style>
-    </Window.Resources>
+        PreviewKeyDown="Window_PreviewKeyDown">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
@@ -30,9 +21,9 @@
         </Border>
 
         <!-- 🎛 컨트롤 영역 -->
-        <StackPanel Grid.Row="1" Background="#EEE" Margin="10">
+        <StackPanel Grid.Row="1" Background="Transparent" Margin="10">
             <!-- 재생 슬라이더 -->
-            <Slider Name="PlaybackSlider"
+            <Slider Name="PlaybackSlider" Style="{StaticResource CustomSliderStyle}"
                     Minimum="0" Maximum="100" Value="0" Height="20"
                     Margin="0,0,0,4"
                     PreviewMouseDown="PlaybackSlider_PreviewMouseDown"
@@ -53,14 +44,14 @@
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" HorizontalAlignment="Left">
                     <Button Name="OpenButton" Content="열기" Click="OpenVideo_Click" Width="80" Margin="0,0,10,0"/>
                     <Button Name="PlayPauseButton" Content="재생" Click="PlayPause_Click" Width="80" Margin="0,0,10,0"/>
-                    <Button Name="StopButton" Content="정지" Click="Stop_Click" Width="80"/>
+                    <Button Name="StopButton" Content="정지" Click="Stop_Click" Width="80" Margin="0,0,10,0"/>
                 </StackPanel>
 
                 <!-- 재생 속도 조절 -->
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
-                    <TextBlock Text="속도:" VerticalAlignment="Center" Margin="10,0,4,0"/>
+                    <TextBlock Text="속도:" VerticalAlignment="Center" Margin="10,0,4,0" FontWeight="SemiBold"/>
                     <Button Content="-" Width="30" Click="SpeedDown_Click"/>
-                    <TextBlock Name="SpeedLabel" Text="1초/프레임" Width="90" TextAlignment="Center" Margin="5,0"/>
+                    <TextBlock Name="SpeedLabel" Text="1초/프레임" Width="90" TextAlignment="Center" VerticalAlignment="Center" Padding="2,0" Margin="5,0" FontWeight="Medium"/>
                     <Button Content="+" Width="30" Click="SpeedUp_Click"/>
                 </StackPanel>
             </DockPanel>
