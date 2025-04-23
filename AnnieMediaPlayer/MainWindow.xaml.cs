@@ -18,9 +18,8 @@ namespace AnnieMediaPlayer
         private bool _isSliderDragging = false;
         private int _currentFrame = 0;
         private TimeSpan _videoDuration = TimeSpan.Zero;
-        private long _seekTarget = -1;
         private AVRational _streamTimeBase;
-        private bool _seekRequested = false;
+        private FFmpegContext? _context; // 클래스 필드 추가
 
         private TimeSpan[] _playbackSpeeds = new[]
         {
@@ -59,7 +58,6 @@ namespace AnnieMediaPlayer
                 _cancellation = new CancellationTokenSource();
                 _isPlaying = true;
                 _isPaused = false;
-                _seekRequested = false;
                 _currentFrame = 0;
 
                 PlayPauseButton.IsEnabled = true;
@@ -72,21 +70,11 @@ namespace AnnieMediaPlayer
                     {
                         FFmpegHelper.OpenVideo(_videoPath, (frame, frameNumber, currentTime, totalTime, context) =>
                         {
+                            _context = context; // 최초 저장
+
                             unsafe
                             {
                                 _streamTimeBase = context.FormatContext->streams[context.VideoStreamIndex]->time_base;
-                            }
-
-                            if (_seekRequested)
-                            {
-                                unsafe
-                                {
-                                    ffmpeg.av_seek_frame(context.FormatContext, context.VideoStreamIndex, _seekTarget, ffmpeg.AVSEEK_FLAG_BACKWARD);
-                                    ffmpeg.avcodec_flush_buffers(context.CodecContext);
-                                }
-                                _seekRequested = false;
-                                _currentFrame = 0;
-                                return;
                             }
 
                             while (_isPaused && !_cancellation.IsCancellationRequested)
@@ -161,6 +149,8 @@ namespace AnnieMediaPlayer
             _isPlaying = false;
             _isPaused = false;
             _cancellation?.Cancel();
+            _context = null;
+            _streamTimeBase = default;
 
             Dispatcher.Invoke(() =>
             {
@@ -218,14 +208,19 @@ namespace AnnieMediaPlayer
         {
             _isSliderDragging = false;
 
-            if (_isPlaying)
+            if (_isPlaying && _context != null)
             {
                 var seekTime = TimeSpan.FromSeconds(PlaybackSlider.Value);
+                var timeBase = _streamTimeBase;
+                long seekTarget = (long)(seekTime.TotalSeconds / ffmpeg.av_q2d(timeBase));
 
-                var timeBase = _streamTimeBase; // → FFmpegContext에서 전달받거나 전역 저장 필요
-                _seekTarget = (long)(seekTime.TotalSeconds / ffmpeg.av_q2d(timeBase));
-
-                _seekRequested = true;
+                BitmapSource? bmp = FFmpegHelper.SeekAndDecodeFrame(_context, seekTarget, out int frameNum, out TimeSpan currentTime);
+                if (bmp != null)
+                {
+                    VideoImage.Source = bmp;
+                    CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
+                    FrameNumberText.Text = frameNum.ToString();
+                }
             }
         }
 
