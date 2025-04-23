@@ -24,6 +24,7 @@
         <StackPanel Grid.Row="1" Background="Transparent" Margin="10">
             <!-- 재생 슬라이더 -->
             <Slider Name="PlaybackSlider" Style="{StaticResource CustomSliderStyle}"
+                    IsEnabled="{Binding Path=IsEnabled, ElementName=StopButton}"
                     Minimum="0" Maximum="100" Value="0" Height="20"
                     Margin="0,0,0,4"
                     PreviewMouseDown="PlaybackSlider_PreviewMouseDown"
