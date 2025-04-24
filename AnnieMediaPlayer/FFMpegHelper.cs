@@ -121,51 +121,58 @@ namespace AnnieMediaPlayer
             return frameNumber;
         }
 
-        public static unsafe BitmapSource? SeekAndDecodeFrame(FFmpegContext context, long seekTarget, out int frameNumber, out TimeSpan currentTime)
+        public static unsafe BitmapSource? SeekAndDecodeFrame(FFmpegContext context, long seekTarget, out int frameNumber, out TimeSpan currentTime, bool useKeyFrame = true)
         {
             frameNumber = -1;
-            currentTime = new TimeSpan();
+            currentTime = TimeSpan.Zero;
 
             ffmpeg.av_seek_frame(context.FormatContext, context.VideoStreamIndex, seekTarget, ffmpeg.AVSEEK_FLAG_BACKWARD);
             ffmpeg.avcodec_flush_buffers(context.CodecContext);
 
             AVPacket* pkt = ffmpeg.av_packet_alloc();
             AVFrame* frame = ffmpeg.av_frame_alloc();
-            AVFrame* rgbFrame = ffmpeg.av_frame_alloc();
-
-            int width = context.CodecContext->width;
-            int height = context.CodecContext->height;
-
-            SwsContext* swsCtx = ffmpeg.sws_getContext(
-                width, height, context.CodecContext->pix_fmt,
-                width, height, AVPixelFormat.AV_PIX_FMT_BGR24,
-                ffmpeg.SWS_BILINEAR, null, null, null);
-
-            int bufferSize = ffmpeg.av_image_get_buffer_size(AVPixelFormat.AV_PIX_FMT_BGR24, width, height, 1);
-            byte* buffer = (byte*)ffmpeg.av_malloc((ulong)bufferSize);
-
-            byte_ptrArray4 dstData = new byte_ptrArray4();
-            int_array4 dstLinesize = new int_array4();
-            ffmpeg.av_image_fill_arrays(ref dstData, ref dstLinesize, buffer, AVPixelFormat.AV_PIX_FMT_BGR24, width, height, 1);
+            byte* buffer;
+            AVFrame* rgbFrame = AllocateFrameWithBuffer(context.CodecContext, out buffer);
+            SwsContext* swsCtx = CreateSwsContext(context.CodecContext);
 
             BitmapSource? result = null;
+            double expectedTime = seekTarget * ffmpeg.av_q2d(context.FormatContext->streams[context.VideoStreamIndex]->time_base);
 
-            while (ffmpeg.av_read_frame(context.FormatContext, pkt) >= 0)
+            bool find = false;
+            while (ffmpeg.av_read_frame(context.FormatContext, pkt) >= 0 && !find)
             {
                 if (pkt->stream_index == context.VideoStreamIndex)
                 {
                     if (ffmpeg.avcodec_send_packet(context.CodecContext, pkt) == 0)
                     {
-                        if (ffmpeg.avcodec_receive_frame(context.CodecContext, frame) == 0)
+                        if (useKeyFrame)
                         {
-                            currentTime = TimeSpan.FromSeconds(frame->pts * ffmpeg.av_q2d(context.FormatContext->streams[context.VideoStreamIndex]->time_base));
-                            frameNumber = GetFrameNumber(context, frame);
-                            ffmpeg.sws_scale(swsCtx, frame->data, frame->linesize, 0, height, dstData, dstLinesize);
-
-                            using var bmp = new Bitmap(width, height, dstLinesize[0], PixelFormat.Format24bppRgb, (IntPtr)dstData[0]);
-                            result = Imaging.CreateBitmapSourceFromHBitmap(bmp.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromWidthAndHeight(width, height));
-                            result.Freeze();
-                            break;
+                            if (ffmpeg.avcodec_receive_frame(context.CodecContext, frame) == 0)
+                            {
+                                currentTime = TimeSpan.FromSeconds(frame->pts * ffmpeg.av_q2d(context.FormatContext->streams[context.VideoStreamIndex]->time_base));
+                                frameNumber = GetFrameNumber(context, frame);
+                                ffmpeg.sws_scale(swsCtx, frame->data, frame->linesize, 0, context.CodecContext->height,
+                                    rgbFrame->data, rgbFrame->linesize);
+                                result = ConvertFrameToBitmapSource(rgbFrame, context.CodecContext);
+                                find = true;
+                            }
+                        }
+                        else
+                        {
+                            while (ffmpeg.avcodec_receive_frame(context.CodecContext, frame) == 0)
+                            {
+                                double actualTime = frame->pts * ffmpeg.av_q2d(context.FormatContext->streams[context.VideoStreamIndex]->time_base);
+                                if (actualTime >= expectedTime)
+                                {
+                                    currentTime = TimeSpan.FromSeconds(actualTime);
+                                    frameNumber = GetFrameNumber(context, frame);
+                                    ffmpeg.sws_scale(swsCtx, frame->data, frame->linesize, 0, context.CodecContext->height,
+                                        rgbFrame->data, rgbFrame->linesize);
+                                    result = ConvertFrameToBitmapSource(rgbFrame, context.CodecContext);
+                                    find = true;
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
