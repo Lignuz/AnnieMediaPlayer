@@ -13,6 +13,7 @@
 		<VersionPrefix>0.8.1.0</VersionPrefix>
 		<RepositoryUrl>https://github.com/Lignuz/AnnieMediaPlayer.git</RepositoryUrl>
 		<Copyright>Copyright 2025 Annie Choi, All Rights Reserved.</Copyright>
+		<PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>
