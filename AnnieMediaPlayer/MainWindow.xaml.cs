@@ -237,37 +237,51 @@ namespace AnnieMediaPlayer
         {
             if (e.Key == Key.Space)
             {
-                if (_isPlaying)
+                // Ctrl + Space : 정지
+                if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
                 {
-                    PlayPause_Click(null, null);
+                    if (_isPlaying)
+                    {
+                        StopPlayback();
+                    }   
                 }
+                // Space : 열기, 일시정지/재생 토글
                 else
                 {
-                    OpenVideo_Click(null, null);
+                    if (_isPlaying)
+                    {
+                        PlayPause_Click(null, null);
+                    }
+                    else
+                    {
+                        OpenVideo_Click(null, null);
+                    }
                 }
                 e.Handled = true; // 포커스를 가진 다른 컨트롤로 전달되지 않게 막음
             }
-            else if (_isPlaying && _isPaused && _context != null && (e.Key == Key.Left || e.Key == Key.Right))
+            else if (e.Key == Key.Left || e.Key == Key.Right)
             {
-                double step = 1.0 / _context.Fps;
-                double currentSeconds = PlaybackSlider.Value;
-                double newTime = e.Key == Key.Left
-                    ? Math.Max(0, currentSeconds - step)
-                    : Math.Min(_videoDuration.TotalSeconds, currentSeconds + step);
-
-                PlaybackSlider.Value = newTime;
-
-                var timeBase = _streamTimeBase;
-                long seekTarget = (long)(newTime / ffmpeg.av_q2d(timeBase));
-
-                var bmp = FFmpegHelper.SeekAndDecodeFrame(_context, seekTarget, out int frameNum, out TimeSpan currentTime, false);
-                if (bmp != null)
+                if (_isPlaying && _isPaused && _context != null)
                 {
-                    VideoImage.Source = bmp;
-                    CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
-                    FrameNumberText.Text = frameNum.ToString();
-                }
+                    double step = 1.0 / _context.Fps;
+                    double currentSeconds = PlaybackSlider.Value;
+                    double newTime = e.Key == Key.Left
+                        ? Math.Max(0, currentSeconds - step)
+                        : Math.Min(_videoDuration.TotalSeconds, currentSeconds + step);
 
+                    PlaybackSlider.Value = newTime;
+
+                    var timeBase = _streamTimeBase;
+                    long seekTarget = (long)(newTime / ffmpeg.av_q2d(timeBase));
+
+                    var bmp = FFmpegHelper.SeekAndDecodeFrame(_context, seekTarget, out int frameNum, out TimeSpan currentTime, false);
+                    if (bmp != null)
+                    {
+                        VideoImage.Source = bmp;
+                        CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
+                        FrameNumberText.Text = frameNum.ToString();
+                    }
+                }
                 e.Handled = true;
             }
         }
