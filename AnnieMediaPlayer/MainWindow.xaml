@@ -8,6 +8,7 @@
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
+        MinWidth="540" MinHeight="310"
         Title="Annie Media Player" Height="600" Width="900"
         StateChanged="Window_StateChanged"
         PreviewKeyDown="Window_PreviewKeyDown">
@@ -89,17 +90,20 @@
                 </Grid>
             </Grid>
 
-            <!-- 리사이즈 핸들 (4방향 + 4코너) -->
-            <Border Name="TopResizeBorder" Height="6" VerticalAlignment="Top" Cursor="SizeNS" Background="Transparent" MouseLeftButtonDown="TopResizeBorder_MouseLeftButtonDown"/>
-            <Border Name="BottomResizeBorder" Height="6" VerticalAlignment="Bottom" Cursor="SizeNS" Background="Transparent" MouseLeftButtonDown="BottomResizeBorder_MouseLeftButtonDown"/>
-            <Border Name="LeftResizeBorder" Width="6" HorizontalAlignment="Left" Cursor="SizeWE" Background="Transparent" MouseLeftButtonDown="LeftResizeBorder_MouseLeftButtonDown"/>
-            <Border Name="RightResizeBorder" Width="6" HorizontalAlignment="Right" Cursor="SizeWE" Background="Transparent" MouseLeftButtonDown="RightResizeBorder_MouseLeftButtonDown"/>
+            <!-- 리사이징 처리를 위한 컨트롤 -->
+            <Grid>
+                <!-- 리사이즈 핸들 (4방향 + 4코너) -->
+                <Border Name="TopResizeBorder" Height="6" VerticalAlignment="Top" Cursor="SizeNS" Background="Transparent" MouseLeftButtonDown="TopResizeBorder_MouseLeftButtonDown" />
+                <Border Name="BottomResizeBorder" Height="6" VerticalAlignment="Bottom" Cursor="SizeNS" Background="Transparent" MouseLeftButtonDown="BottomResizeBorder_MouseLeftButtonDown"/>
+                <Border Name="LeftResizeBorder" Width="6" HorizontalAlignment="Left" Cursor="SizeWE" Background="Transparent" MouseLeftButtonDown="LeftResizeBorder_MouseLeftButtonDown"/>
+                <Border Name="RightResizeBorder" Width="6" HorizontalAlignment="Right" Cursor="SizeWE" Background="Transparent" MouseLeftButtonDown="RightResizeBorder_MouseLeftButtonDown"/>
 
-            <!-- 코너 핸들 -->
-            <Border Name="TopLeftResizeBorder" Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Top" Cursor="SizeNWSE" Background="Transparent" MouseLeftButtonDown="TopLeftResizeBorder_MouseLeftButtonDown"/>
-            <Border Name="TopRightResizeBorder" Width="8" Height="8" HorizontalAlignment="Right" VerticalAlignment="Top" Cursor="SizeNESW" Background="Transparent" MouseLeftButtonDown="TopRightResizeBorder_MouseLeftButtonDown"/>
-            <Border Name="BottomLeftResizeBorder" Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Bottom" Cursor="SizeNESW" Background="Transparent" MouseLeftButtonDown="BottomLeftResizeBorder_MouseLeftButtonDown"/>
-            <Border Name="BottomRightResizeBorder" Width="8" Height="8" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="SizeNWSE" Background="Transparent" MouseLeftButtonDown="BottomRightResizeBorder_MouseLeftButtonDown"/>
+                <!-- 코너 핸들 -->
+                <Border Name="TopLeftResizeBorder" Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Top" Cursor="SizeNWSE" Background="Transparent" MouseLeftButtonDown="TopLeftResizeBorder_MouseLeftButtonDown"/>
+                <Border Name="TopRightResizeBorder" Width="8" Height="8" HorizontalAlignment="Right" VerticalAlignment="Top" Cursor="SizeNESW" Background="Transparent" MouseLeftButtonDown="TopRightResizeBorder_MouseLeftButtonDown"/>
+                <Border Name="BottomLeftResizeBorder" Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Bottom" Cursor="SizeNESW" Background="Transparent" MouseLeftButtonDown="BottomLeftResizeBorder_MouseLeftButtonDown"/>
+                <Border Name="BottomRightResizeBorder" Width="8" Height="8" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="SizeNWSE" Background="Transparent" MouseLeftButtonDown="BottomRightResizeBorder_MouseLeftButtonDown"/>
+            </Grid>
         </Grid>
     </Border>
 </Window>

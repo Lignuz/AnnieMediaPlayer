@@ -3,6 +3,7 @@ using Microsoft.Win32;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -394,6 +395,9 @@ namespace AnnieMediaPlayer
         [DllImport("user32.dll")]
         public static extern IntPtr SendMessage(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
 
+        [DllImport("user32.dll")]
+        private static extern bool ReleaseCapture();
+
         private const int WM_NCLBUTTONDOWN = 0xA1;
         private const int HTLEFT = 10;
         private const int HTRIGHT = 11;
@@ -406,7 +410,9 @@ namespace AnnieMediaPlayer
 
         private void ResizeWindow(int direction)
         {
-            SendMessage(new System.Windows.Interop.WindowInteropHelper(this).Handle, WM_NCLBUTTONDOWN, (IntPtr)direction, IntPtr.Zero);
+            var hwnd = new WindowInteropHelper(this).Handle;
+            ReleaseCapture();
+            SendMessage(hwnd, WM_NCLBUTTONDOWN, (IntPtr)direction, IntPtr.Zero);
         }
 
         private void TopResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTTOP);
