@@ -2,6 +2,7 @@
 using Microsoft.Win32;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace AnnieMediaPlayer
@@ -245,11 +246,11 @@ namespace AnnieMediaPlayer
         {
             if (this.WindowState == WindowState.Maximized)
             {
-                MaxRestoreButton.Content = "❐"; // 복원 아이콘
+                MaxRestoreButton.Content = (Geometry)FindResource("RestoreIconData"); // ❐ 복원 아이콘
             }
             else
             {
-                MaxRestoreButton.Content = "□"; // 최대화 아이콘
+                MaxRestoreButton.Content = (Geometry)FindResource("MaximizeIconData"); // □ 최대화 아이콘
             }
         }
 
