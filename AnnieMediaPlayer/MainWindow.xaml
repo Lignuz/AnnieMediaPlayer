@@ -13,7 +13,7 @@
         StateChanged="Window_StateChanged"
         PreviewKeyDown="Window_PreviewKeyDown"
         Loaded="Window_Loaded">
-    <Border BorderBrush="#444" BorderThickness="1" CornerRadius="8" Background="#FFFFFF" Padding="0">
+    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Background="{DynamicResource BackgroundBrush}" Padding="0">
         <Grid>
             <Grid>
                 <Grid.RowDefinitions>

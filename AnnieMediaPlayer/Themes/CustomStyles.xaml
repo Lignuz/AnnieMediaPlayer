@@ -10,13 +10,18 @@
     </Geometry>
     <Geometry x:Key="CloseIconData">M 6 6 L 14 14 M 6 14 L 14 6</Geometry>
 
+    <!-- 텍스트 블럭 -->
+    <Style TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TitleTextBrush}"/>
+    </Style>
+
     <!-- 버튼 -->
     <Style TargetType="Button">
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="Padding" Value="8,4"/>
         <Setter Property="Margin" Value="4"/>
-        <Setter Property="Background" Value="#FFF"/>
-        <Setter Property="BorderBrush" Value="#CCC"/>
+        <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Effect">
             <Setter.Value>
@@ -25,7 +30,10 @@
         </Setter>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="#F0F0F0"/>
+                <Setter Property="Background" Value="{DynamicResource ButtonHoverBrush}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ButtonPressedBrush}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -46,17 +54,17 @@
                     <Grid Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
                         <Viewbox Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <Path Stroke="Black"
-                              StrokeThickness="1.0"
-                              Stretch="Uniform"
-                              Data="{TemplateBinding Content}"/>
+                                  StrokeThickness="1.0"
+                                  Stretch="Uniform"
+                                  Data="{TemplateBinding Content}"/>
                         </Viewbox>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#EEE"/>
+                            <Setter Property="Background" Value="{DynamicResource ButtonHoverBrush}"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter Property="Background" Value="#DDD"/>
+                            <Setter Property="Background" Value="{DynamicResource ButtonPressedBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -72,19 +80,17 @@
                     <Grid Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
                         <Viewbox Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <Path Stroke="Black"
-                              StrokeThickness="1.0"
-                              Stretch="Uniform"
-                              Data="{TemplateBinding Content}"/>
+                                  StrokeThickness="1.0"
+                                  Stretch="Uniform"
+                                  Data="{TemplateBinding Content}"/>
                         </Viewbox>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#E81123"/>
-                            <!-- 빨간색 hover -->
+                            <Setter Property="Background" Value="{DynamicResource CloseButtonHoverBrush}"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter Property="Background" Value="#C50F1F"/>
-                            <!-- 빨간색 눌림 -->
+                            <Setter Property="Background" Value="{DynamicResource CloseButtonPressedBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -102,11 +108,10 @@
                         <Grid>
                             <Track x:Name="PART_Track">
                                 <Track.DecreaseRepeatButton>
-                                    <RepeatButton Command="Slider.DecreaseLarge" Style="{x:Null}" IsTabStop="False"
-                                          Background="#FFE0E0E0" BorderBrush="Transparent">
+                                    <RepeatButton Command="Slider.DecreaseLarge" Style="{x:Null}" IsTabStop="False">
                                         <RepeatButton.Template>
                                             <ControlTemplate TargetType="RepeatButton">
-                                                <Rectangle Fill="#FFE0E0E0" Height="4" VerticalAlignment="Center"/>
+                                                <Rectangle Fill="{DynamicResource SliderBarBrush}" Height="4" VerticalAlignment="Center"/>
                                             </ControlTemplate>
                                         </RepeatButton.Template>
                                     </RepeatButton>
@@ -115,7 +120,7 @@
                                     <Thumb Width="14" Height="14">
                                         <Thumb.Style>
                                             <Style TargetType="Thumb">
-                                                <Setter Property="Background" Value="#FF88CC88"/>
+                                                <Setter Property="Background" Value="{DynamicResource ThumbBrush}"/>
                                                 <Setter Property="BorderBrush" Value="Transparent"/>
                                                 <Setter Property="BorderThickness" Value="0"/>
                                                 <Setter Property="Effect">
@@ -125,13 +130,13 @@
                                                 </Setter>
                                                 <Style.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Background" Value="#FF66BB66"/>
+                                                        <Setter Property="Background" Value="{DynamicResource ThumbHoverBrush}"/>
                                                     </Trigger>
                                                     <Trigger Property="IsDragging" Value="True">
-                                                        <Setter Property="Background" Value="#FF449944"/>
+                                                        <Setter Property="Background" Value="{DynamicResource ThumbDraggingBrush}"/>
                                                     </Trigger>
                                                     <Trigger Property="IsEnabled" Value="False">
-                                                        <Setter Property="Background" Value="#FFCCCCCC"/>
+                                                        <Setter Property="Background" Value="{DynamicResource ThumbDisabledBrush}"/>
                                                     </Trigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -139,11 +144,10 @@
                                     </Thumb>
                                 </Track.Thumb>
                                 <Track.IncreaseRepeatButton>
-                                    <RepeatButton Command="Slider.IncreaseLarge" Style="{x:Null}" IsTabStop="False"
-                                          Background="#FFE0E0E0" BorderBrush="Transparent">
+                                    <RepeatButton Command="Slider.IncreaseLarge" Style="{x:Null}" IsTabStop="False">
                                         <RepeatButton.Template>
                                             <ControlTemplate TargetType="RepeatButton">
-                                                <Rectangle Fill="#FFE0E0E0" Height="4" VerticalAlignment="Center"/>
+                                                <Rectangle Fill="{DynamicResource SliderBarBrush}" Height="4" VerticalAlignment="Center"/>
                                             </ControlTemplate>
                                         </RepeatButton.Template>
                                     </RepeatButton>
@@ -153,7 +157,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="SliderBackground" Property="Background" Value="#FFE0E0E0"/>
+                            <Setter TargetName="SliderBackground" Property="Background" Value="{DynamicResource SliderBarBrush}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="SliderBackground" Property="Opacity" Value="0.5"/>
