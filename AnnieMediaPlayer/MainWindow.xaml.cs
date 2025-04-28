@@ -1,5 +1,6 @@
 ﻿using FFmpeg.AutoGen;
 using Microsoft.Win32;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -384,5 +385,38 @@ namespace AnnieMediaPlayer
         {
             this.Close();
         }
+
+
+        //////////////////////////////////////////////////////
+        // WindowStyle="None" 에 대한 수동 윈도우 크기 조절 //
+        //////////////////////////////////////////////////////
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr SendMessage(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
+
+        private const int WM_NCLBUTTONDOWN = 0xA1;
+        private const int HTLEFT = 10;
+        private const int HTRIGHT = 11;
+        private const int HTTOP = 12;
+        private const int HTTOPLEFT = 13;
+        private const int HTTOPRIGHT = 14;
+        private const int HTBOTTOM = 15;
+        private const int HTBOTTOMLEFT = 16;
+        private const int HTBOTTOMRIGHT = 17;
+
+        private void ResizeWindow(int direction)
+        {
+            SendMessage(new System.Windows.Interop.WindowInteropHelper(this).Handle, WM_NCLBUTTONDOWN, (IntPtr)direction, IntPtr.Zero);
+        }
+
+        private void TopResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTTOP);
+        private void BottomResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTBOTTOM);
+        private void LeftResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTLEFT);
+        private void RightResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTRIGHT);
+
+        private void TopLeftResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTTOPLEFT);
+        private void TopRightResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTTOPRIGHT);
+        private void BottomLeftResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTBOTTOMLEFT);
+        private void BottomRightResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTBOTTOMRIGHT);
     }
 }
