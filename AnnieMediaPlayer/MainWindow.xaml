@@ -11,7 +11,8 @@
         MinWidth="540" MinHeight="310"
         Title="Annie Media Player" Height="600" Width="900"
         StateChanged="Window_StateChanged"
-        PreviewKeyDown="Window_PreviewKeyDown">
+        PreviewKeyDown="Window_PreviewKeyDown"
+        Loaded="Window_Loaded">
     <Border BorderBrush="#444" BorderThickness="1" CornerRadius="8" Background="#FFFFFF" Padding="0">
         <Grid>
             <Grid>

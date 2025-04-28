@@ -49,6 +49,18 @@ namespace AnnieMediaPlayer
             StopButton.IsEnabled = false;
         }
 
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            var fadeIn = new System.Windows.Media.Animation.DoubleAnimation
+            {
+                From = 0,
+                To = 1,
+                Duration = TimeSpan.FromMilliseconds(300),
+                EasingFunction = new System.Windows.Media.Animation.QuadraticEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
+            };
+            this.BeginAnimation(Window.OpacityProperty, fadeIn);
+        }
+
         private async void OpenVideo_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
