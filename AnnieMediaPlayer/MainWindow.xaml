@@ -9,6 +9,7 @@
         AllowsTransparency="True"
         Background="Transparent"
         Title="Annie Media Player" Height="600" Width="900"
+        StateChanged="Window_StateChanged"
         PreviewKeyDown="Window_PreviewKeyDown">
     <Border BorderBrush="#444" BorderThickness="1" CornerRadius="8" Background="#FFFFFF" Padding="0">
         <Grid>
@@ -27,9 +28,9 @@
                     <TextBlock Text="Annie Media Player" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="Bold"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="0,0,5,0">
-                    <Button Content="━" Width="40" Height="30" Click="MinimizeButton_Click" Background="Transparent" BorderBrush="{x:Null}" FontSize="16" />
-                    <Button Name="MaxRestoreButton" Content="□" Width="40" Height="30" Click="MaxRestoreButton_Click" Background="Transparent" BorderBrush="{x:Null}" FontSize="16" />
-                    <Button Content="✕" Width="40" Height="30" Click="CloseButton_Click" Background="Transparent" BorderBrush="{x:Null}" FontSize="16" />
+                    <Button Style="{StaticResource TitleBarButtonStyle}" Content="━" Click="MinimizeButton_Click"/>
+                    <Button x:Name="MaxRestoreButton" Style="{StaticResource TitleBarButtonStyle}" Content="□" Click="MaxRestoreButton_Click"/>
+                    <Button Style="{StaticResource CloseButtonStyle}" Content="✕" Click="CloseButton_Click"/>
                 </StackPanel>
             </DockPanel>
 

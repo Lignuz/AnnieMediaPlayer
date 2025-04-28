@@ -236,6 +236,23 @@ namespace AnnieMediaPlayer
             }
         }
 
+        private void Window_StateChanged(object sender, EventArgs e)
+        {
+            UpdateMaxRestoreButton();
+        }
+
+        private void UpdateMaxRestoreButton()
+        {
+            if (this.WindowState == WindowState.Maximized)
+            {
+                MaxRestoreButton.Content = "❐"; // 복원 아이콘
+            }
+            else
+            {
+                MaxRestoreButton.Content = "□"; // 최대화 아이콘
+            }
+        }
+
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Space)
@@ -355,12 +372,10 @@ namespace AnnieMediaPlayer
             if (this.WindowState == WindowState.Normal)
             {
                 this.WindowState = WindowState.Maximized;
-                MaxRestoreButton.Content = "❐"; // 최대화되면 Restore 아이콘으로 변경
             }
             else
             {
                 this.WindowState = WindowState.Normal;
-                MaxRestoreButton.Content = "□"; // 복원되면 Maximize 아이콘으로 변경
             }
         }
 
