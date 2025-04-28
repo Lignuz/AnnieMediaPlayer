@@ -5,57 +5,86 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AnnieMediaPlayer"
         mc:Ignorable="d"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
         Title="Annie Media Player" Height="600" Width="900"
         PreviewKeyDown="Window_PreviewKeyDown">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-            <!-- 영상 표시 영역 -->
-            <RowDefinition Height="Auto" />
-            <!-- 컨트롤 영역 -->
-        </Grid.RowDefinitions>
+    <Border BorderBrush="#444" BorderThickness="1" CornerRadius="8" Background="#FFFFFF" Padding="0">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40"/>
+                <!-- 커스텀 타이틀바 -->
+                <RowDefinition Height="*"/>
+                <!-- 영상 + 컨트롤 영역 -->
+            </Grid.RowDefinitions>
 
-        <!-- 🎞 영상 표시 영역 -->
-        <Border Grid.Row="0" Background="Black">
-            <Image Name="VideoImage" Stretch="Uniform" />
-        </Border>
-
-        <!-- 🎛 컨트롤 영역 -->
-        <StackPanel Grid.Row="1" Background="Transparent" Margin="10">
-            <!-- 재생 슬라이더 -->
-            <Slider Name="PlaybackSlider" Style="{StaticResource CustomSliderStyle}"
-                    IsEnabled="{Binding Path=IsEnabled, ElementName=StopButton}"
-                    Minimum="0" Maximum="100" Value="0" Height="20"
-                    Margin="0,0,0,4"
-                    PreviewMouseDown="PlaybackSlider_PreviewMouseDown"
-                    PreviewMouseUp="PlaybackSlider_PreviewMouseUp"
-                    ValueChanged="PlaybackSlider_ValueChanged"/>
-
-            <!-- 시간 표시 -->
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                <TextBlock Name="CurrentTimeText" Text="00:00:00" FontWeight="Bold" />
-                <TextBlock Text=" / " />
-                <TextBlock Name="TotalTimeText" Text="00:00:00" Margin="0,0,10,0"/>
-                <TextBlock Text="프레임:" />
-                <TextBlock Name="FrameNumberText" Text="0" FontWeight="Bold" Margin="5,0"/>
-            </StackPanel>
-
-            <!-- 버튼 + 속도 컨트롤 -->
-            <DockPanel LastChildFill="False">
-                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" HorizontalAlignment="Left">
-                    <Button Name="OpenButton" Content="열기" Click="OpenVideo_Click" Width="80" Margin="0,0,10,0"/>
-                    <Button Name="PlayPauseButton" Content="재생" Click="PlayPause_Click" Width="80" Margin="0,0,10,0"/>
-                    <Button Name="StopButton" Content="정지" Click="Stop_Click" Width="80" Margin="0,0,10,0"/>
+            <!-- 🎀 커스텀 타이틀바 -->
+            <DockPanel Background="Transparent" Grid.Row="0" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" MouseMove="TitleBar_MouseMove" MouseLeftButtonUp="TitleBar_MouseLeftButtonUp" LastChildFill="False">
+                <!-- 🎨 아이콘 + 제목 묶기 -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
+                    <Image Source="pack://application:,,,/Resources/AnnieMediaPlayer.ico" Width="20" Height="20" Margin="0,0,6,0" />
+                    <TextBlock Text="Annie Media Player" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="Bold"/>
                 </StackPanel>
-
-                <!-- 재생 속도 조절 -->
-                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
-                    <TextBlock Text="속도:" VerticalAlignment="Center" Margin="10,0,4,0" FontWeight="SemiBold"/>
-                    <Button Content="-" Width="30" Click="SpeedDown_Click"/>
-                    <TextBlock Name="SpeedLabel" Text="1초/프레임" Width="90" TextAlignment="Center" VerticalAlignment="Center" Padding="2,0" Margin="5,0" FontWeight="Medium"/>
-                    <Button Content="+" Width="30" Click="SpeedUp_Click"/>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="0,0,5,0">
+                    <Button Content="━" Width="40" Height="30" Click="MinimizeButton_Click" Background="Transparent" BorderBrush="{x:Null}" FontSize="16" />
+                    <Button Name="MaxRestoreButton" Content="□" Width="40" Height="30" Click="MaxRestoreButton_Click" Background="Transparent" BorderBrush="{x:Null}" FontSize="16" />
+                    <Button Content="✕" Width="40" Height="30" Click="CloseButton_Click" Background="Transparent" BorderBrush="{x:Null}" FontSize="16" />
                 </StackPanel>
             </DockPanel>
-        </StackPanel>
-    </Grid>
+
+            <!-- 🎞 영상 + 컨트롤 -->
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <!-- 영상 표시 영역 -->
+                    <RowDefinition Height="Auto" />
+                    <!-- 컨트롤 영역 -->
+                </Grid.RowDefinitions>
+
+                <!-- 🎞 영상 표시 영역 -->
+                <Border Grid.Row="0" Background="Black">
+                    <Image Name="VideoImage" Stretch="Uniform" />
+                </Border>
+
+                <!-- 🎛 컨트롤 영역 -->
+                <StackPanel Grid.Row="1" Background="Transparent" Margin="15">
+                    <!-- 재생 슬라이더 -->
+                    <Slider Name="PlaybackSlider" Style="{StaticResource CustomSliderStyle}"
+                IsEnabled="{Binding Path=IsEnabled, ElementName=StopButton}"
+                Minimum="0" Maximum="100" Value="0" Height="20"
+                Margin="0,0,0,4"
+                PreviewMouseDown="PlaybackSlider_PreviewMouseDown"
+                PreviewMouseUp="PlaybackSlider_PreviewMouseUp"
+                ValueChanged="PlaybackSlider_ValueChanged"/>
+
+                    <!-- 시간 표시 -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Name="CurrentTimeText" Text="00:00:00" FontWeight="Bold" />
+                        <TextBlock Text=" / " />
+                        <TextBlock Name="TotalTimeText" Text="00:00:00" Margin="0,0,10,0"/>
+                        <TextBlock Text="프레임:" />
+                        <TextBlock Name="FrameNumberText" Text="0" FontWeight="Bold" Margin="5,0"/>
+                    </StackPanel>
+
+                    <!-- 버튼 + 속도 컨트롤 -->
+                    <DockPanel LastChildFill="False">
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" HorizontalAlignment="Left">
+                            <Button Name="OpenButton" Content="열기" Click="OpenVideo_Click" Width="80" Margin="0,0,10,0"/>
+                            <Button Name="PlayPauseButton" Content="재생" Click="PlayPause_Click" Width="80" Margin="0,0,10,0"/>
+                            <Button Name="StopButton" Content="정지" Click="Stop_Click" Width="80" Margin="0,0,10,0"/>
+                        </StackPanel>
+
+                        <!-- 재생 속도 조절 -->
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                            <TextBlock Text="속도:" VerticalAlignment="Center" Margin="10,0,4,0" FontWeight="SemiBold"/>
+                            <Button Content="-" Width="30" Click="SpeedDown_Click"/>
+                            <TextBlock Name="SpeedLabel" Text="1초/프레임" Width="90" TextAlignment="Center" VerticalAlignment="Center" Padding="2,0" Margin="5,0" FontWeight="Medium"/>
+                            <Button Content="+" Width="30" Click="SpeedUp_Click"/>
+                        </StackPanel>
+                    </DockPanel>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
 </Window>

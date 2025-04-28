@@ -11,6 +11,9 @@ namespace AnnieMediaPlayer
     /// </summary>
     public partial class MainWindow : Window
     {
+        private Point _mouseDownPoint;
+        private bool _isDragging = false;
+
         private string _videoPath;
         private CancellationTokenSource _cancellation;
         private bool _isPlaying = false;
@@ -284,6 +287,86 @@ namespace AnnieMediaPlayer
                 }
                 e.Handled = true;
             }
+        }
+
+        private void ToggleWindowState()
+        {
+            this.WindowState = (this.WindowState == WindowState.Normal) ? WindowState.Maximized : WindowState.Normal;
+        }
+
+        private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount == 2)
+            {
+                ToggleWindowState();
+            }
+            else if (e.ButtonState == MouseButtonState.Pressed)
+            {
+                if (this.WindowState == WindowState.Maximized)
+                {
+                    _mouseDownPoint = e.GetPosition(this);
+                    _isDragging = true;
+                }
+
+                DragMove(); // 윈도우 드래그
+            }
+        }
+
+        private void TitleBar_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_isDragging && e.LeftButton == MouseButtonState.Pressed)
+            {
+                Point currentPoint = e.GetPosition(this);
+                double deltaX = Math.Abs(currentPoint.X - _mouseDownPoint.X);
+                double deltaY = Math.Abs(currentPoint.Y - _mouseDownPoint.Y);
+
+                if ((deltaX > SystemParameters.MinimumHorizontalDragDistance) ||
+                    (deltaY > SystemParameters.MinimumVerticalDragDistance))
+                {
+                    _isDragging = false;
+
+                    if (this.WindowState == WindowState.Maximized)
+                    {
+                        var mouseX = Mouse.GetPosition(this).X;
+                        var percent = mouseX / this.ActualWidth;
+
+                        this.WindowState = WindowState.Normal;
+                        this.Left = SystemParameters.WorkArea.Width * percent - (this.Width / 2);
+                        this.Top = 0;
+                    }
+
+                    DragMove();
+                }
+            }
+        }
+
+        private void TitleBar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            _isDragging = false;
+        }
+
+        private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.WindowState = WindowState.Minimized;
+        }
+
+        private void MaxRestoreButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.WindowState == WindowState.Normal)
+            {
+                this.WindowState = WindowState.Maximized;
+                MaxRestoreButton.Content = "❐"; // 최대화되면 Restore 아이콘으로 변경
+            }
+            else
+            {
+                this.WindowState = WindowState.Normal;
+                MaxRestoreButton.Content = "□"; // 복원되면 Maximize 아이콘으로 변경
+            }
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
         }
     }
 }

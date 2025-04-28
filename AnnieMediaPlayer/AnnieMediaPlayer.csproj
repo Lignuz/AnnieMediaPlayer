@@ -10,7 +10,7 @@
 		<ApplicationIcon>Resources\AnnieMediaPlayer.ico</ApplicationIcon>
 		<Authors>Lignuz</Authors>
 		<Company>Annie Choi</Company>
-		<VersionPrefix>0.8.1.0</VersionPrefix>
+		<VersionPrefix>0.9.0.0</VersionPrefix>
 		<RepositoryUrl>https://github.com/Lignuz/AnnieMediaPlayer.git</RepositoryUrl>
 		<Copyright>Copyright 2025 Annie Choi, All Rights Reserved.</Copyright>
 		<PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
@@ -22,7 +22,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Content Include="Resources\AnnieMediaPlayer.ico" />
+	  <Resource Include="Resources\AnnieMediaPlayer.ico" />
 	</ItemGroup>
 
 	<ItemGroup>
