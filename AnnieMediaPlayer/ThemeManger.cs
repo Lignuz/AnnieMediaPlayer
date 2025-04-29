@@ -8,7 +8,7 @@ namespace AnnieMediaPlayer
     public static class ThemeManager
     {
         private static bool _isDarkTheme = false;
-        public static bool IsDarkTheme => _isDarkTheme; 
+        public static bool IsDarkTheme => _isDarkTheme;
 
         public static void ToggleTheme()
         {
@@ -44,11 +44,13 @@ namespace AnnieMediaPlayer
                 {
                     if (brushKey.EndsWith("Brush"))
                     {
-                        string colorKey = themePrefix + brushKey.Replace("Brush", "Color");
+                        // Brush 키에서 정확히 Brush만 떼고, Color 키 만들기
+                        string baseName = brushKey.Substring(0, brushKey.Length - "Brush".Length);
+                        string colorKey = themePrefix + baseName + "Color";
 
-                        if (Application.Current.Resources.Contains(colorKey))
+                        if (themeDict.Contains(colorKey))
                         {
-                            AnimateColor(brushKey, (Color)Application.Current.Resources[colorKey]);
+                            AnimateColor(brushKey, (Color)themeDict[colorKey]);
                         }
                     }
                 }
@@ -68,7 +70,7 @@ namespace AnnieMediaPlayer
             }
         }
 
-        // AnimateColor 로 대체합니다.
+        // (참고용) SetColor는 AnimateColor 도입으로 현재는 사용 안함
         private static void SetColor(string brushKey, Color color)
         {
             if (Application.Current.Resources[brushKey] is SolidColorBrush brush)
