@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 
 namespace AnnieMediaPlayer
@@ -401,6 +402,16 @@ namespace AnnieMediaPlayer
 
         private void ThemeToggleButton_Click(object sender, RoutedEventArgs e)
         {
+            // 아이콘 회전 애니메이션
+            var rotateAnimation = new DoubleAnimation
+            {
+                From = 0,
+                To = 360,
+                Duration = TimeSpan.FromMilliseconds(500),
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+            };
+            ThemeToggleRotate.BeginAnimation(RotateTransform.AngleProperty, rotateAnimation);
+
             ThemeManager.ToggleTheme();
         }
 
