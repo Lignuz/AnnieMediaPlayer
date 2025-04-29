@@ -32,13 +32,13 @@ namespace AnnieMediaPlayer
 
         private static void ApplyThemeColors(string themePrefix)
         {
-            var themeDict = Application.Current.Resources.MergedDictionaries
-                              .FirstOrDefault(d => d.Source != null && d.Source.OriginalString.Contains("ThemeColors.xaml"));
+            var brushDict = FindResourceDictionary("Brushes.xaml");  
+            var colorDict = FindResourceDictionary("ThemeColors.xaml"); 
 
-            if (themeDict == null)
+            if (brushDict == null || colorDict == null)
                 return;
 
-            foreach (DictionaryEntry entry in themeDict)
+            foreach (DictionaryEntry entry in brushDict)
             {
                 if (entry.Key is string brushKey && entry.Value is SolidColorBrush)
                 {
@@ -48,13 +48,38 @@ namespace AnnieMediaPlayer
                         string baseName = brushKey.Substring(0, brushKey.Length - "Brush".Length);
                         string colorKey = themePrefix + baseName + "Color";
 
-                        if (themeDict.Contains(colorKey))
+                        if (colorDict.Contains(colorKey))
                         {
-                            AnimateColor(brushKey, (Color)themeDict[colorKey]);
+                            AnimateColor(brushKey, (Color)colorDict[colorKey]);
                         }
                     }
                 }
             }
+        }
+
+        private static ResourceDictionary? FindResourceDictionary(string partialPath)
+        {
+            foreach (var dict in Application.Current.Resources.MergedDictionaries)
+            {
+                var result = FindInDictionary(dict, partialPath);
+                if (result != null)
+                    return result;
+            }
+            return null;
+        }
+
+        private static ResourceDictionary? FindInDictionary(ResourceDictionary dict, string partialPath)
+        {
+            if (dict.Source != null && dict.Source.OriginalString.Contains(partialPath))
+                return dict;
+
+            foreach (var subDict in dict.MergedDictionaries)
+            {
+                var result = FindInDictionary(subDict, partialPath);
+                if (result != null)
+                    return result;
+            }
+            return null;
         }
 
         private static void AnimateColor(string brushKey, Color toColor)

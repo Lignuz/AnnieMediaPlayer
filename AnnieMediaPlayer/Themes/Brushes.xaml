@@ -1,0 +1,25 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Dynamic Brushes -->
+    <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource LightBackgroundColor}"/>
+    <SolidColorBrush x:Key="BorderBrush" Color="{DynamicResource LightBorderColor}"/>
+    <SolidColorBrush x:Key="TitleTextBrush" Color="{DynamicResource LightTitleTextColor}"/>
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="{DynamicResource LightButtonBackgroundColor}"/>
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="{DynamicResource LightButtonBorderColor}"/>
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="{DynamicResource LightButtonHoverColor}"/>
+    <SolidColorBrush x:Key="ButtonPressedBrush" Color="{DynamicResource LightButtonPressedColor}"/>
+    <SolidColorBrush x:Key="ButtonDisabledBackgroundBrush" Color="{DynamicResource LightButtonDisabledBackgroundColor}"/>
+    <SolidColorBrush x:Key="ButtonDisabledBorderBrush" Color="{DynamicResource LightButtonDisabledBorderColor}"/>
+    <SolidColorBrush x:Key="ButtonDisabledForegroundBrush" Color="{DynamicResource LightButtonDisabledForegroundColor}"/>
+    <SolidColorBrush x:Key="ThemeButtonFillBrush" Color="{DynamicResource LightThemeButtonFillColor}"/>
+    <SolidColorBrush x:Key="CloseButtonHoverBrush" Color="{DynamicResource LightCloseButtonHoverColor}"/>
+    <SolidColorBrush x:Key="CloseButtonPressedBrush" Color="{DynamicResource LightCloseButtonPressedColor}"/>
+    <SolidColorBrush x:Key="SliderBarBrush" Color="{DynamicResource LightSliderBarColor}"/>
+    <SolidColorBrush x:Key="ThumbBrush" Color="{DynamicResource LightThumbColor}"/>
+    <SolidColorBrush x:Key="ThumbHoverBrush" Color="{DynamicResource LightThumbHoverColor}"/>
+    <SolidColorBrush x:Key="ThumbDraggingBrush" Color="{DynamicResource LightThumbDraggingColor}"/>
+    <SolidColorBrush x:Key="ThumbDisabledBrush" Color="{DynamicResource LightThumbDisabledColor}"/>
+    <SolidColorBrush x:Key="VideoBackgroundBrush" Color="{DynamicResource LightVideoBackgroundColor}"/>
+
+</ResourceDictionary>

@@ -1,0 +1,25 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+	<!-- Light Theme Colors -->
+	<Color x:Key="LightBackgroundColor">#FFFFFFFF</Color>
+	<Color x:Key="LightBorderColor">#FF444444</Color>
+	<Color x:Key="LightTitleTextColor">#FF000000</Color>
+	<Color x:Key="LightButtonBackgroundColor">#FFFFFFFF</Color>
+	<Color x:Key="LightButtonBorderColor">#FFCCCCCC</Color>
+	<Color x:Key="LightButtonHoverColor">#FFF0F0F0</Color>
+	<Color x:Key="LightButtonPressedColor">#FFDDDDDD</Color>
+	<Color x:Key="LightButtonDisabledBackgroundColor">#FFE5E5E5</Color>
+	<Color x:Key="LightButtonDisabledBorderColor">#FFAAAAAA</Color>
+	<Color x:Key="LightButtonDisabledForegroundColor">#FF888888</Color>
+	<Color x:Key="LightThemeButtonFillColor">#FF000000</Color>
+	<Color x:Key="LightCloseButtonHoverColor">#FFE81123</Color>
+	<Color x:Key="LightCloseButtonPressedColor">#FFC50F1F</Color>
+	<Color x:Key="LightSliderBarColor">#FFE0E0E0</Color>
+	<Color x:Key="LightThumbColor">#FF88CC88</Color>
+	<Color x:Key="LightThumbHoverColor">#FF66BB66</Color>
+	<Color x:Key="LightThumbDraggingColor">#FF449944</Color>
+	<Color x:Key="LightThumbDisabledColor">#FFCCCCCC</Color>
+	<Color x:Key="LightVideoBackgroundColor">#FF000000</Color>
+	
+</ResourceDictionary>
