@@ -400,19 +400,48 @@ namespace AnnieMediaPlayer
             this.Close();
         }
 
-        private void ThemeToggleButton_Click(object sender, RoutedEventArgs e)
+        private async void ThemeToggleButton_Click(object sender, RoutedEventArgs e)
         {
-            // 아이콘 회전 애니메이션
-            var rotateAnimation = new DoubleAnimation
+            if (ThemeToggleButton.IsEnabled == false)
+                return;
+
+            ThemeToggleButton.IsEnabled = false;
+
+            // 회전 애니메이션
+            var rotateAnim = new DoubleAnimation
             {
                 From = 0,
                 To = 360,
                 Duration = TimeSpan.FromMilliseconds(500),
-                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+                EasingFunction = new CircleEase { EasingMode = EasingMode.EaseInOut }
             };
-            ThemeToggleRotate.BeginAnimation(RotateTransform.AngleProperty, rotateAnimation);
+            ThemeToggleRotate.BeginAnimation(RotateTransform.AngleProperty, rotateAnim);
 
+            // 눌림(스케일) 애니메이션 추가 (선택사항)
+            var scale = new ScaleTransform(1, 1);
+            ThemeToggleButton.LayoutTransform = scale;
+            var scaleDown = new DoubleAnimation(1.0, 0.85, TimeSpan.FromMilliseconds(100));
+            var scaleUp = new DoubleAnimation(0.85, 1.0, TimeSpan.FromMilliseconds(200))
+            {
+                BeginTime = TimeSpan.FromMilliseconds(300)
+            };
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleDown);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleDown);
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleUp);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleUp);
+
+            // 테마 전환 (살짝 지연)
+            await Task.Delay(200);
             ThemeManager.ToggleTheme();
+
+            // 아이콘 교체
+            if (ThemeManager.IsDarkTheme)
+                ThemeToggleButton.Content = FindResource("ThemeDarkIconData");
+            else
+                ThemeToggleButton.Content = FindResource("ThemeLightIconData");
+
+            await Task.Delay(300); // 회전 끝날 때까지 기다리기
+            ThemeToggleButton.IsEnabled = true;
         }
 
 

@@ -1,5 +1,4 @@
 ﻿using System.Windows;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
@@ -8,6 +7,7 @@ namespace AnnieMediaPlayer
     public static class ThemeManager
     {
         private static bool _isDarkTheme = false;
+        public static bool IsDarkTheme => _isDarkTheme; 
 
         public static void ToggleTheme()
         {

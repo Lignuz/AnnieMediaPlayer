@@ -10,10 +10,21 @@
         M 6 8 H 12 V 14 H 6 Z
     </Geometry>
     <Geometry x:Key="CloseIconData">M 6 6 L 14 14 M 6 14 L 14 6</Geometry>
-    <Geometry x:Key="ThemeIconData">
-        M 12,2 
-        A 10,10 0 1 1 2,12
-        A 6,6 0 1 0 12,2
+    <GeometryGroup x:Key="ThemeLightIconData">
+        <EllipseGeometry Center="12,12" RadiusX="6" RadiusY="6"/>
+        <EllipseGeometry Center="12,2" RadiusX="1" RadiusY="1"/>
+        <EllipseGeometry Center="12,22" RadiusX="1" RadiusY="1"/>
+        <EllipseGeometry Center="2,12" RadiusX="1" RadiusY="1"/>
+        <EllipseGeometry Center="22,12" RadiusX="1" RadiusY="1"/>
+        <EllipseGeometry Center="5,5" RadiusX="1" RadiusY="1"/>
+        <EllipseGeometry Center="19,5" RadiusX="1" RadiusY="1"/>
+        <EllipseGeometry Center="5,19" RadiusX="1" RadiusY="1"/>
+        <EllipseGeometry Center="19,19" RadiusX="1" RadiusY="1"/>
+    </GeometryGroup>
+    <Geometry x:Key="ThemeDarkIconData">
+        M 12,2
+        A 10,10 0 1 0 2,12
+        A 6,6 0 1 1 12,2
         Z
     </Geometry>
 
