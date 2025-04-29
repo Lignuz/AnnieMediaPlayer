@@ -1,12 +1,7 @@
-﻿using FFmpeg.AutoGen;
-using Microsoft.Win32;
-using System.Runtime.InteropServices;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
 
 namespace AnnieMediaPlayer
 {
@@ -15,471 +10,69 @@ namespace AnnieMediaPlayer
     /// </summary>
     public partial class MainWindow : Window
     {
-        private Point _mouseDownPoint;
-        private bool _isDragging = false;
-
-        private string _videoPath;
-        private CancellationTokenSource _cancellation;
-        private bool _isPlaying = false;
-        private bool _isPaused = false;
-        private bool _isSliderDragging = false;
-        private int _currentFrame = 0;
-        private TimeSpan _videoDuration = TimeSpan.Zero;
-        private AVRational _streamTimeBase;
-        private FFmpegContext? _context; // 클래스 필드 추가
-
-        private TimeSpan[] _playbackSpeeds = new[]
-        {
-            TimeSpan.FromSeconds(100),
-            TimeSpan.FromSeconds(50),
-            TimeSpan.FromSeconds(10),
-            TimeSpan.FromSeconds(5),
-            TimeSpan.FromSeconds(1),
-            TimeSpan.FromMilliseconds(33.3) // 약 30fps
-        };
-        private int _speedIndex = 4;
-
         public MainWindow()
         {
             InitializeComponent();
             FFmpegLoader.RegisterFFmpeg();
-            UpdateSpeedLabel();
+            SpeedController.UpdateSpeedLabel(this);
 
-            StopPlayback();
+            VideoPlayerController.Stop(this);
             PlayPauseButton.IsEnabled = false;
             StopButton.IsEnabled = false;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            var fadeIn = new System.Windows.Media.Animation.DoubleAnimation
+            var fadeIn = new DoubleAnimation
             {
                 From = 0,
                 To = 1,
                 Duration = TimeSpan.FromMilliseconds(300),
-                EasingFunction = new System.Windows.Media.Animation.QuadraticEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
             };
             this.BeginAnimation(Window.OpacityProperty, fadeIn);
         }
 
-        private async void OpenVideo_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new OpenFileDialog
-            {
-                Title = "비디오 파일 열기",
-                Filter = "비디오 파일 (*.mp4;*.avi;*.mov;*.mkv;*.wmv)|*.mp4;*.avi;*.mov;*.mkv;*.wmv|모든 파일 (*.*)|*.*"
-            };
-            if (dialog.ShowDialog() == true)
-            {
-                StopPlayback();
+        private void OpenVideo_Click(object sender, RoutedEventArgs e) => VideoPlayerController.OpenVideo(this);
+        private void PlayPause_Click(object sender, RoutedEventArgs e) => VideoPlayerController.TogglePlayPause(this);
+        private void Stop_Click(object sender, RoutedEventArgs e) => VideoPlayerController.Stop(this);
 
-                _videoPath = dialog.FileName;
-                _cancellation = new CancellationTokenSource();
-                _isPlaying = true;
-                _isPaused = false;
-                _currentFrame = 0;
+        private void SpeedDown_Click(object sender, RoutedEventArgs e) => SpeedController.SpeedDown(this);
+        private void SpeedUp_Click(object sender, RoutedEventArgs e) => SpeedController.SpeedUp(this);
 
-                PlayPauseButton.IsEnabled = true;
-                StopButton.IsEnabled = true;
-                PlayPauseButton.Content = "일시정지";
+        private void PlaybackSlider_PreviewMouseDown(object sender, MouseButtonEventArgs e) => VideoPlayerController.OnSliderDragStart(this);
+        private void PlaybackSlider_PreviewMouseUp(object sender, MouseButtonEventArgs e) => VideoPlayerController.OnSliderDragEnd(this);
+        private void PlaybackSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => VideoPlayerController.OnSliderValueChanged(this);
 
-                try
-                {
-                    await Task.Run(() =>
-                    {
-                        FFmpegHelper.OpenVideo(_videoPath, (frame, frameNumber, currentTime, totalTime, context) =>
-                        {
-                            _context = context; // 최초 저장
-
-                            unsafe
-                            {
-                                _streamTimeBase = context.FormatContext->streams[context.VideoStreamIndex]->time_base;
-                            }
-
-                            while (_isPaused && !_cancellation.IsCancellationRequested)
-                            {
-                                Thread.Sleep(100);
-                            }
-
-                            _videoDuration = totalTime;
-
-                            Dispatcher.Invoke(() =>
-                            {
-                                VideoImage.Source = frame;
-                                VideoImage.Stretch = System.Windows.Media.Stretch.Uniform;
-                                _currentFrame = frameNumber;
-                                if (!_isSliderDragging)
-                                {
-                                    PlaybackSlider.Maximum = totalTime.TotalSeconds;
-                                    PlaybackSlider.Value = currentTime.TotalSeconds;
-                                    CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
-                                }
-                                TotalTimeText.Text = totalTime.ToString(@"hh\:mm\:ss");
-                                FrameNumberText.Text = frameNumber.ToString();
-                            });
-
-                            var start = DateTime.UtcNow;
-                            while (!_cancellation.IsCancellationRequested)
-                            {
-                                var delay = _playbackSpeeds[_speedIndex];
-                                if (_isPaused)
-                                {
-                                    Thread.Sleep(100);
-                                    continue;
-                                }
-
-                                var elapsed = DateTime.UtcNow - start;
-                                if (elapsed >= delay)
-                                    break;
-
-                                Thread.Sleep(10);
-                            }
-
-                        }, _cancellation.Token, () => Dispatcher.Invoke(StopPlayback));
-                    });
-                }
-                catch (Exception ex)
-                {
-                    // 예외 발생 시 사용자에게 알림
-                    Dispatcher.Invoke(() =>
-                    {
-                        MessageBox.Show(this, $"비디오를 열 수 없습니다:\n{ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                        StopPlayback();
-                    });
-                }
-            }
-        }
-
-        private void PlayPause_Click(object sender, RoutedEventArgs e)
-        {
-            if (!_isPlaying) return;
-
-            _isPaused = !_isPaused;
-            PlayPauseButton.Content = _isPaused ? "재생" : "일시정지";
-        }
-
-        private void Stop_Click(object sender, RoutedEventArgs e)
-        {
-            StopPlayback();
-        }
-
-        private void StopPlayback()
-        {
-            _isPlaying = false;
-            _isPaused = false;
-            _cancellation?.Cancel();
-            _context = null;
-            _streamTimeBase = default;
-
-            Dispatcher.Invoke(() =>
-            {
-                // VideoImage.Source = null;
-                VideoImage.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/background01.png"));
-                VideoImage.Stretch = System.Windows.Media.Stretch.UniformToFill;
-                CurrentTimeText.Text = "00:00:00";
-                TotalTimeText.Text = "00:00:00";
-                FrameNumberText.Text = "0";
-                PlaybackSlider.Value = 0;
-                PlayPauseButton.Content = "재생";
-                PlayPauseButton.IsEnabled = false;
-                StopButton.IsEnabled = false;
-            });
-        }
-
-        private void SpeedDown_Click(object sender, RoutedEventArgs e)
-        {
-            if (_speedIndex > 0)
-            {
-                _speedIndex--;
-                UpdateSpeedLabel();
-            }
-        }
-
-        private void SpeedUp_Click(object sender, RoutedEventArgs e)
-        {
-            if (_speedIndex < _playbackSpeeds.Length - 1)
-            {
-                _speedIndex++;
-                UpdateSpeedLabel();
-            }
-        }
-
-        private void UpdateSpeedLabel()
-        {
-            var speed = _playbackSpeeds[_speedIndex];
-            if (speed.TotalSeconds >= 1)
-            {
-                SpeedLabel.Text = $"{(int)speed.TotalSeconds}초/프레임";
-            }
-            else
-            {
-                int fps = (int)Math.Round(1.0 / speed.TotalSeconds);
-                SpeedLabel.Text = $"{fps}fps";
-            }
-        }
-
-        private void PlaybackSlider_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            _isSliderDragging = true;
-        }
-
-        private void PlaybackSlider_PreviewMouseUp(object sender, MouseButtonEventArgs e)
-        {
-            _isSliderDragging = false;
-
-            if (_isPlaying && _context != null)
-            {
-                var seekTime = TimeSpan.FromSeconds(PlaybackSlider.Value);
-                var timeBase = _streamTimeBase;
-                long seekTarget = (long)(seekTime.TotalSeconds / ffmpeg.av_q2d(timeBase));
-
-                BitmapSource? bmp = FFmpegHelper.SeekAndDecodeFrame(_context, seekTarget, out int frameNum, out TimeSpan currentTime);
-                if (bmp != null)
-                {
-                    VideoImage.Source = bmp;
-                    CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
-                    FrameNumberText.Text = frameNum.ToString();
-                }
-            }
-        }
-
-        private void PlaybackSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (_isSliderDragging)
-            {
-                var time = TimeSpan.FromSeconds(PlaybackSlider.Value);
-                CurrentTimeText.Text = time.ToString(@"hh\:mm\:ss");
-            }
-        }
-
-        private void Window_StateChanged(object sender, EventArgs e)
-        {
-            UpdateMaxRestoreButton();
-        }
+        private void Window_StateChanged(object sender, EventArgs e) => UpdateMaxRestoreButton();
 
         private void UpdateMaxRestoreButton()
         {
-            if (this.WindowState == WindowState.Maximized)
-            {
-                MaxRestoreButton.Content = (Geometry)FindResource("RestoreIconData"); // ❐ 복원 아이콘
-            }
-            else
-            {
-                MaxRestoreButton.Content = (Geometry)FindResource("MaximizeIconData"); // □ 최대화 아이콘
-            }
+            MaxRestoreButton.Content = (Geometry)FindResource(
+                this.WindowState == WindowState.Maximized ? "RestoreIconData" : "MaximizeIconData");
         }
 
-        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Space)
-            {
-                // Ctrl + Space : 정지
-                if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
-                {
-                    if (_isPlaying)
-                    {
-                        StopPlayback();
-                    }   
-                }
-                // Space : 열기, 일시정지/재생 토글
-                else
-                {
-                    if (_isPlaying)
-                    {
-                        PlayPause_Click(null, null);
-                    }
-                    else
-                    {
-                        OpenVideo_Click(null, null);
-                    }
-                }
-                e.Handled = true; // 포커스를 가진 다른 컨트롤로 전달되지 않게 막음
-            }
-            else if (e.Key == Key.Left || e.Key == Key.Right)
-            {
-                if (_isPlaying && _isPaused && _context != null)
-                {
-                    double step = 1.0 / _context.Fps;
-                    double currentSeconds = PlaybackSlider.Value;
-                    double newTime = e.Key == Key.Left
-                        ? Math.Max(0, currentSeconds - step)
-                        : Math.Min(_videoDuration.TotalSeconds, currentSeconds + step);
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e) => KeyboardInputHandler.HandleKeyDown(this, e);
 
-                    PlaybackSlider.Value = newTime;
+        private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => TitleBarController.MouseLeftButtonDown(this, e);
+        private void TitleBar_MouseMove(object sender, MouseEventArgs e) => TitleBarController.MouseMove(this, e);
+        private void TitleBar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) => TitleBarController.MouseLeftButtonUp();
 
-                    var timeBase = _streamTimeBase;
-                    long seekTarget = (long)(newTime / ffmpeg.av_q2d(timeBase));
+        private void MinimizeButton_Click(object sender, RoutedEventArgs e) => this.WindowState = WindowState.Minimized;
+        private void MaxRestoreButton_Click(object sender, RoutedEventArgs e) => this.WindowState = this.WindowState == WindowState.Normal ? WindowState.Maximized : WindowState.Normal;
+        private void CloseButton_Click(object sender, RoutedEventArgs e) => this.Close();
 
-                    var bmp = FFmpegHelper.SeekAndDecodeFrame(_context, seekTarget, out int frameNum, out TimeSpan currentTime, false);
-                    if (bmp != null)
-                    {
-                        VideoImage.Source = bmp;
-                        CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
-                        FrameNumberText.Text = frameNum.ToString();
-                    }
-                }
-                e.Handled = true;
-            }
-        }
+        private void ThemeToggleButton_Click(object sender, RoutedEventArgs e) => ThemeToggleController.ToggleTheme(this);
 
-        private void ToggleWindowState()
-        {
-            this.WindowState = (this.WindowState == WindowState.Normal) ? WindowState.Maximized : WindowState.Normal;
-        }
+        // 리사이즈 핸들링
+        private void TopResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => WindowResizeHelper.Top(e, this);
+        private void BottomResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => WindowResizeHelper.Bottom(e, this);
+        private void LeftResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => WindowResizeHelper.Left(e, this);
+        private void RightResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => WindowResizeHelper.Right(e, this);
 
-        private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            if (e.ClickCount == 2)
-            {
-                ToggleWindowState();
-            }
-            else if (e.ButtonState == MouseButtonState.Pressed)
-            {
-                if (this.WindowState == WindowState.Maximized)
-                {
-                    _mouseDownPoint = e.GetPosition(this);
-                    _isDragging = true;
-                }
-
-                DragMove(); // 윈도우 드래그
-            }
-        }
-
-        private void TitleBar_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (_isDragging && e.LeftButton == MouseButtonState.Pressed)
-            {
-                Point currentPoint = e.GetPosition(this);
-                double deltaX = Math.Abs(currentPoint.X - _mouseDownPoint.X);
-                double deltaY = Math.Abs(currentPoint.Y - _mouseDownPoint.Y);
-
-                if ((deltaX > SystemParameters.MinimumHorizontalDragDistance) ||
-                    (deltaY > SystemParameters.MinimumVerticalDragDistance))
-                {
-                    _isDragging = false;
-
-                    if (this.WindowState == WindowState.Maximized)
-                    {
-                        var mouseX = Mouse.GetPosition(this).X;
-                        var percent = mouseX / this.ActualWidth;
-
-                        this.WindowState = WindowState.Normal;
-                        this.Left = SystemParameters.WorkArea.Width * percent - (this.Width / 2);
-                        this.Top = 0;
-                    }
-
-                    DragMove();
-                }
-            }
-        }
-
-        private void TitleBar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            _isDragging = false;
-        }
-
-        private void MinimizeButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.WindowState = WindowState.Minimized;
-        }
-
-        private void MaxRestoreButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (this.WindowState == WindowState.Normal)
-            {
-                this.WindowState = WindowState.Maximized;
-            }
-            else
-            {
-                this.WindowState = WindowState.Normal;
-            }
-        }
-
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.Close();
-        }
-
-        private async void ThemeToggleButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (ThemeToggleButton.IsEnabled == false)
-                return;
-
-            ThemeToggleButton.IsEnabled = false;
-
-            // 회전 애니메이션
-            var rotateAnim = new DoubleAnimation
-            {
-                From = 0,
-                To = 360,
-                Duration = TimeSpan.FromMilliseconds(500),
-                EasingFunction = new CircleEase { EasingMode = EasingMode.EaseInOut }
-            };
-            ThemeToggleRotate.BeginAnimation(RotateTransform.AngleProperty, rotateAnim);
-
-            // 눌림(스케일) 애니메이션 추가 (선택사항)
-            var scale = new ScaleTransform(1, 1);
-            ThemeToggleButton.LayoutTransform = scale;
-            var scaleDown = new DoubleAnimation(1.0, 0.85, TimeSpan.FromMilliseconds(100));
-            var scaleUp = new DoubleAnimation(0.85, 1.0, TimeSpan.FromMilliseconds(200))
-            {
-                BeginTime = TimeSpan.FromMilliseconds(300)
-            };
-            scale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleDown);
-            scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleDown);
-            scale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleUp);
-            scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleUp);
-
-            // 테마 전환 (살짝 지연)
-            await Task.Delay(200);
-            ThemeManager.ToggleTheme();
-
-            // 아이콘 교체
-            if (ThemeManager.IsDarkTheme)
-                ThemeToggleButton.Content = FindResource("ThemeDarkIconData");
-            else
-                ThemeToggleButton.Content = FindResource("ThemeLightIconData");
-
-            await Task.Delay(300); // 회전 끝날 때까지 기다리기
-            ThemeToggleButton.IsEnabled = true;
-        }
-
-
-        //////////////////////////////////////////////////////
-        // WindowStyle="None" 에 대한 수동 윈도우 크기 조절 //
-        //////////////////////////////////////////////////////
-
-        [DllImport("user32.dll")]
-        public static extern IntPtr SendMessage(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
-
-        [DllImport("user32.dll")]
-        private static extern bool ReleaseCapture();
-
-        private const int WM_NCLBUTTONDOWN = 0xA1;
-        private const int HTLEFT = 10;
-        private const int HTRIGHT = 11;
-        private const int HTTOP = 12;
-        private const int HTTOPLEFT = 13;
-        private const int HTTOPRIGHT = 14;
-        private const int HTBOTTOM = 15;
-        private const int HTBOTTOMLEFT = 16;
-        private const int HTBOTTOMRIGHT = 17;
-
-        private void ResizeWindow(int direction)
-        {
-            var hwnd = new WindowInteropHelper(this).Handle;
-            ReleaseCapture();
-            SendMessage(hwnd, WM_NCLBUTTONDOWN, (IntPtr)direction, IntPtr.Zero);
-        }
-
-        private void TopResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTTOP);
-        private void BottomResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTBOTTOM);
-        private void LeftResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTLEFT);
-        private void RightResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTRIGHT);
-
-        private void TopLeftResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTTOPLEFT);
-        private void TopRightResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTTOPRIGHT);
-        private void BottomLeftResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTBOTTOMLEFT);
-        private void BottomRightResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ResizeWindow(HTBOTTOMRIGHT);
+        private void TopLeftResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => WindowResizeHelper.TopLeft(e, this);
+        private void TopRightResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => WindowResizeHelper.TopRight(e, this);
+        private void BottomLeftResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => WindowResizeHelper.BottomLeft(e, this);
+        private void BottomRightResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => WindowResizeHelper.BottomRight(e, this);
     }
 }
