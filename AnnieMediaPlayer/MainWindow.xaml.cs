@@ -399,6 +399,11 @@ namespace AnnieMediaPlayer
             this.Close();
         }
 
+        private void ThemeToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            ThemeManager.ToggleTheme();
+        }
+
 
         //////////////////////////////////////////////////////
         // WindowStyle="None" 에 대한 수동 윈도우 크기 조절 //
