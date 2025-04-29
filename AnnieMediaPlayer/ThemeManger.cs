@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Collections;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
@@ -21,48 +22,37 @@ namespace AnnieMediaPlayer
 
         public static void ApplyLightTheme()
         {
-            AnimateColor("BackgroundBrush", (Color)Application.Current.Resources["LightBackgroundColor"]);
-            AnimateColor("BorderBrush", (Color)Application.Current.Resources["LightBorderColor"]);
-            AnimateColor("TitleTextBrush", (Color)Application.Current.Resources["LightTitleTextColor"]);
-            AnimateColor("ButtonBackgroundBrush", (Color)Application.Current.Resources["LightButtonBackground"]);
-            AnimateColor("ButtonBorderBrush", (Color)Application.Current.Resources["LightButtonBorder"]);
-            AnimateColor("ButtonHoverBrush", (Color)Application.Current.Resources["LightButtonHoverBackground"]);
-            AnimateColor("ButtonPressedBrush", (Color)Application.Current.Resources["LightButtonPressedBackground"]);
-            AnimateColor("ButtonDisabledBackgroundBrush", (Color)Application.Current.Resources["LightButtonDisabledBackground"]);
-            AnimateColor("ButtonDisabledBorderBrush", (Color)Application.Current.Resources["LightButtonDisabledBorder"]);
-            AnimateColor("ButtonDisabledForegroundBrush", (Color)Application.Current.Resources["LightButtonDisabledForeground"]);
-            AnimateColor("ThemeButtonFillBrush", (Color)Application.Current.Resources["LightThemeButtonFillColor"]);
-            AnimateColor("CloseButtonHoverBrush", (Color)Application.Current.Resources["LightCloseButtonHoverBackground"]);
-            AnimateColor("CloseButtonPressedBrush", (Color)Application.Current.Resources["LightCloseButtonPressedBackground"]);
-            AnimateColor("SliderBarBrush", (Color)Application.Current.Resources["LightSliderBarColor"]);
-            AnimateColor("ThumbBrush", (Color)Application.Current.Resources["LightThumbColor"]);
-            AnimateColor("ThumbHoverBrush", (Color)Application.Current.Resources["LightThumbHoverColor"]);
-            AnimateColor("ThumbDraggingBrush", (Color)Application.Current.Resources["LightThumbDraggingColor"]);
-            AnimateColor("ThumbDisabledBrush", (Color)Application.Current.Resources["LightThumbDisabledColor"]);
-            AnimateColor("VideoBackgroundBrush", (Color)Application.Current.Resources["LightVideoBackground"]);
+            ApplyThemeColors("Light");
         }
 
         public static void ApplyDarkTheme()
         {
-            AnimateColor("BackgroundBrush", (Color)Application.Current.Resources["DarkBackgroundColor"]);
-            AnimateColor("BorderBrush", (Color)Application.Current.Resources["DarkBorderColor"]);
-            AnimateColor("TitleTextBrush", (Color)Application.Current.Resources["DarkTitleTextColor"]);
-            AnimateColor("ButtonBackgroundBrush", (Color)Application.Current.Resources["DarkButtonBackground"]);
-            AnimateColor("ButtonBorderBrush", (Color)Application.Current.Resources["DarkButtonBorder"]);
-            AnimateColor("ButtonHoverBrush", (Color)Application.Current.Resources["DarkButtonHoverBackground"]);
-            AnimateColor("ButtonPressedBrush", (Color)Application.Current.Resources["DarkButtonPressedBackground"]);
-            AnimateColor("ButtonDisabledBackgroundBrush", (Color)Application.Current.Resources["DarkButtonDisabledBackground"]);
-            AnimateColor("ButtonDisabledBorderBrush", (Color)Application.Current.Resources["DarkButtonDisabledBorder"]);
-            AnimateColor("ButtonDisabledForegroundBrush", (Color)Application.Current.Resources["DarkButtonDisabledForeground"]);
-            AnimateColor("ThemeButtonFillBrush", (Color)Application.Current.Resources["DarkThemeButtonFillColor"]);
-            AnimateColor("CloseButtonHoverBrush", (Color)Application.Current.Resources["DarkCloseButtonHoverBackground"]);
-            AnimateColor("CloseButtonPressedBrush", (Color)Application.Current.Resources["DarkCloseButtonPressedBackground"]);
-            AnimateColor("SliderBarBrush", (Color)Application.Current.Resources["DarkSliderBarColor"]);
-            AnimateColor("ThumbBrush", (Color)Application.Current.Resources["DarkThumbColor"]);
-            AnimateColor("ThumbHoverBrush", (Color)Application.Current.Resources["DarkThumbHoverColor"]);
-            AnimateColor("ThumbDraggingBrush", (Color)Application.Current.Resources["DarkThumbDraggingColor"]);
-            AnimateColor("ThumbDisabledBrush", (Color)Application.Current.Resources["DarkThumbDisabledColor"]);
-            AnimateColor("VideoBackgroundBrush", (Color)Application.Current.Resources["DarkVideoBackground"]);
+            ApplyThemeColors("Dark");
+        }
+
+        private static void ApplyThemeColors(string themePrefix)
+        {
+            var themeDict = Application.Current.Resources.MergedDictionaries
+                              .FirstOrDefault(d => d.Source != null && d.Source.OriginalString.Contains("ThemeColors.xaml"));
+
+            if (themeDict == null)
+                return;
+
+            foreach (DictionaryEntry entry in themeDict)
+            {
+                if (entry.Key is string brushKey && entry.Value is SolidColorBrush)
+                {
+                    if (brushKey.EndsWith("Brush"))
+                    {
+                        string colorKey = themePrefix + brushKey.Replace("Brush", "Color");
+
+                        if (Application.Current.Resources.Contains(colorKey))
+                        {
+                            AnimateColor(brushKey, (Color)Application.Current.Resources[colorKey]);
+                        }
+                    }
+                }
+            }
         }
 
         private static void AnimateColor(string brushKey, Color toColor)

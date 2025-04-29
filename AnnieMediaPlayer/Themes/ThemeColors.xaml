@@ -5,63 +5,63 @@
     <Color x:Key="LightBackgroundColor">#FFFFFFFF</Color>
     <Color x:Key="LightBorderColor">#FF444444</Color>
     <Color x:Key="LightTitleTextColor">#FF000000</Color>
-    <Color x:Key="LightButtonBackground">#FFFFFFFF</Color>
-    <Color x:Key="LightButtonBorder">#FFCCCCCC</Color>
-    <Color x:Key="LightButtonHoverBackground">#FFF0F0F0</Color>
-    <Color x:Key="LightButtonPressedBackground">#FFDDDDDD</Color>
-    <Color x:Key="LightButtonDisabledBackground">#FFE5E5E5</Color>
-    <Color x:Key="LightButtonDisabledBorder">#FFAAAAAA</Color>
-    <Color x:Key="LightButtonDisabledForeground">#FF888888</Color>
+    <Color x:Key="LightButtonBackgroundColor">#FFFFFFFF</Color>
+    <Color x:Key="LightButtonBorderColor">#FFCCCCCC</Color>
+    <Color x:Key="LightButtonHoverColor">#FFF0F0F0</Color>
+    <Color x:Key="LightButtonPressedColor">#FFDDDDDD</Color>
+    <Color x:Key="LightButtonDisabledBackgroundColor">#FFE5E5E5</Color>
+    <Color x:Key="LightButtonDisabledBorderColor">#FFAAAAAA</Color>
+    <Color x:Key="LightButtonDisabledForegroundColor">#FF888888</Color>
     <Color x:Key="LightThemeButtonFillColor">#FF000000</Color>
-    <Color x:Key="LightCloseButtonHoverBackground">#FFE81123</Color>
-    <Color x:Key="LightCloseButtonPressedBackground">#FFC50F1F</Color>
+    <Color x:Key="LightCloseButtonHoverColor">#FFE81123</Color>
+    <Color x:Key="LightCloseButtonPressedColor">#FFC50F1F</Color>
     <Color x:Key="LightSliderBarColor">#FFE0E0E0</Color>
     <Color x:Key="LightThumbColor">#FF88CC88</Color>
     <Color x:Key="LightThumbHoverColor">#FF66BB66</Color>
     <Color x:Key="LightThumbDraggingColor">#FF449944</Color>
     <Color x:Key="LightThumbDisabledColor">#FFCCCCCC</Color>
-    <Color x:Key="LightVideoBackground">#FF000000</Color>
+    <Color x:Key="LightVideoBackgroundColor">#FF000000</Color>
 
     <!-- Dark Theme Colors -->
     <Color x:Key="DarkBackgroundColor">#FF1E1E1E</Color>
     <Color x:Key="DarkBorderColor">#FF888888</Color>
     <Color x:Key="DarkTitleTextColor">#FFFFFFFF</Color>
-    <Color x:Key="DarkButtonBackground">#FF2D2D30</Color>
-    <Color x:Key="DarkButtonBorder">#FF555555</Color>
-    <Color x:Key="DarkButtonHoverBackground">#FF3E3E42</Color>
-    <Color x:Key="DarkButtonPressedBackground">#FF505050</Color>
-    <Color x:Key="DarkButtonDisabledBackground">#FF3A3A3A</Color>
-    <Color x:Key="DarkButtonDisabledBorder">#FF666666</Color>
-    <Color x:Key="DarkButtonDisabledForeground">#FF888888</Color>
+    <Color x:Key="DarkButtonBackgroundColor">#FF2D2D30</Color>
+    <Color x:Key="DarkButtonBorderColor">#FF555555</Color>
+    <Color x:Key="DarkButtonHoverColor">#FF3E3E42</Color>
+    <Color x:Key="DarkButtonPressedColor">#FF505050</Color>
+    <Color x:Key="DarkButtonDisabledBackgroundColor">#FF3A3A3A</Color>
+    <Color x:Key="DarkButtonDisabledBorderColor">#FF666666</Color>
+    <Color x:Key="DarkButtonDisabledForegroundColor">#FF888888</Color>
     <Color x:Key="DarkThemeButtonFillColor">#FFFFFFFF</Color>
-    <Color x:Key="DarkCloseButtonHoverBackground">#FFE81123</Color>
-    <Color x:Key="DarkCloseButtonPressedBackground">#FFC50F1F</Color>
+    <Color x:Key="DarkCloseButtonHoverColor">#FFE81123</Color>
+    <Color x:Key="DarkCloseButtonPressedColor">#FFC50F1F</Color>
     <Color x:Key="DarkSliderBarColor">#FF555555</Color>
     <Color x:Key="DarkThumbColor">#FF66BB66</Color>
     <Color x:Key="DarkThumbHoverColor">#FF449944</Color>
     <Color x:Key="DarkThumbDraggingColor">#FF228822</Color>
     <Color x:Key="DarkThumbDisabledColor">#FF666666</Color>
-    <Color x:Key="DarkVideoBackground">#FF000000</Color>
+    <Color x:Key="DarkVideoBackgroundColor">#FF000000</Color>
 
     <!-- Dynamic Brushes -->
     <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource LightBackgroundColor}"/>
     <SolidColorBrush x:Key="BorderBrush" Color="{DynamicResource LightBorderColor}"/>
     <SolidColorBrush x:Key="TitleTextBrush" Color="{DynamicResource LightTitleTextColor}"/>
-    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="{DynamicResource LightButtonBackground}"/>
-    <SolidColorBrush x:Key="ButtonBorderBrush" Color="{DynamicResource LightButtonBorder}"/>
-    <SolidColorBrush x:Key="ButtonHoverBrush" Color="{DynamicResource LightButtonHoverBackground}"/>
-    <SolidColorBrush x:Key="ButtonPressedBrush" Color="{DynamicResource LightButtonPressedBackground}"/>
-    <SolidColorBrush x:Key="ButtonDisabledBackgroundBrush" Color="{DynamicResource LightButtonDisabledBackground}" />
-    <SolidColorBrush x:Key="ButtonDisabledBorderBrush" Color="{DynamicResource LightButtonDisabledBorder}" />
-    <SolidColorBrush x:Key="ButtonDisabledForegroundBrush" Color="{DynamicResource LightButtonDisabledForeground}" />
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="{DynamicResource LightButtonBackgroundColor}"/>
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="{DynamicResource LightButtonBorderColor}"/>
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="{DynamicResource LightButtonHoverColor}"/>
+    <SolidColorBrush x:Key="ButtonPressedBrush" Color="{DynamicResource LightButtonPressedColor}"/>
+    <SolidColorBrush x:Key="ButtonDisabledBackgroundBrush" Color="{DynamicResource LightButtonDisabledBackgroundColor}"/>
+    <SolidColorBrush x:Key="ButtonDisabledBorderBrush" Color="{DynamicResource LightButtonDisabledBorderColor}"/>
+    <SolidColorBrush x:Key="ButtonDisabledForegroundBrush" Color="{DynamicResource LightButtonDisabledForegroundColor}"/>
     <SolidColorBrush x:Key="ThemeButtonFillBrush" Color="{DynamicResource LightThemeButtonFillColor}"/>
-    <SolidColorBrush x:Key="CloseButtonHoverBrush" Color="{DynamicResource LightCloseButtonHoverBackground}"/>
-    <SolidColorBrush x:Key="CloseButtonPressedBrush" Color="{DynamicResource LightCloseButtonPressedBackground}"/>
+    <SolidColorBrush x:Key="CloseButtonHoverBrush" Color="{DynamicResource LightCloseButtonHoverColor}"/>
+    <SolidColorBrush x:Key="CloseButtonPressedBrush" Color="{DynamicResource LightCloseButtonPressedColor}"/>
     <SolidColorBrush x:Key="SliderBarBrush" Color="{DynamicResource LightSliderBarColor}"/>
     <SolidColorBrush x:Key="ThumbBrush" Color="{DynamicResource LightThumbColor}"/>
     <SolidColorBrush x:Key="ThumbHoverBrush" Color="{DynamicResource LightThumbHoverColor}"/>
     <SolidColorBrush x:Key="ThumbDraggingBrush" Color="{DynamicResource LightThumbDraggingColor}"/>
     <SolidColorBrush x:Key="ThumbDisabledBrush" Color="{DynamicResource LightThumbDisabledColor}"/>
-    <SolidColorBrush x:Key="VideoBackgroundBrush" Color="{DynamicResource LightVideoBackground}"/>
+    <SolidColorBrush x:Key="VideoBackgroundBrush" Color="{DynamicResource LightVideoBackgroundColor}"/>
 
 </ResourceDictionary>
