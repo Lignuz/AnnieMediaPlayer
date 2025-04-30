@@ -32,15 +32,15 @@ namespace AnnieMediaPlayer
 
         private static void ApplyThemeColors(string themePrefix)
         {
-            var brushDict = FindResourceDictionary("Brushes.xaml");  
-            var colorDict = FindResourceDictionary("ThemeColors.xaml"); 
+            var brushDict = FindResourceDictionary("Brushes.xaml");
+            var colorDict = FindResourceDictionary("ThemeColors.xaml");
 
             if (brushDict == null || colorDict == null)
                 return;
 
             foreach (DictionaryEntry entry in brushDict)
             {
-                if (entry.Key is string brushKey && entry.Value is SolidColorBrush)
+                if (entry.Key is string brushKey && entry.Value is SolidColorBrush brush)
                 {
                     if (brushKey.EndsWith("Brush"))
                     {
@@ -50,7 +50,7 @@ namespace AnnieMediaPlayer
 
                         if (colorDict.Contains(colorKey))
                         {
-                            AnimateColor(brushKey, (Color)colorDict[colorKey]);
+                            AnimateBrush(brush, (Color)colorDict[colorKey]);
                         }
                     }
                 }
@@ -82,16 +82,22 @@ namespace AnnieMediaPlayer
             return null;
         }
 
+        private static void AnimateBrush(SolidColorBrush brush, Color toColor)
+        {
+            brush.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation
+            {
+                To = toColor,
+                Duration = TimeSpan.FromMilliseconds(300),
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+            });
+        }
+
+        // (참고용) 
         private static void AnimateColor(string brushKey, Color toColor)
         {
             if (Application.Current.Resources[brushKey] is SolidColorBrush brush)
             {
-                brush.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation
-                {
-                    To = toColor,
-                    Duration = TimeSpan.FromMilliseconds(300),
-                    EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
-                });
+                AnimateBrush(brush, toColor);
             }
         }
 
