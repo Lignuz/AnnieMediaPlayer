@@ -1,0 +1,19 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="Text.AppTitle">Annie Media Player</sys:String>
+    <sys:String x:Key="Text.Open">열기</sys:String>
+    <sys:String x:Key="Text.Play">재생</sys:String>
+    <sys:String x:Key="Text.Pause">일시정지</sys:String>
+    <sys:String x:Key="Text.Stop">정지</sys:String>
+    <sys:String x:Key="Text.Sec">초</sys:String>
+    <sys:String x:Key="Text.Speed">속도</sys:String>
+    <sys:String x:Key="Text.Frame">프레임</sys:String>
+    <sys:String x:Key="Text.Error">오류</sys:String>
+
+    <sys:String x:Key="Text.OpenDialogTitle">비디오 파일 열기</sys:String>
+    <sys:String x:Key="Text.OpenDialogFilter">비디오 파일 (*.mp4;*.avi;*.mov;*.mkv;*.wmv)|*.mp4;*.avi;*.mov;*.mkv;*.wmv|모든 파일 (*.*)|*.*</sys:String>
+    <sys:String x:Key="Text.OpenVideoFailed">비디오를 열 수 없습니다</sys:String>
+
+</ResourceDictionary>

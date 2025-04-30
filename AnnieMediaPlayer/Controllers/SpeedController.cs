@@ -1,4 +1,7 @@
-﻿namespace AnnieMediaPlayer
+﻿using System.Windows.Controls;
+using System.Windows.Documents;
+
+namespace AnnieMediaPlayer
 {
     public static class SpeedController
     {
@@ -19,7 +22,23 @@
             var speed = VideoPlayerController.PlaybackSpeeds[VideoPlayerController.SpeedIndex];
             if (speed.TotalSeconds >= 1)
             {
-                window.SpeedLabel.Text = $"{(int)speed.TotalSeconds}초/프레임";
+                TextBlock textBlock = window.SpeedLabel;
+                textBlock.Inlines.Clear();
+
+                // 속도 값
+                Run valueRun = new Run(speed.TotalSeconds.ToString());
+                textBlock.Inlines.Add(valueRun);
+
+                // 단위 (초)
+                Run secondRun = LanguageManager.GetLocalizedRun("Text.Sec");
+                textBlock.Inlines.Add(secondRun);
+
+                // 슬래시
+                textBlock.Inlines.Add(new Run("/"));
+
+                // 단위 (프레임)
+                Run frameRun = LanguageManager.GetLocalizedRun("Text.Frame");
+                textBlock.Inlines.Add(frameRun);
             }
             else
             {

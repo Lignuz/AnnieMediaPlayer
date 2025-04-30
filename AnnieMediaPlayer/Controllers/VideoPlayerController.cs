@@ -2,6 +2,7 @@
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using FFmpeg.AutoGen;
+using System.Windows.Controls;
 
 namespace AnnieMediaPlayer
 {
@@ -39,8 +40,8 @@ namespace AnnieMediaPlayer
         {
             var dialog = new OpenFileDialog
             {
-                Title = "비디오 파일 열기",
-                Filter = "비디오 파일 (*.mp4;*.avi;*.mov;*.mkv;*.wmv)|*.mp4;*.avi;*.mov;*.mkv;*.wmv|모든 파일 (*.*)|*.*"
+                Title = LanguageManager.GetResourceString("Text.OpenDialogTitle"),
+                Filter = LanguageManager.GetResourceString("Text.OpenDialogFilter")
             };
 
             if (dialog.ShowDialog() == true)
@@ -53,7 +54,7 @@ namespace AnnieMediaPlayer
 
                 window.PlayPauseButton.IsEnabled = true;
                 window.StopButton.IsEnabled = true;
-                window.PlayPauseButton.Content = "일시정지";
+                window.PlayPauseButton.SetResourceReference(ContentControl.ContentProperty, "Text.Pause");
 
                 try
                 {
@@ -105,7 +106,9 @@ namespace AnnieMediaPlayer
                     // 예외 발생 시 사용자에게 알림
                     window.Dispatcher.Invoke(() =>
                     {
-                        MessageBox.Show(window, $"비디오를 열 수 없습니다:\n{ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                        string desc = LanguageManager.GetResourceString("Text.OpenVideoFailed");
+                        string title = LanguageManager.GetResourceString("Text.Error");
+                        MessageBox.Show(window, $"{desc}:\n{ex.Message}", title, MessageBoxButton.OK, MessageBoxImage.Error);
                         Stop(window);
                     });
                 }
@@ -117,7 +120,7 @@ namespace AnnieMediaPlayer
             if (!_isPlaying) return;
 
             _isPaused = !_isPaused;
-            window.PlayPauseButton.Content = _isPaused ? "재생" : "일시정지";
+            window.PlayPauseButton.SetResourceReference(ContentControl.ContentProperty, _isPaused ? "Text.Play" : "Text.Pause");
         }
 
         public static void Stop(MainWindow window)
@@ -134,7 +137,7 @@ namespace AnnieMediaPlayer
             window.TotalTimeText.Text = "00:00:00";
             window.FrameNumberText.Text = "0";
             window.PlaybackSlider.Value = 0;
-            window.PlayPauseButton.Content = "재생";
+            window.PlayPauseButton.SetResourceReference(ContentControl.ContentProperty, "Text.Play");
             window.PlayPauseButton.IsEnabled = false;
             window.StopButton.IsEnabled = false;
         }

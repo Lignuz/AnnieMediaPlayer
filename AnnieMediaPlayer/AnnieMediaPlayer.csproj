@@ -33,6 +33,17 @@
 	<ItemGroup>
 		<FFmpegDlls Include="..\ffmpeg\**\*.*" />
 	</ItemGroup>
+	
+	<ItemGroup>
+	  <Page Update="Languages\StringResources.en.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	    <CopyToOutputDirectory></CopyToOutputDirectory>
+	  </Page>
+	  <Page Update="Languages\StringResources.ko.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	    <CopyToOutputDirectory></CopyToOutputDirectory>
+	  </Page>
+	</ItemGroup>
 
 	<Target Name="CopyFFmpegDlls" AfterTargets="Build">
 		<Message Importance="high" Text="🔁 FFmpeg DLL 복사 시작..." />
