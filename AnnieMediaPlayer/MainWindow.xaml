@@ -12,7 +12,8 @@
         Title="Annie Media Player" Height="600" Width="900"
         StateChanged="Window_StateChanged"
         PreviewKeyDown="Window_PreviewKeyDown"
-        Loaded="Window_Loaded">
+        Loaded="Window_Loaded"
+        Closing="Window_Closing">
     <Window.Resources>
         <local:FileNameConverter x:Key="FileNameConverter"/>
     </Window.Resources>

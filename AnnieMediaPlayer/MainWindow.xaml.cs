@@ -33,6 +33,11 @@ namespace AnnieMediaPlayer
             this.BeginAnimation(Window.OpacityProperty, fadeIn);
         }
 
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            VideoPlayerController.Stop(this);
+        }
+
         private void OpenVideo_Click(object sender, RoutedEventArgs e) => VideoPlayerController.OpenVideo(this);
         private void PlayPause_Click(object sender, RoutedEventArgs e) => VideoPlayerController.TogglePlayPause(this);
         private void Stop_Click(object sender, RoutedEventArgs e) => VideoPlayerController.Stop(this);
