@@ -22,7 +22,7 @@ namespace AnnieMediaPlayer
             TimeSpan.FromSeconds(10),
             TimeSpan.FromSeconds(5),
             TimeSpan.FromSeconds(1),
-            TimeSpan.FromMilliseconds(33.3) // 약 30fps
+            TimeSpan.FromMilliseconds(33.3) // placeholder, will override with actual FPS on open
         };
         private static int _speedIndex = 4;
 
@@ -66,6 +66,11 @@ namespace AnnieMediaPlayer
                             unsafe { _streamTimeBase = context.FormatContext->streams[context.VideoStreamIndex]->time_base; }
                             _videoDuration = totalTime;
 
+                            // ⚠ FPS 기반 딜레이 재계산 (playbackSpeeds[5])
+                            double fps = context.Fps;
+                            if (fps > 0)
+                                _playbackSpeeds[5] = TimeSpan.FromMilliseconds(1000.0 / fps);
+
                             while (_isPaused && !_cancellation.IsCancellationRequested)
                                 Thread.Sleep(100);
 
@@ -79,6 +84,9 @@ namespace AnnieMediaPlayer
                                 window.CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
                                 window.TotalTimeText.Text = totalTime.ToString(@"hh\:mm\:ss");
                                 window.FrameNumberText.Text = frameNumber.ToString();
+
+                                // 속도 라벨도 즉시 업데이트
+                                SpeedController.UpdateSpeedLabel(window);
                             });
 
                             var start = DateTime.UtcNow;
@@ -95,7 +103,7 @@ namespace AnnieMediaPlayer
                                 if (elapsed >= delay)
                                     break;
 
-                                Thread.Sleep(10);
+                                Thread.Sleep(1);
                             }
 
                         }, _cancellation.Token, () => window.Dispatcher.Invoke(() => Stop(window)));
