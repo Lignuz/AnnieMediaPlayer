@@ -26,6 +26,9 @@ namespace AnnieMediaPlayer
         };
         private static int _speedIndex = 4;
 
+        public static bool PauseForSeeking { get; set; } = false;
+
+
         public static void InitializeUI(MainWindow window)
         {
             _isPlaying = false;
@@ -161,16 +164,26 @@ namespace AnnieMediaPlayer
 
             if (_isPlaying && _context != null)
             {
-                var seekTime = TimeSpan.FromSeconds(window.PlaybackSlider.Value);
-                var timeBase = _streamTimeBase;
-                long seekTarget = (long)(seekTime.TotalSeconds / ffmpeg.av_q2d(timeBase));
+                PauseForSeeking = true;
+                Thread.Sleep(50); // 디코딩 쓰레드가 멈출 시간을 줌
 
-                var bmp = FFmpegHelper.SeekAndDecodeFrame(_context, seekTarget, out int frameNum, out TimeSpan currentTime);
-                if (bmp != null)
+                try
                 {
-                    window.VideoImage.Source = bmp;
-                    window.CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
-                    window.FrameNumberText.Text = frameNum.ToString();
+                    var seekTime = TimeSpan.FromSeconds(window.PlaybackSlider.Value);
+                    var timeBase = _streamTimeBase;
+                    long seekTarget = (long)(seekTime.TotalSeconds / ffmpeg.av_q2d(timeBase));
+
+                    var bmp = FFmpegHelper.SeekAndDecodeFrame(_context, seekTarget, out int frameNum, out TimeSpan currentTime);
+                    if (bmp != null)
+                    {
+                        window.VideoImage.Source = bmp;
+                        window.CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
+                        window.FrameNumberText.Text = frameNum.ToString();
+                    }
+                }
+                finally
+                {
+                    PauseForSeeking = false;
                 }
             }
         }

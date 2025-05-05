@@ -54,6 +54,12 @@ namespace AnnieMediaPlayer
             bool eof = false;
             while (!token.IsCancellationRequested)
             {
+                while (VideoPlayerController.PauseForSeeking)
+                {
+                    Thread.Sleep(10);
+                    if (token.IsCancellationRequested) return;
+                }
+
                 if (!eof && ffmpeg.av_read_frame(context.FormatContext, pPacket) >= 0)
                 {
                     if (pPacket->stream_index == context.VideoStreamIndex)
