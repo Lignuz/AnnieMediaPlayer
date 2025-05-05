@@ -69,6 +69,20 @@ namespace AnnieMediaPlayer
                     textBlock.Text = $"{fps}fps";
                 }
             }
+
+            UpdateActualSpeedLabel(window);
+        }
+
+        public static void UpdateActualSpeedLabel(MainWindow window)
+        {
+            string actualStr = "";
+            double actualFps = VideoPlayerController.ActualFps;
+            if (VideoPlayerController.Context != null)
+            {
+                actualStr = actualFps > 0 ? actualFps.ToString("0.00") : "-";
+                actualStr = $"{actualStr}fps";
+            }
+            window.ActualFpsText.Text = actualStr;
         }
     }
 }

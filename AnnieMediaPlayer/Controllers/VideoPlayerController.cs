@@ -28,6 +28,10 @@ namespace AnnieMediaPlayer
 
         public static bool PauseForSeeking { get; set; } = false;
 
+        private static DateTime _lastFrameTime = DateTime.MinValue;
+        private static double _actualFps = 0.0;
+        public static double ActualFps => _actualFps;
+
 
         public static void InitializeUI(MainWindow window)
         {
@@ -88,6 +92,15 @@ namespace AnnieMediaPlayer
                                 window.TotalTimeText.Text = totalTime.ToString(@"hh\:mm\:ss");
                                 window.FrameNumberText.Text = frameNumber.ToString();
 
+                                // 실제 FPS 계산
+                                if (!_isPaused && _lastFrameTime != DateTime.MinValue)
+                                {
+                                    var frameElapsed = DateTime.UtcNow - _lastFrameTime;
+                                    if (frameElapsed.TotalSeconds > 0)
+                                        _actualFps = 1.0 / frameElapsed.TotalSeconds;
+                                }
+                                _lastFrameTime = DateTime.UtcNow;
+
                                 // 속도 라벨도 즉시 업데이트
                                 SpeedController.UpdateSpeedLabel(window);
                             });
@@ -141,6 +154,9 @@ namespace AnnieMediaPlayer
             _cancellation?.Cancel();
             _context = null;
             _streamTimeBase = default;
+
+            _actualFps = 0.0;
+            _lastFrameTime = DateTime.MinValue;
 
             window.VideoImage.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/background01.png"));
             window.VideoImage.Stretch = System.Windows.Media.Stretch.UniformToFill;
@@ -208,13 +224,19 @@ namespace AnnieMediaPlayer
         public static void IncreaseSpeed()
         {
             if (_speedIndex < _playbackSpeeds.Length - 1)
+            {
+                _actualFps = 0;
                 _speedIndex++;
+            }
         }
 
         public static void DecreaseSpeed()
         {
             if (_speedIndex > 0)
+            {
+                _actualFps = 0;
                 _speedIndex--;
+            }
         }
     }
 }
