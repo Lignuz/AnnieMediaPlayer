@@ -1,9 +1,7 @@
 ﻿using FFmpeg.AutoGen;
-using System.Drawing;
-using System.Drawing.Imaging;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 
 namespace AnnieMediaPlayer
@@ -54,35 +52,118 @@ namespace AnnieMediaPlayer
             bool eof = false;
             while (!token.IsCancellationRequested)
             {
+                // 탐색할 때 잠깐 멈춤
                 while (VideoPlayerController.PauseForSeeking)
                 {
                     Thread.Sleep(10);
                     if (token.IsCancellationRequested) return;
                 }
 
-                if (!eof && ffmpeg.av_read_frame(context.FormatContext, pPacket) >= 0)
+                // 일시 정지 상태 확인 및 대기
+                while (VideoPlayerController.IsPaused && !token.IsCancellationRequested)
                 {
-                    if (pPacket->stream_index == context.VideoStreamIndex)
+                    Thread.Sleep(100);
+                }
+
+                if (token.IsCancellationRequested) return;
+
+                try
+                {
+                    if (!eof && ffmpeg.av_read_frame(context.FormatContext, pPacket) >= 0)
                     {
-                        ffmpeg.avcodec_send_packet(context.CodecContext, pPacket);
+                        if (pPacket->stream_index == context.VideoStreamIndex)
+                        {
+                            ffmpeg.avcodec_send_packet(context.CodecContext, pPacket);
+                        }
+                        ffmpeg.av_packet_unref(pPacket);
                     }
-                    ffmpeg.av_packet_unref(pPacket);
-                }
-                else
-                {
-                    ffmpeg.avcodec_send_packet(context.CodecContext, null);
-                    eof = true;
-                }
+                    else
+                    {
+                        ffmpeg.avcodec_send_packet(context.CodecContext, null);
+                        eof = true;
+                    }
 
-                while (ffmpeg.avcodec_receive_frame(context.CodecContext, pFrame) == 0)
-                {
-                    TimeSpan currentTime = TimeSpan.FromSeconds(pFrame->pts * ffmpeg.av_q2d(context.FormatContext->streams[context.VideoStreamIndex]->time_base));
-                    TimeSpan totalTime = TimeSpan.FromSeconds(context.FormatContext->duration / (double)ffmpeg.AV_TIME_BASE);
-                    int frameNumber = GetFrameNumber(context, pFrame);
+                    double timeBase = ffmpeg.av_q2d(context.FormatContext->streams[context.VideoStreamIndex]->time_base);
+                    while (ffmpeg.avcodec_receive_frame(context.CodecContext, pFrame) == 0)
+                    {
+                        TimeSpan currentTime = TimeSpan.FromSeconds(pFrame->pts * timeBase);
+                        if (VideoPlayerController.PauseForSeeking && VideoPlayerController.CurrentVideoTime != currentTime)
+                        {
+                            ffmpeg.av_frame_unref(pFrame);
+                            continue;
+                        } 
 
-                    ffmpeg.sws_scale(swsCtx, pFrame->data, pFrame->linesize, 0, context.CodecContext->height, pFrameRGB->data, pFrameRGB->linesize);
-                    var bitmapSource = ConvertFrameToBitmapSource(pFrameRGB, context.CodecContext);
-                    onFrameDecoded(bitmapSource, frameNumber, currentTime, totalTime, context);
+                        TimeSpan totalTime = TimeSpan.FromSeconds(context.FormatContext->duration / (double)ffmpeg.AV_TIME_BASE);
+                        int frameNumber = GetFrameNumber(context, pFrame);
+
+                        ffmpeg.sws_scale(swsCtx, pFrame->data, pFrame->linesize, 0, context.CodecContext->height, pFrameRGB->data, pFrameRGB->linesize);
+                        var bitmapSource = ConvertFrameToBitmapSource(pFrameRGB, context.CodecContext);
+
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            onFrameDecoded(bitmapSource, frameNumber, currentTime, totalTime, context);
+                        });
+
+                        // 여기서 속도 제어를 위한 프레임 타이밍 조절
+                        if (VideoPlayerController.SpeedIndex == 5)
+                        {
+                            double targetTimeInSeconds = pFrame->pts * timeBase;
+                            TimeSpan targetTime = TimeSpan.FromSeconds(targetTimeInSeconds);
+                            DateTime playbackStartTime = VideoPlayerController.PlaybackStartTime;
+                            TimeSpan elapsedTime = DateTime.UtcNow - playbackStartTime;
+                            TimeSpan requiredDelay = targetTime - elapsedTime;
+
+                            if (requiredDelay.TotalMilliseconds > 0)
+                            {
+                                // 정확한 딜레이를 위한 대기
+                                Stopwatch sw = Stopwatch.StartNew();
+                                while (sw.Elapsed.TotalMilliseconds < requiredDelay.TotalMilliseconds)
+                                {
+                                    if (token.IsCancellationRequested) return;
+                                    Thread.SpinWait(10);
+                                    
+                                    targetTimeInSeconds = pFrame->pts * timeBase;
+                                    targetTime = TimeSpan.FromSeconds(targetTimeInSeconds);
+                                    playbackStartTime = VideoPlayerController.PlaybackStartTime;
+                                    elapsedTime = DateTime.UtcNow - playbackStartTime;
+                                    requiredDelay = targetTime - elapsedTime;
+
+                                    if (VideoPlayerController.WaitForPauseForSeeking)
+                                    {
+                                        VideoPlayerController.WaitForPauseForSeeking = false;
+                                        requiredDelay = TimeSpan.Zero;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            TimeSpan delay = VideoPlayerController.PlaybackSpeeds[VideoPlayerController.SpeedIndex];
+                            var sw = Stopwatch.StartNew();
+                            while (sw.Elapsed < delay)
+                            {
+                                if (token.IsCancellationRequested)
+                                    return;
+                                Thread.SpinWait(10); // 정밀한 대기를 위해 SpinWait 사용
+                                delay = VideoPlayerController.PlaybackSpeeds[VideoPlayerController.SpeedIndex];
+
+                                if (VideoPlayerController.WaitForPauseForSeeking)
+                                {
+                                    VideoPlayerController.WaitForPauseForSeeking = false;
+                                    delay = TimeSpan.Zero;
+                                }
+                            }
+                        }
+
+                        ffmpeg.av_frame_unref(pFrame);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error during video decoding: {ex.Message}");
+                    // To prevent the loop from getting stuck on a problematic packet,
+                    // we'll break the inner while loop and try to read the next packet.
+                    break;
                 }
 
                 if (eof)
@@ -129,7 +210,8 @@ namespace AnnieMediaPlayer
             SwsContext* swsCtx = CreateSwsContext(context.CodecContext);
 
             BitmapSource? result = null;
-            double expectedTime = seekTarget * ffmpeg.av_q2d(context.FormatContext->streams[context.VideoStreamIndex]->time_base);
+            double timeBase = ffmpeg.av_q2d(context.FormatContext->streams[context.VideoStreamIndex]->time_base);
+            double expectedTime = seekTarget * timeBase;
 
             bool find = false;
             while (ffmpeg.av_read_frame(context.FormatContext, pkt) >= 0 && !find)
@@ -142,7 +224,7 @@ namespace AnnieMediaPlayer
                         {
                             if (ffmpeg.avcodec_receive_frame(context.CodecContext, frame) == 0)
                             {
-                                currentTime = TimeSpan.FromSeconds(frame->pts * ffmpeg.av_q2d(context.FormatContext->streams[context.VideoStreamIndex]->time_base));
+                                currentTime = TimeSpan.FromSeconds(frame->pts * timeBase);
                                 frameNumber = GetFrameNumber(context, frame);
                                 ffmpeg.sws_scale(swsCtx, frame->data, frame->linesize, 0, context.CodecContext->height,
                                     rgbFrame->data, rgbFrame->linesize);
@@ -154,7 +236,7 @@ namespace AnnieMediaPlayer
                         {
                             while (ffmpeg.avcodec_receive_frame(context.CodecContext, frame) == 0)
                             {
-                                double actualTime = frame->pts * ffmpeg.av_q2d(context.FormatContext->streams[context.VideoStreamIndex]->time_base);
+                                double actualTime = frame->pts * timeBase;
                                 if (actualTime >= expectedTime)
                                 {
                                     currentTime = TimeSpan.FromSeconds(actualTime);

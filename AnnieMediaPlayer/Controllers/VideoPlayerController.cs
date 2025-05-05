@@ -3,6 +3,7 @@ using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using FFmpeg.AutoGen;
 using System.Windows.Controls;
+using System.Diagnostics;
 
 namespace AnnieMediaPlayer
 {
@@ -27,10 +28,13 @@ namespace AnnieMediaPlayer
         private static int _speedIndex = 4;
 
         public static bool PauseForSeeking { get; set; } = false;
-
+        public static bool WaitForPauseForSeeking { get; set; } = false;
         private static DateTime _lastFrameTime = DateTime.MinValue;
         private static double _actualFps = 0.0;
         public static double ActualFps => _actualFps;
+        private static TimeSpan _currentVideoTime = TimeSpan.Zero; // 현재 비디오 시간을 저장할 필드
+        public static TimeSpan CurrentVideoTime => _currentVideoTime;
+        public static DateTime PlaybackStartTime { get; set; }
 
 
         public static void InitializeUI(MainWindow window)
@@ -65,6 +69,7 @@ namespace AnnieMediaPlayer
 
                 try
                 {
+                    PlaybackStartTime = DateTime.UtcNow;
                     await Task.Run(() =>
                     {
                         FFmpegHelper.OpenVideo(dialog.FileName, (frame, frameNumber, currentTime, totalTime, context) =>
@@ -72,14 +77,12 @@ namespace AnnieMediaPlayer
                             _context = context;
                             unsafe { _streamTimeBase = context.FormatContext->streams[context.VideoStreamIndex]->time_base; }
                             _videoDuration = totalTime;
+                            _currentVideoTime = currentTime; // 현재 비디오 시간 업데이트
 
                             // ⚠ FPS 기반 딜레이 재계산 (playbackSpeeds[5])
                             double fps = context.Fps;
                             if (fps > 0)
                                 _playbackSpeeds[5] = TimeSpan.FromMilliseconds(1000.0 / fps);
-
-                            while (_isPaused && !_cancellation.IsCancellationRequested)
-                                Thread.Sleep(100);
 
                             window.Dispatcher.Invoke(() =>
                             {
@@ -105,24 +108,6 @@ namespace AnnieMediaPlayer
                                 // 속도 라벨도 즉시 업데이트
                                 SpeedController.UpdateSpeedLabel(window);
                             });
-
-                            var start = DateTime.UtcNow;
-                            while (!_cancellation.IsCancellationRequested)
-                            {
-                                var delay = _playbackSpeeds[_speedIndex];
-                                if (_isPaused)
-                                {
-                                    Thread.Sleep(100);
-                                    continue;
-                                }
-
-                                var elapsed = DateTime.UtcNow - start;
-                                if (elapsed >= delay)
-                                    break;
-
-                                Thread.Sleep(1);
-                            }
-
                         }, _cancellation.Token, () => window.Dispatcher.Invoke(() => Stop(window)));
                     });
                 }
@@ -145,6 +130,7 @@ namespace AnnieMediaPlayer
             if (!_isPlaying) return;
 
             _isPaused = !_isPaused;
+            PlaybackStartTime = DateTime.UtcNow - _currentVideoTime;
             window.PlayPauseButton.SetResourceReference(ContentControl.ContentProperty, _isPaused ? "Text.Play" : "Text.Pause");
         }
 
@@ -158,6 +144,8 @@ namespace AnnieMediaPlayer
 
             _actualFps = 0.0;
             _lastFrameTime = DateTime.MinValue;
+            _currentVideoTime = TimeSpan.Zero;
+            WaitForPauseForSeeking = false;
 
             window.FileNameText.Tag = "";
             window.VideoImage.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/background01.png"));
@@ -196,9 +184,16 @@ namespace AnnieMediaPlayer
                     var bmp = FFmpegHelper.SeekAndDecodeFrame(_context, seekTarget, out int frameNum, out TimeSpan currentTime);
                     if (bmp != null)
                     {
-                        window.VideoImage.Source = bmp;
-                        window.CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
-                        window.FrameNumberText.Text = frameNum.ToString();
+                        _currentVideoTime = currentTime;
+                        PlaybackStartTime = DateTime.UtcNow - _currentVideoTime;
+                        WaitForPauseForSeeking = true;
+
+                        window.Dispatcher.Invoke(() =>
+                        {
+                            window.VideoImage.Source = bmp;
+                            window.CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
+                            window.FrameNumberText.Text = frameNum.ToString();
+                        });
                     }
                 }
                 finally
@@ -231,6 +226,7 @@ namespace AnnieMediaPlayer
             {
                 _actualFps = 0;
                 _speedIndex++;
+                PlaybackStartTime = DateTime.UtcNow - _currentVideoTime;
             }
         }
 
@@ -240,6 +236,7 @@ namespace AnnieMediaPlayer
             {
                 _actualFps = 0;
                 _speedIndex--;
+                PlaybackStartTime = DateTime.UtcNow - _currentVideoTime;
             }
         }
     }
