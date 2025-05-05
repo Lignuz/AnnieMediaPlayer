@@ -13,6 +13,10 @@
         StateChanged="Window_StateChanged"
         PreviewKeyDown="Window_PreviewKeyDown"
         Loaded="Window_Loaded">
+    <Window.Resources>
+        <local:FileNameConverter x:Key="FileNameConverter"/>
+    </Window.Resources>
+
     <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Background="{DynamicResource BackgroundBrush}" Padding="0">
         <Grid>
             <Grid>
@@ -29,6 +33,7 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
                         <Image Source="pack://application:,,,/Resources/AnnieMediaPlayer.ico" Width="20" Height="20" Margin="0,0,6,0" />
                         <TextBlock Text="{DynamicResource Text.AppTitle}" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="Bold"/>
+                        <TextBlock Name="FileNameText" VerticalAlignment="Center" Margin="20,0,0,0" Text="{Binding ElementName=FileNameText, Path=Tag, Converter={StaticResource FileNameConverter}}" ToolTip="{Binding ElementName=FileNameText, Path=Tag}"/>
                         <TextBlock Name="ActualFpsText" VerticalAlignment="Center" Margin="10,0,0,0"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="0,0,5,0">

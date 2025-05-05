@@ -83,6 +83,7 @@ namespace AnnieMediaPlayer
 
                             window.Dispatcher.Invoke(() =>
                             {
+                                window.FileNameText.Tag = dialog.FileName;
                                 window.VideoImage.Source = frame;
                                 window.VideoImage.Stretch = System.Windows.Media.Stretch.Uniform;
                                 window.PlaybackSlider.Maximum = totalTime.TotalSeconds;
@@ -158,6 +159,7 @@ namespace AnnieMediaPlayer
             _actualFps = 0.0;
             _lastFrameTime = DateTime.MinValue;
 
+            window.FileNameText.Tag = "";
             window.VideoImage.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/background01.png"));
             window.VideoImage.Stretch = System.Windows.Media.Stretch.UniformToFill;
             window.CurrentTimeText.Text = "00:00:00";
@@ -167,6 +169,8 @@ namespace AnnieMediaPlayer
             window.PlayPauseButton.SetResourceReference(ContentControl.ContentProperty, "Text.Play");
             window.PlayPauseButton.IsEnabled = false;
             window.StopButton.IsEnabled = false;
+
+            SpeedController.UpdateActualSpeedLabel(window);
         }
 
         public static void OnSliderDragStart(MainWindow window)
