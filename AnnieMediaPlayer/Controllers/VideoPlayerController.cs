@@ -216,6 +216,7 @@ namespace AnnieMediaPlayer
         public static bool IsPlaying => _isPlaying;
         public static bool IsPaused => _isPaused;
         public static int SpeedIndex => _speedIndex;
+        public static bool IsNormalSpeed => SpeedIndex == 5; // 1배속인지 확인하는 속성
         public static TimeSpan[] PlaybackSpeeds => _playbackSpeeds;
         public static TimeSpan VideoDuration => _videoDuration;
         public static AVRational streamTimeBase => _streamTimeBase;

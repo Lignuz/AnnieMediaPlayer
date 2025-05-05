@@ -24,7 +24,7 @@ namespace AnnieMediaPlayer
             textBlock.Inlines.Clear();
 
             // 원본 속도 (1배속) 표시
-            if (VideoPlayerController.SpeedIndex == 5)
+            if (VideoPlayerController.IsNormalSpeed)
             {
                 if (VideoPlayerController.Context != null)
                 {
