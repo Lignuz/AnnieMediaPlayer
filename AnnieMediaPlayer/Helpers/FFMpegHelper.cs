@@ -76,24 +76,12 @@ namespace AnnieMediaPlayer
 
                 while (ffmpeg.avcodec_receive_frame(context.CodecContext, pFrame) == 0)
                 {
-                    ffmpeg.sws_scale(swsCtx, pFrame->data, pFrame->linesize, 0, context.CodecContext->height,
-                        pFrameRGB->data, pFrameRGB->linesize);
-
-                    using var bitmap = new Bitmap(context.CodecContext->width, context.CodecContext->height,
-                        pFrameRGB->linesize[0], PixelFormat.Format24bppRgb, (IntPtr)pFrameRGB->data[0]);
-
-                    IntPtr hBitmap = bitmap.GetHbitmap();
-                    var bitmapSource = Imaging.CreateBitmapSourceFromHBitmap(
-                        hBitmap, IntPtr.Zero, Int32Rect.Empty,
-                        BitmapSizeOptions.FromWidthAndHeight(context.CodecContext->width, context.CodecContext->height));
-
-                    bitmapSource.Freeze();
-                    DeleteObject(hBitmap);
-
                     TimeSpan currentTime = TimeSpan.FromSeconds(pFrame->pts * ffmpeg.av_q2d(context.FormatContext->streams[context.VideoStreamIndex]->time_base));
                     TimeSpan totalTime = TimeSpan.FromSeconds(context.FormatContext->duration / (double)ffmpeg.AV_TIME_BASE);
                     int frameNumber = GetFrameNumber(context, pFrame);
 
+                    ffmpeg.sws_scale(swsCtx, pFrame->data, pFrame->linesize, 0, context.CodecContext->height, pFrameRGB->data, pFrameRGB->linesize);
+                    var bitmapSource = ConvertFrameToBitmapSource(pFrameRGB, context.CodecContext);
                     onFrameDecoded(bitmapSource, frameNumber, currentTime, totalTime, context);
                 }
 
@@ -242,15 +230,25 @@ namespace AnnieMediaPlayer
         {
             int width = codec->width;
             int height = codec->height;
+            int stride = pFrameRGB->linesize[0];
+            IntPtr pixelData = (IntPtr)pFrameRGB->data[0];
 
-            var bitmap = new Bitmap(width, height, pFrameRGB->linesize[0],
-                PixelFormat.Format24bppRgb, (IntPtr)pFrameRGB->data[0]);
+            var bitmapSource = new WriteableBitmap(
+                width,
+                height,
+                96, // DpiX (adjust as needed)
+                96, // DpiY (adjust as needed)
+                System.Windows.Media.PixelFormats.Bgr24, // Or whichever format matches pFrameRGB->data
+                null
+            );
 
-            var bitmapSource = Imaging.CreateBitmapSourceFromHBitmap(
-                bitmap.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty,
-                BitmapSizeOptions.FromWidthAndHeight(width, height));
+            bitmapSource.WritePixels(
+                new Int32Rect(0, 0, width, height),
+                pixelData,
+                height * stride,
+                stride
+            );
 
-            bitmap.Dispose();
             bitmapSource.Freeze();
             return bitmapSource;
         }
