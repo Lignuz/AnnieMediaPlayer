@@ -17,5 +17,7 @@
     <sys:String x:Key="Text.OpenVideoFailed">Failed to open video</sys:String>
 
     <sys:String x:Key="Text.Settings">Settings</sys:String>
+    <sys:String x:Key="Text.General">General</sys:String>
+    <sys:String x:Key="Text.Advanced">Advanced</sys:String>
 
 </ResourceDictionary>

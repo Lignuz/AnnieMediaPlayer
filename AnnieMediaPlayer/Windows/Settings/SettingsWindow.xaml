@@ -10,6 +10,23 @@
         Title="{DynamicResource Text.Settings}" Height="450" Width="600"
         x:Name="uc">
     <StackPanel>
+        <!-- titlebar -->
         <cons:TitleBar TitleText="{Binding Path=Title, ElementName=uc}"/>
+        <!-- main area -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Navigation List -->
+            <ListBox x:Name="SettingsNav" Grid.Column="0" Background="Transparent" BorderThickness="0" SelectionChanged="SettingsNav_SelectionChanged">
+                <ListBoxItem Tag="General" Content="{DynamicResource Text.General}"/>
+                <ListBoxItem Tag="Advanced" Content="{DynamicResource Text.Advanced}"/>
+            </ListBox>
+
+            <!-- Content Presenter for Pages -->
+            <ContentControl x:Name="ContentArea" Grid.Column="1" Margin="10"/>
+        </Grid>
     </StackPanel>
 </base:BaseWindow>

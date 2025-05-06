@@ -17,5 +17,7 @@
     <sys:String x:Key="Text.OpenVideoFailed">비디오를 열 수 없습니다</sys:String>
 
     <sys:String x:Key="Text.Settings">환경설정</sys:String>
+    <sys:String x:Key="Text.General">일반설정</sys:String>
+    <sys:String x:Key="Text.Advanced">고급설정</sys:String>
 
 </ResourceDictionary>

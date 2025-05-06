@@ -2,6 +2,7 @@
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using AnnieMediaPlayer.Windows.Settings;
 
 namespace AnnieMediaPlayer
 {
@@ -70,7 +71,12 @@ namespace AnnieMediaPlayer
         private void CloseButton_Click(object sender, RoutedEventArgs e) => this.Close();
         private void SettingButton_Click(object sender, RoutedEventArgs e)
         {
-
+            var win = new SettingsWindow
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            win.ShowDialog();
         }
         private void ThemeToggleButton_Click(object sender, RoutedEventArgs e) => ThemeToggleController.ToggleTheme(this);
 
