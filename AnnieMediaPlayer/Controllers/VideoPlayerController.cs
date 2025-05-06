@@ -3,7 +3,9 @@ using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using FFmpeg.AutoGen;
 using System.Windows.Controls;
-using System.Diagnostics;
+using System.Windows.Input;
+using System.Collections.Concurrent;
+using System.Windows.Media;
 
 namespace AnnieMediaPlayer
 {
@@ -12,6 +14,7 @@ namespace AnnieMediaPlayer
         private static CancellationTokenSource? _cancellation;
         private static FFmpegContext? _context;
         private static AVRational _streamTimeBase;
+        private static string _filePath = string.Empty;
         private static bool _isPlaying;
         private static bool _isPaused;
         private static bool _isSliderDragging;
@@ -27,6 +30,10 @@ namespace AnnieMediaPlayer
         };
         private static int _speedIndex = 4;
 
+        private static ConcurrentQueue<MouseEventArgs> _previewQueue = new ConcurrentQueue<MouseEventArgs>();
+        private static bool _isPreviewing = false;
+
+        public static string FilePath => _filePath;
         public static bool PauseForSeeking { get; set; } = false;
         public static bool WaitForPauseForSeeking { get; set; } = false;
         private static DateTime _lastFrameTime = DateTime.MinValue;
@@ -35,6 +42,7 @@ namespace AnnieMediaPlayer
         private static TimeSpan _currentVideoTime = TimeSpan.Zero; // 현재 비디오 시간을 저장할 필드
         public static TimeSpan CurrentVideoTime => _currentVideoTime;
         public static DateTime PlaybackStartTime { get; set; }
+        public static FFmpegFrameGrabber? ffmpegFrameGrabber { get; private set; } = null;
 
 
         public static void InitializeUI(MainWindow window)
@@ -58,6 +66,8 @@ namespace AnnieMediaPlayer
             if (dialog.ShowDialog() == true)
             {
                 Stop(window);
+                _filePath = dialog.FileName;
+                ffmpegFrameGrabber = new FFmpegFrameGrabber(_filePath);
 
                 _cancellation = new CancellationTokenSource();
                 _isPlaying = true;
@@ -136,11 +146,14 @@ namespace AnnieMediaPlayer
 
         public static void Stop(MainWindow window)
         {
+            _filePath = string.Empty;
             _isPlaying = false;
             _isPaused = false;
             _cancellation?.Cancel();
             _context = null;
             _streamTimeBase = default;
+            ffmpegFrameGrabber?.Dispose();
+            ffmpegFrameGrabber = null;
 
             _actualFps = 0.0;
             _lastFrameTime = DateTime.MinValue;
@@ -159,6 +172,107 @@ namespace AnnieMediaPlayer
             window.StopButton.IsEnabled = false;
 
             SpeedController.UpdateActualSpeedLabel(window);
+        }
+
+        public static void OnSliderMouseHover(MainWindow window, MouseEventArgs e)
+        {
+            if (_isPlaying && _context != null)
+            {
+                _previewQueue.Enqueue(e);
+
+                if (!_isPreviewing)
+                {
+                    ProcessPreviewQueue(window);
+                }
+            }   
+        }
+
+        public static void OnSliderMouseLeave(MainWindow window, MouseEventArgs e)
+        {
+            _previewQueue.Clear();
+        }
+
+        private async static void ProcessPreviewQueue(MainWindow window)
+        {
+            _isPreviewing = true;
+            while (_previewQueue.TryDequeue(out MouseEventArgs? e))
+            {
+                if (_previewQueue.Count == 0)
+                {
+                    if (ffmpegFrameGrabber != null)
+                    {
+                        Slider slider = window.PlaybackSlider;
+                        Point mousePos = e.GetPosition(slider);
+
+                        double trackLength = slider.ActualWidth;
+                        double ratio = Math.Max(0, Math.Min(1, mousePos.X / trackLength));
+                        double seekTime = slider.Minimum + (ratio * (slider.Maximum - slider.Minimum));
+                        TimeSpan targetTime = TimeSpan.FromSeconds(seekTime);
+
+                        int w = ffmpegFrameGrabber.Width;
+                        int h = ffmpegFrameGrabber.Height;
+                        Size size = Utilities.GetScaledSize(w, h, 200, 150);
+
+                        // 프리뷰를 위한 비동기 작업
+                        TimeSpan currentTime = TimeSpan.Zero;
+                        var bmp = await Task.Run(() => ffmpegFrameGrabber?.GetFrameAt(targetTime, size, out currentTime));
+
+                        // 프리뷰 이미지 업데이트
+                        if (bmp != null)
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                var image = new Image
+                                {
+                                    Source = bmp,
+                                    Width = size.Width,
+                                    Height = size.Height,
+                                    Stretch = System.Windows.Media.Stretch.Uniform
+                                };
+                                var grid = new Grid();
+                                grid.Margin = new Thickness(2);
+
+                                grid.Children.Add(image);
+
+                                var textblock = new TextBlock
+                                {
+                                    Text = Utilities.FormatTimeSpan(currentTime),
+                                    Padding = new Thickness(2),
+                                    VerticalAlignment = VerticalAlignment.Top,
+                                    HorizontalAlignment = HorizontalAlignment.Left,
+                                    Background = (SolidColorBrush)Application.Current.MainWindow.FindResource("BackgroundBrush")
+                                };
+                                grid.Children.Add(textblock);
+                                
+                                // set to popup
+                                var target = window.VideoImageContainer;
+                                mousePos = e.GetPosition(target);
+
+                                double targetWidth = target.ActualWidth;
+                                double targetHeight = target.ActualHeight;
+
+                                double popupWidth = size.Width + (grid.Margin.Left + grid.Margin.Right);
+                                double popupHeight = size.Height + (grid.Margin.Top + grid.Margin.Bottom);
+
+                                double offsetX = mousePos.X - popupWidth / 2;
+                                double offsetY = targetHeight - (popupHeight - 5);
+                                offsetX = Math.Max(0, Math.Min(offsetX, targetWidth - popupWidth));
+
+                                Point screenPos = target.PointToScreen(new Point (offsetX, offsetY));
+                                window.PreviewSliderPopup.HorizontalOffset = screenPos.X;
+                                window.PreviewSliderPopup.VerticalOffset = screenPos.Y;
+                                window.PreviewSliderPopup.Child = grid;
+                            });
+                        }
+                    }
+                }
+            }
+
+            _isPreviewing = false;
+            if (!_previewQueue.IsEmpty)
+            {
+                ProcessPreviewQueue(window);
+            }
         }
 
         public static void OnSliderDragStart(MainWindow window)

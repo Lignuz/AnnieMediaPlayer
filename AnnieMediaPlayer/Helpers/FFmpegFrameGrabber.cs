@@ -22,6 +22,9 @@ namespace AnnieMediaPlayer
         private AVFrame* _scaledRgbFrame = null; // 리사이징된 프레임
         private byte* _scaledBuffer = null; // 리사이징된 버퍼
 
+        public int Width => _width;
+        public int Height => _height;
+
         public FFmpegFrameGrabber(string filePath)
         {
             _filePath = filePath;
@@ -168,8 +171,10 @@ namespace AnnieMediaPlayer
             _scaledSwsContext = null;
         }
 
-        public unsafe BitmapSource? GetFrameAt(TimeSpan targetTime, Size previewSize, bool useKeyFrame = true)
+        public unsafe BitmapSource? GetFrameAt(TimeSpan targetTime, Size previewSize, out TimeSpan currentTime, bool useKeyFrame = true)
         {
+            currentTime = TimeSpan.Zero;
+
             AllocateScaledFrame((int)previewSize.Width, (int)previewSize.Height);
 
             AVFrame* frame = ffmpeg.av_frame_alloc();
@@ -195,10 +200,11 @@ namespace AnnieMediaPlayer
                             {
                                 if (useKeyFrame || Math.Abs((frame->pts * timeBase) - targetTime.TotalSeconds) < 0.1)
                                 {
+                                    currentTime = TimeSpan.FromSeconds(frame->pts * timeBase);
+
                                     ffmpeg.sws_scale(_scaledSwsContext, frame->data, frame->linesize, 0, _height,
                                         _scaledRgbFrame->data, _scaledRgbFrame->linesize);
 
-                                    // FFmpegHelper.ConvertFrameToBitmapSource 내부에서 fixed 사용
                                     result = FFmpegHelper.ConvertFrameToBitmapSource(_scaledRgbFrame, _previewWidth, _previewHeight);
                                     frameFound = true;
                                 }

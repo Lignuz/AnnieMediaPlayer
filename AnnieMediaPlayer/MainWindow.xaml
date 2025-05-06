@@ -60,7 +60,7 @@
                     </Grid.RowDefinitions>
 
                     <!-- 🎞 영상 표시 영역 -->
-                    <Border Grid.Row="0" Background="Black">
+                    <Border Name="VideoImageContainer" Grid.Row="0" Background="Black">
                         <Image Name="VideoImage" Stretch="Uniform" />
                     </Border>
 
@@ -71,9 +71,12 @@
                             IsEnabled="{Binding Path=IsEnabled, ElementName=StopButton}"
                             Minimum="0" Maximum="100" Value="0"
                             Margin="0,0,0,4"
+                            PreviewMouseMove="PlaybackSlider_PreviewMouseMove"
+                            MouseLeave="PlaybackSlider_MouseLeave"
                             PreviewMouseDown="PlaybackSlider_PreviewMouseDown"
                             PreviewMouseUp="PlaybackSlider_PreviewMouseUp"
                             ValueChanged="PlaybackSlider_ValueChanged"/>
+                        <Popup Name="PreviewSliderPopup" Placement="Absolute" IsOpen="{Binding ElementName=PlaybackSlider, Path=IsMouseOver, Mode=OneWay}"/>
 
                         <!-- 시간 표시 -->
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
