@@ -1,0 +1,15 @@
+﻿<base:BaseWindow x:Class="AnnieMediaPlayer.Windows.Settings.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AnnieMediaPlayer.Windows.Settings"
+        xmlns:base="clr-namespace:AnnieMediaPlayer"
+        xmlns:cons="clr-namespace:AnnieMediaPlayer.CustomControls"
+        mc:Ignorable="d"
+        Title="{DynamicResource Text.Settings}" Height="450" Width="600"
+        x:Name="uc">
+    <StackPanel>
+        <cons:TitleBar TitleText="{Binding Path=Title, ElementName=uc}"/>
+    </StackPanel>
+</base:BaseWindow>

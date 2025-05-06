@@ -16,4 +16,6 @@
     <sys:String x:Key="Text.OpenDialogFilter">Video Files (*.mp4;*.avi;*.mov;*.mkv;*.wmv)|*.mp4;*.avi;*.mov;*.mkv;*.wmv|All Files (*.*)|*.*</sys:String>
     <sys:String x:Key="Text.OpenVideoFailed">Failed to open video</sys:String>
 
+    <sys:String x:Key="Text.Settings">Settings</sys:String>
+
 </ResourceDictionary>

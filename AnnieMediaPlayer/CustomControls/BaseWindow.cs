@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace AnnieMediaPlayer
@@ -23,6 +24,17 @@ namespace AnnieMediaPlayer
 
             this.Activated += (_, _) => IsWindowActive = true;
             this.Deactivated += (_, _) => IsWindowActive = false;
+        }
+
+        private void OnTitleBarDrag(object sender, MouseButtonEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed)
+                DragMove();
+        }
+
+        private void OnCloseClicked(object sender, RoutedEventArgs e)
+        {
+            Close();
         }
     }
 }

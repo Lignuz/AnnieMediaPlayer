@@ -16,4 +16,6 @@
     <sys:String x:Key="Text.OpenDialogFilter">비디오 파일 (*.mp4;*.avi;*.mov;*.mkv;*.wmv)|*.mp4;*.avi;*.mov;*.mkv;*.wmv|모든 파일 (*.*)|*.*</sys:String>
     <sys:String x:Key="Text.OpenVideoFailed">비디오를 열 수 없습니다</sys:String>
 
+    <sys:String x:Key="Text.Settings">환경설정</sys:String>
+
 </ResourceDictionary>
