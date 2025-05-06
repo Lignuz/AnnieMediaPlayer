@@ -16,6 +16,10 @@ This software includes third-party libraries. Their respective licenses and attr
 3. System.Drawing.Common
    - License: MIT License
    - Website: https://www.nuget.org/packages/System.Drawing.Common/9.0.4
+   
+4. NAudio
+   - License: MIT License
+   - Website: https://github.com/naudio/NAudio
 
 ---
 

@@ -12,6 +12,7 @@ See the [LICENSE](LICENSE) file for details.
 - FFmpeg (GPL v3) – Precompiled binaries by Gyan.dev: https://www.gyan.dev/ffmpeg/builds/
 - FFmpeg.AutoGen (LGPL v3) – https://github.com/Ruslan-B/FFmpeg.AutoGen
 - System.Drawing.Common (MIT) – https://www.nuget.org/packages/System.Drawing.Common/9.0.4
+- NAudio (MIT) – https://github.com/naudio/NAudio
 
 
 📘 다른 언어로 보기: [🇰🇷 한국어](README.ko.md)

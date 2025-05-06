@@ -13,3 +13,4 @@ FFmpeg을 사용하여 10초에 1프레임 수준의 느린 재생이 가능합�
 - FFmpeg (GPL v3) – Precompiled binaries by Gyan.dev: https://www.gyan.dev/ffmpeg/builds/
 - FFmpeg.AutoGen (LGPL v3) – https://github.com/Ruslan-B/FFmpeg.AutoGen
 - System.Drawing.Common (MIT) – https://www.nuget.org/packages/System.Drawing.Common/9.0.4
+- NAudio (MIT) – https://github.com/naudio/NAudio
