@@ -1,6 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:local="clr-namespace:AnnieMediaPlayer">
+                    xmlns:base="clr-namespace:AnnieMediaPlayer">
 
     <!-- 아이콘 Path Geometry 리소스 -->
     <Geometry x:Key="MinimizeIconData">M 4 15 L 16 15</Geometry>
@@ -32,6 +32,43 @@
         <EllipseGeometry Center="12,12" RadiusX="3" RadiusY="3"/>
     </GeometryGroup>
 
+
+    <!-- 그림자 효과 정의 -->
+    <DropShadowEffect x:Key="ActiveWindowShadow" Color="Black" Direction="315" ShadowDepth="10" BlurRadius="10" Opacity="0.15"/>
+    <DropShadowEffect x:Key="InactiveWindowShadow" Color="Black" Direction="315" ShadowDepth="10" BlurRadius="10" Opacity="0.05"/>
+
+    <!-- 베이스 윈도우 스타일 -->
+    <Style x:Key="BaseWindowStyle" TargetType="{x:Type base:BaseWindow}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type base:BaseWindow}">
+                    <Border x:Name="RootBorder"
+                        Background="{DynamicResource BackgroundBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Margin="10"
+                        SnapsToDevicePixels="True"
+                        Padding="0"
+                        Effect="{DynamicResource ActiveWindowShadow}">
+                        <AdornerDecorator>
+                            <ContentPresenter />
+                        </AdornerDecorator>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsWindowActive" Value="False">
+                            <Setter TargetName="RootBorder" Property="Effect" Value="{DynamicResource InactiveWindowShadow}" />
+                            <Setter TargetName="RootBorder" Property="BorderBrush" Value="{DynamicResource InactiveBorderBrush}"/>
+                        </Trigger>
+                        <Trigger Property="WindowState" Value="Maximized">
+                            <Setter TargetName="RootBorder" Property="Margin" Value="0"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
     <!-- 텍스트 블럭 -->
     <Style TargetType="TextBlock">
@@ -112,7 +149,7 @@
                         <Trigger Property="IsPressed" Value="True">
                             <Setter Property="Background" Value="{DynamicResource ButtonPressedBrush}"/>
                         </Trigger>
-                        <Trigger Property="local:ButtonHelper.IconMode" Value="Fill">
+                        <Trigger Property="base:ButtonHelper.IconMode" Value="Fill">
                             <Setter TargetName="IconPath" Property="Fill" Value="{DynamicResource ThemeButtonFillBrush}"/>
                             <Setter TargetName="IconPath" Property="Stroke" Value="Transparent"/>
                         </Trigger>

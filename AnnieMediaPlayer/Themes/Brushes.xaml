@@ -21,5 +21,6 @@
     <SolidColorBrush x:Key="ThumbDraggingBrush" Color="{DynamicResource LightThumbDraggingColor}"/>
     <SolidColorBrush x:Key="ThumbDisabledBrush" Color="{DynamicResource LightThumbDisabledColor}"/>
     <SolidColorBrush x:Key="VideoBackgroundBrush" Color="{DynamicResource LightVideoBackgroundColor}"/>
+    <SolidColorBrush x:Key="InactiveBorderBrush" Color="{DynamicResource LightInactiveBorderColor}"/>
 
 </ResourceDictionary>

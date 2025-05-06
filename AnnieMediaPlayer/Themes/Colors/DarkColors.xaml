@@ -21,5 +21,6 @@
 	<Color x:Key="DarkThumbDraggingColor">#FF228822</Color>
 	<Color x:Key="DarkThumbDisabledColor">#FF666666</Color>
 	<Color x:Key="DarkVideoBackgroundColor">#FF000000</Color>
+    <Color x:Key="DarkInactiveBorderColor">#FF444444</Color>
 	
 </ResourceDictionary>
