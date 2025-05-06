@@ -68,7 +68,10 @@ namespace AnnieMediaPlayer
         private void MinimizeButton_Click(object sender, RoutedEventArgs e) => this.WindowState = WindowState.Minimized;
         private void MaxRestoreButton_Click(object sender, RoutedEventArgs e) => this.WindowState = this.WindowState == WindowState.Normal ? WindowState.Maximized : WindowState.Normal;
         private void CloseButton_Click(object sender, RoutedEventArgs e) => this.Close();
+        private void SettingButton_Click(object sender, RoutedEventArgs e)
+        {
 
+        }
         private void ThemeToggleButton_Click(object sender, RoutedEventArgs e) => ThemeToggleController.ToggleTheme(this);
 
         // 리사이즈 핸들링
