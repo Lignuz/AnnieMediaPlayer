@@ -63,6 +63,11 @@
                         </Trigger>
                         <Trigger Property="WindowState" Value="Maximized">
                             <Setter TargetName="RootBorder" Property="Margin" Value="0"/>
+                            <Setter TargetName="RootBorder" Property="CornerRadius" Value="0" />
+                        </Trigger>
+                        <Trigger Property="IsSnapped" Value="True">
+                            <Setter TargetName="RootBorder" Property="Margin" Value="0" />
+                            <Setter TargetName="RootBorder" Property="CornerRadius" Value="0" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

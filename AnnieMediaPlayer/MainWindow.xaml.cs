@@ -1,5 +1,7 @@
-﻿using System.Windows;
+﻿using System.Diagnostics;
+using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using AnnieMediaPlayer.Windows.Settings;
@@ -58,6 +60,45 @@ namespace AnnieMediaPlayer
         {
             MaxRestoreButton.Content = (Geometry)FindResource(
                 this.WindowState == WindowState.Maximized ? "RestoreIconData" : "MaximizeIconData");
+        }
+
+        private void Window_LocationChanged(object sender, EventArgs e) => MonitorSnapState();
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e) => MonitorSnapState();
+
+        void MonitorSnapState()
+        {
+            bool isDragging = Mouse.LeftButton == MouseButtonState.Pressed;
+            IsSnapped = isDragging ? false : IsSnappedLikeWindows11(this);
+        }
+
+        private bool IsSnappedLikeWindows11(Window window)
+        {
+            var handle = new WindowInteropHelper(window).Handle;
+            var screen = System.Windows.Forms.Screen.FromHandle(handle);
+            var workArea = screen.WorkingArea;
+            var dpiX = VisualTreeHelper.GetDpi(window).DpiScaleX;
+            var dpiY = VisualTreeHelper.GetDpi(window).DpiScaleY;
+
+            double left = window.Left;
+            double top = window.Top;
+            double width = window.Width;
+            double height = window.Height;
+
+            // DPI 보정
+            var scaledWorkArea = new Rect(
+                workArea.Left / dpiX,
+                workArea.Top / dpiY,
+                workArea.Width / dpiX,
+                workArea.Height / dpiY
+            );
+
+            var tolerance = 10.0;
+            var isNearWorkArea = Math.Abs(left - scaledWorkArea.Left) < tolerance ||
+                                 Math.Abs(top - scaledWorkArea.Top) < tolerance ||
+                                 Math.Abs((left + width) - (scaledWorkArea.Right)) < tolerance ||
+                                 Math.Abs((top + height) - (scaledWorkArea.Bottom)) < tolerance;
+
+            return isNearWorkArea;
         }
 
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e) => KeyboardInputHandler.HandleKeyDown(this, e);

@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 
 namespace AnnieMediaPlayer
@@ -9,10 +10,18 @@ namespace AnnieMediaPlayer
         public static readonly DependencyProperty IsWindowActiveProperty =
             DependencyProperty.Register("IsWindowActive", typeof(bool), typeof(BaseWindow), new PropertyMetadata(true));
 
+        public static readonly DependencyProperty IsSnappedProperty =
+            DependencyProperty.Register(nameof(IsSnapped), typeof(bool), typeof(BaseWindow), new PropertyMetadata(false));
         public bool IsWindowActive
         {
             get => (bool)GetValue(IsWindowActiveProperty);
             set => SetValue(IsWindowActiveProperty, value);
+        }
+
+        public bool IsSnapped
+        {
+            get => (bool)GetValue(IsSnappedProperty);
+            set => SetValue(IsSnappedProperty, value);
         }
 
         public BaseWindow()
