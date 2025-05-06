@@ -365,10 +365,8 @@ namespace AnnieMediaPlayer
                 ffmpeg.SWS_BILINEAR, null, null, null);
         }
 
-        public static unsafe BitmapSource ConvertFrameToBitmapSource(AVFrame* pFrameRGB, AVCodecContext* codec)
+        public static unsafe BitmapSource ConvertFrameToBitmapSource(AVFrame* pFrameRGB, int width, int height)
         {
-            int width = codec->width;
-            int height = codec->height;
             int stride = pFrameRGB->linesize[0];
             IntPtr pixelData = (IntPtr)pFrameRGB->data[0];
 
@@ -390,6 +388,12 @@ namespace AnnieMediaPlayer
 
             bitmapSource.Freeze();
             return bitmapSource;
+        }
+
+        // 기존 ConvertFrameToBitmapSource는 내부적으로 새로운 오버로드 호출
+        public static unsafe BitmapSource ConvertFrameToBitmapSource(AVFrame* pFrameRGB, AVCodecContext* codec)
+        {
+            return ConvertFrameToBitmapSource(pFrameRGB, codec->width, codec->height);
         }
 
         public static unsafe AVFrame* AllocateFrameWithBuffer(AVCodecContext* codecContext, out byte* buffer)
