@@ -164,7 +164,12 @@
                                     </RepeatButton>
                                 </Track.DecreaseRepeatButton>
                                 <Track.Thumb>
-                                    <Thumb Width="14" Height="14">
+                                    <Thumb Width="12" Height="12">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="{x:Type Thumb}">
+                                                <Ellipse x:Name="knob" Width="10" Height="10" Fill="{TemplateBinding Background}" Stroke="{TemplateBinding BorderBrush}" StrokeThickness="{TemplateBinding BorderThickness}" VerticalAlignment="Center"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
                                         <Thumb.Style>
                                             <Style TargetType="Thumb">
                                                 <Setter Property="Background" Value="{DynamicResource ThumbBrush}"/>

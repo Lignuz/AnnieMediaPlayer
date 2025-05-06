@@ -69,7 +69,7 @@
                         <!-- 재생 슬라이더 -->
                         <Slider Name="PlaybackSlider" Style="{StaticResource CustomSliderStyle}"
                             IsEnabled="{Binding Path=IsEnabled, ElementName=StopButton}"
-                            Minimum="0" Maximum="100" Value="0" Height="20"
+                            Minimum="0" Maximum="100" Value="0"
                             Margin="0,0,0,4"
                             PreviewMouseDown="PlaybackSlider_PreviewMouseDown"
                             PreviewMouseUp="PlaybackSlider_PreviewMouseUp"
