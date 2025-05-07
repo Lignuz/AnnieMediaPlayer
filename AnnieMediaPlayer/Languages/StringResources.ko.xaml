@@ -20,4 +20,12 @@
     <sys:String x:Key="Text.General">일반설정</sys:String>
     <sys:String x:Key="Text.Advanced">고급설정</sys:String>
 
+    <sys:String x:Key="Text.Languages">언어</sys:String>
+    <sys:String x:Key="Text.Languages.Korean">한국어</sys:String>
+    <sys:String x:Key="Text.Languages.English">영어</sys:String>
+
+    <sys:String x:Key="Text.Themes">테마</sys:String>
+    <sys:String x:Key="Text.Themes.Light">라이트 모드</sys:String>
+    <sys:String x:Key="Text.Themes.Dark">다크 모드</sys:String>
+
 </ResourceDictionary>

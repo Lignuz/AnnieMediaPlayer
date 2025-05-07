@@ -20,4 +20,12 @@
     <sys:String x:Key="Text.General">General</sys:String>
     <sys:String x:Key="Text.Advanced">Advanced</sys:String>
 
+    <sys:String x:Key="Text.Languages">Languages</sys:String>
+    <sys:String x:Key="Text.Languages.Korean">Korean</sys:String>
+    <sys:String x:Key="Text.Languages.English">English</sys:String>
+
+    <sys:String x:Key="Text.Themes">Themes</sys:String>
+    <sys:String x:Key="Text.Themes.Light">Light Mode</sys:String>
+    <sys:String x:Key="Text.Themes.Dark">Dark Mode</sys:String>
+
 </ResourceDictionary>
