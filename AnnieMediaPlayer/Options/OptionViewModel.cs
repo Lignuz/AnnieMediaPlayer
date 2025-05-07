@@ -1,0 +1,116 @@
+﻿using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
+namespace AnnieMediaPlayer.Options
+{
+    public class OptionViewModel : INotifyPropertyChanged
+    {
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private static OptionViewModel? _instance;
+        public static OptionViewModel Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = new OptionViewModel();
+                }
+                return _instance;
+            }
+        }
+
+        private Option _currentOption;
+        public Option CurrentOption
+        {
+            get { return _currentOption; }
+            set
+            {
+                if (_currentOption != null)
+                {
+                    _currentOption.PropertyChanged -= CurrentOption_PropertyChanged;
+                }
+                _currentOption = value;
+                if (_currentOption != null)
+                {
+                    _currentOption.PropertyChanged += CurrentOption_PropertyChanged;
+                }
+                OnAllOptionsChanged();
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// Enum 값의 다국어 처리를 위한 연결 리소스 딕셔너리
+        /// </summary>
+        public Dictionary<Themes, string> ThemeDisplayNames { get; } = new Dictionary<Themes, string>
+        {
+            { Themes.Light, "Text.Themes.Light" },
+            { Themes.Dark, "Text.Themes.Dark" }
+        };
+
+        public Dictionary<Languages, string> LanguageDisplayNames { get; } = new Dictionary<Languages, string>
+        {
+            { Languages.ko, "Text.Languages.Korean" },
+            { Languages.en, "Text.Languages.English" }
+        };
+
+
+        private OptionViewModel()
+        {
+            // 옵션 초기값 지정
+            CurrentOption = new Option
+            {
+                SelectedTheme = Themes.Light,
+                SelectedLanguage = Languages.ko,
+            };
+        }
+
+        private void OnAllOptionsChanged()
+        {
+            ApplyAllOptions(CurrentOption);
+        }
+
+        private void CurrentOption_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            // 개별 프로퍼티 변경에 따른 처리
+            switch (e.PropertyName)
+            {
+                case nameof(Option.SelectedTheme):
+                    HandleThemeChanged(CurrentOption.SelectedTheme);
+                    break;
+                case nameof(Option.SelectedLanguage):
+                    HandleLanguageChanged(CurrentOption.SelectedLanguage);
+                    break;
+                default:
+                    System.Diagnostics.Debug.WriteLine($"알 수 없는 프로퍼티 변경: {e.PropertyName}");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 개별 프로퍼티 변경 처리 메서드
+        /// </summary>
+        private void HandleLanguageChanged(Languages newLanguage)
+        {
+            LanguageManager.ChangeLanguage(newLanguage);
+        }
+
+        private void HandleThemeChanged(Themes newTheme)
+        {   
+        }
+
+        // 전체 옵션 적용 메서드
+        private void ApplyAllOptions(Option? currentOptions)
+        {
+            if (currentOptions != null)
+            {
+                
+            }
+        }
+    }
+}

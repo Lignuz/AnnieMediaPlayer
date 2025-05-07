@@ -520,7 +520,7 @@ namespace AnnieMediaPlayer
             {
                 if (_waveProvider != null)
                 {
-                    byte[] audioData = ConvertAudioFrameToByteArray(audioFrame, _audioSampleFormat, _audioChannels);
+                    byte[]? audioData = ConvertAudioFrameToByteArray(audioFrame, _audioSampleFormat, _audioChannels);
                     if (audioData != null && audioData.Length > 0)
                     {
                         _waveProvider.AddSamples(audioData, 0, audioData.Length);

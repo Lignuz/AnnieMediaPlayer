@@ -38,7 +38,7 @@ namespace AnnieMediaPlayer
             await Task.Delay(200);
             ThemeManager.ToggleTheme();
 
-            window.ThemeToggleButton.Content = window.FindResource(ThemeManager.IsDarkTheme ? "ThemeDarkIconData" : "ThemeLightIconData");
+            window.ThemeToggleButton.Content = window.FindResource(ThemeManager.theme == Options.Themes.Dark ? "ThemeDarkIconData" : "ThemeLightIconData");
 
             await Task.Delay(300);
             window.ThemeToggleButton.IsEnabled = true;

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using AnnieMediaPlayer.Options;
+using System.Collections;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -7,31 +8,49 @@ namespace AnnieMediaPlayer
 {
     public static class ThemeManager
     {
-        private static bool _isDarkTheme = false;
-        public static bool IsDarkTheme => _isDarkTheme;
+        private static Themes _theme = Themes.Light;
+        public static Themes theme 
+        {
+            get { return _theme; } 
+            private set 
+            { 
+                if (_theme != value)
+                {
+                    _theme = value; 
+                }
+            } 
+        }
 
         public static void ToggleTheme()
         {
-            _isDarkTheme = !_isDarkTheme;
-
-            if (_isDarkTheme)
+            if (theme == Themes.Light)
+            {
                 ApplyDarkTheme();
-            else
+            }
+            else if (theme == Themes.Dark)
+            {
                 ApplyLightTheme();
+            }
         }
 
         public static void ApplyLightTheme()
         {
-            ApplyThemeColors("Light");
+            ApplyThemeColors(Themes.Light);
         }
 
         public static void ApplyDarkTheme()
         {
-            ApplyThemeColors("Dark");
+            ApplyThemeColors(Themes.Dark);
         }
 
-        private static void ApplyThemeColors(string themePrefix)
+        private static void ApplyThemeColors(Themes newTheme, bool animate = true)
         {
+            if (theme == newTheme)
+                return;
+
+            _theme = newTheme;
+            string themePrefix = theme.ToString();
+
             var brushDict = FindResourceDictionary("Brushes.xaml");
             var colorDict = FindResourceDictionary("ThemeColors.xaml");
 
@@ -50,7 +69,15 @@ namespace AnnieMediaPlayer
 
                         if (colorDict.Contains(colorKey))
                         {
-                            AnimateBrush(brush, (Color)colorDict[colorKey]);
+                            Color color = (Color)colorDict[colorKey];
+                            if (animate)
+                            {
+                                AnimateBrush(brush, color);
+                            }
+                            else
+                            {
+                                SetColor(brushKey, color);
+                            }
                         }
                     }
                 }
@@ -82,6 +109,7 @@ namespace AnnieMediaPlayer
             return null;
         }
 
+        // 애니메이션 적용
         private static void AnimateBrush(SolidColorBrush brush, Color toColor)
         {
             brush.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation
@@ -101,7 +129,7 @@ namespace AnnieMediaPlayer
             }
         }
 
-        // (참고용) SetColor는 AnimateColor 도입으로 현재는 사용 안함
+        // 애니메이션 미적용으로 바로 교체 (초기 셋팅 변경용)
         private static void SetColor(string brushKey, Color color)
         {
             if (Application.Current.Resources[brushKey] is SolidColorBrush brush)

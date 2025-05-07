@@ -1,13 +1,31 @@
-﻿using System.Windows;
+﻿using AnnieMediaPlayer.Options;
+using System.Windows;
 using System.Windows.Documents;
 
 namespace AnnieMediaPlayer
 {
     public static class LanguageManager
     {
-        // 언어 변경 (ko, en)
-        public static void ChangeLanguage(string culture)
+        static private Languages _language = Languages.ko;
+        static public Languages language
         {
+            get { return _language; }
+            private set 
+            {
+                if (_language != value)
+                {
+                    _language = value; 
+                }
+            }
+        }
+
+        public static event EventHandler? LanguageChanged;
+
+        // 언어 변경 (ko, en)
+        public static void ChangeLanguage(Languages language)
+        {
+            string culture = language.ToString();
+
             var dictPath = $"Languages/StringResources.{culture}.xaml";
             var newDict = new ResourceDictionary() { Source = new Uri(dictPath, UriKind.Relative) };
 
@@ -18,6 +36,9 @@ namespace AnnieMediaPlayer
                 Application.Current.Resources.MergedDictionaries.Remove(oldDict);
 
             Application.Current.Resources.MergedDictionaries.Add(newDict);
+
+            // 리소스 변경 후 이벤트 발생
+            LanguageChanged?.Invoke(null, EventArgs.Empty);
         }
 
         // 리소스의 문자열을 찾아서 값을 반환합니다. 
