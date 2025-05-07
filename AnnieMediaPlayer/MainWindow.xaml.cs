@@ -1,9 +1,9 @@
-﻿using System.Diagnostics;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using AnnieMediaPlayer.Options;
 using AnnieMediaPlayer.Windows.Settings;
 
 namespace AnnieMediaPlayer
@@ -22,6 +22,8 @@ namespace AnnieMediaPlayer
             VideoPlayerController.Stop(this);
             PlayPauseButton.IsEnabled = false;
             StopButton.IsEnabled = false;
+
+            ThemeManager.ThemeChanged += ThemeManager_ThemeChanged;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -119,7 +121,7 @@ namespace AnnieMediaPlayer
             };
             win.ShowDialog();
         }
-        private void ThemeToggleButton_Click(object sender, RoutedEventArgs e) => ThemeToggleController.ToggleTheme(this);
+        private void ThemeToggleButton_Click(object sender, RoutedEventArgs e) => OptionViewModel.Instance.ToggleTheme();
 
         // 리사이즈 핸들링
         private void TopResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => WindowResizeHelper.Top(e, this);
@@ -131,5 +133,42 @@ namespace AnnieMediaPlayer
         private void TopRightResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => WindowResizeHelper.TopRight(e, this);
         private void BottomLeftResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => WindowResizeHelper.BottomLeft(e, this);
         private void BottomRightResizeBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => WindowResizeHelper.BottomRight(e, this);
+
+        // 테마가 변경됨
+        private async void ThemeManager_ThemeChanged(object? sender, EventArgs e)
+        {
+            if (!ThemeToggleButton.IsEnabled)
+                return;
+
+            ThemeToggleButton.IsEnabled = false;
+
+            // 회전 애니메이션
+            var rotateAnim = new DoubleAnimation
+            {
+                From = 0,
+                To = 360,
+                Duration = TimeSpan.FromMilliseconds(500),
+                EasingFunction = new CircleEase { EasingMode = EasingMode.EaseInOut }
+            };
+            ThemeToggleRotate.BeginAnimation(RotateTransform.AngleProperty, rotateAnim);
+
+            // Scale 애니메이션
+            var scale = new ScaleTransform(1, 1);
+            ThemeToggleButton.LayoutTransform = scale;
+            var scaleDown = new DoubleAnimation(1.0, 0.85, TimeSpan.FromMilliseconds(100));
+            var scaleUp = new DoubleAnimation(0.85, 1.0, TimeSpan.FromMilliseconds(200))
+            {
+                BeginTime = TimeSpan.FromMilliseconds(300)
+            };
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleDown);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleDown);
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleUp);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleUp);
+            await Task.Delay(200);
+            ThemeToggleButton.Content = FindResource(ThemeManager.theme == Options.Themes.Dark ? "ThemeDarkIconData" : "ThemeLightIconData");
+
+            await Task.Delay(300);
+            ThemeToggleButton.IsEnabled = true;
+        }
     }
 }

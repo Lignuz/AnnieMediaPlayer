@@ -8,6 +8,8 @@ namespace AnnieMediaPlayer
 {
     public static class ThemeManager
     {
+        public static event EventHandler? ThemeChanged;
+
         private static Themes _theme = Themes.Light;
         public static Themes theme 
         {
@@ -43,12 +45,12 @@ namespace AnnieMediaPlayer
             ApplyThemeColors(Themes.Dark);
         }
 
-        private static void ApplyThemeColors(Themes newTheme, bool animate = true)
+        public static void ApplyThemeColors(Themes newTheme, bool animate = true)
         {
             if (theme == newTheme)
                 return;
 
-            _theme = newTheme;
+            theme = newTheme;
             string themePrefix = theme.ToString();
 
             var brushDict = FindResourceDictionary("Brushes.xaml");
@@ -82,6 +84,9 @@ namespace AnnieMediaPlayer
                     }
                 }
             }
+
+            // 변경 후 이벤트 발생
+            ThemeChanged?.Invoke(null, EventArgs.Empty);
         }
 
         private static ResourceDictionary? FindResourceDictionary(string partialPath)

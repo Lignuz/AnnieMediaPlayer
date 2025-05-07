@@ -1,4 +1,6 @@
-﻿using System.Windows.Input;
+﻿using System.Windows;
+using System.Windows.Input;
+using AnnieMediaPlayer.Windows.Settings;
 using FFmpeg.AutoGen;
 
 namespace AnnieMediaPlayer
@@ -9,10 +11,20 @@ namespace AnnieMediaPlayer
         {
             return context.FormatContext->streams[context.VideoStreamIndex]->time_base;
         }
-
+        
         public static void HandleKeyDown(MainWindow window, KeyEventArgs e)
         {
-            if (e.Key == Key.Space)
+            if (e.Key == Key.F5)
+            {
+                // 환경 설정 
+                var win = new SettingsWindow
+                {
+                    Owner = window,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                win.ShowDialog();
+            }
+            else if (e.Key == Key.Space)
             {
                 // Ctrl + Space : 정지
                 if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)

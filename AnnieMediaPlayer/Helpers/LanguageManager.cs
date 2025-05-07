@@ -1,4 +1,5 @@
 ﻿using AnnieMediaPlayer.Options;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Documents;
 
@@ -22,8 +23,12 @@ namespace AnnieMediaPlayer
         public static event EventHandler? LanguageChanged;
 
         // 언어 변경 (ko, en)
-        public static void ChangeLanguage(Languages language)
+        public static void ChangeLanguage(Languages newLanguage)
         {
+            if (language == newLanguage)
+                return;
+
+            language = newLanguage;
             string culture = language.ToString();
 
             var dictPath = $"Languages/StringResources.{culture}.xaml";

@@ -101,7 +101,8 @@ namespace AnnieMediaPlayer.Options
         }
 
         private void HandleThemeChanged(Themes newTheme)
-        {   
+        {
+            ThemeManager.ApplyThemeColors(newTheme);
         }
 
         // 전체 옵션 적용 메서드
@@ -111,6 +112,18 @@ namespace AnnieMediaPlayer.Options
             {
                 
             }
+        }
+
+
+        /// <summary>
+        /// 옵션 변경 관련 유틸리티 메서드 
+        /// </summary>
+        public void ToggleTheme()
+        {
+            if (CurrentOption.SelectedTheme == Themes.Dark)
+                CurrentOption.SelectedTheme = Themes.Light;
+            else if (CurrentOption.SelectedTheme == Themes.Light)
+                CurrentOption.SelectedTheme = Themes.Dark;
         }
     }
 }
