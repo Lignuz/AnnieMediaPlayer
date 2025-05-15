@@ -55,7 +55,7 @@ namespace AnnieMediaPlayer
             window.StopButton.IsEnabled = false;
         }
 
-        public static async void OpenVideo(MainWindow window)
+        public static void OpenVideo(MainWindow window)
         {
             var dialog = new OpenFileDialog
             {
@@ -65,73 +65,78 @@ namespace AnnieMediaPlayer
 
             if (dialog.ShowDialog() == true)
             {
-                Stop(window);
-                _filePath = dialog.FileName;
-                ffmpegFrameGrabber = new FFmpegFrameGrabber(_filePath);
+                OpenVideo(window, dialog.FileName);
+            }
+        }
 
-                _cancellation = new CancellationTokenSource();
-                _isPlaying = true;
-                _isPaused = false;
+        public static async void OpenVideo(MainWindow window, string filePath)
+        {
+            Stop(window);
+            _filePath = filePath;
+            ffmpegFrameGrabber = new FFmpegFrameGrabber(_filePath);
 
-                window.PlayPauseButton.IsEnabled = true;
-                window.StopButton.IsEnabled = true;
-                window.PlayPauseButton.SetResourceReference(ContentControl.ContentProperty, "Text.Pause");
+            _cancellation = new CancellationTokenSource();
+            _isPlaying = true;
+            _isPaused = false;
 
-                try
+            window.PlayPauseButton.IsEnabled = true;
+            window.StopButton.IsEnabled = true;
+            window.PlayPauseButton.SetResourceReference(ContentControl.ContentProperty, "Text.Pause");
+
+            try
+            {
+                PlaybackStartTime = DateTime.UtcNow;
+                await Task.Run(() =>
                 {
-                    PlaybackStartTime = DateTime.UtcNow;
-                    await Task.Run(() =>
+                    FFmpegHelper.OpenVideo(_filePath, (frame, frameNumber, currentTime, totalTime, context) =>
                     {
-                        FFmpegHelper.OpenVideo(dialog.FileName, (frame, frameNumber, currentTime, totalTime, context) =>
+                        _context = context;
+                        unsafe { _streamTimeBase = context.FormatContext->streams[context.VideoStreamIndex]->time_base; }
+                        _videoDuration = totalTime;
+                        _currentVideoTime = currentTime; // 현재 비디오 시간 업데이트
+
+                        // ⚠ FPS 기반 딜레이 재계산 (playbackSpeeds[5])
+                        double fps = context.Fps;
+                        if (fps > 0)
+                            _playbackSpeeds[5] = TimeSpan.FromMilliseconds(1000.0 / fps);
+
+                        window.Dispatcher.Invoke(() =>
                         {
-                            _context = context;
-                            unsafe { _streamTimeBase = context.FormatContext->streams[context.VideoStreamIndex]->time_base; }
-                            _videoDuration = totalTime;
-                            _currentVideoTime = currentTime; // 현재 비디오 시간 업데이트
+                            window.FileNameText.Tag = _filePath;
+                            window.VideoImage.Source = frame;
+                            window.VideoImage.Stretch = System.Windows.Media.Stretch.Uniform;
+                            window.PlaybackSlider.Maximum = totalTime.TotalSeconds;
+                            if (!_isSliderDragging)
+                                window.PlaybackSlider.Value = currentTime.TotalSeconds;
+                            window.CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
+                            window.TotalTimeText.Text = totalTime.ToString(@"hh\:mm\:ss");
+                            window.FrameNumberText.Text = frameNumber.ToString();
 
-                            // ⚠ FPS 기반 딜레이 재계산 (playbackSpeeds[5])
-                            double fps = context.Fps;
-                            if (fps > 0)
-                                _playbackSpeeds[5] = TimeSpan.FromMilliseconds(1000.0 / fps);
-
-                            window.Dispatcher.Invoke(() =>
+                            // 실제 FPS 계산
+                            if (!_isPaused && _lastFrameTime != DateTime.MinValue)
                             {
-                                window.FileNameText.Tag = dialog.FileName;
-                                window.VideoImage.Source = frame;
-                                window.VideoImage.Stretch = System.Windows.Media.Stretch.Uniform;
-                                window.PlaybackSlider.Maximum = totalTime.TotalSeconds;
-                                if (!_isSliderDragging)
-                                    window.PlaybackSlider.Value = currentTime.TotalSeconds;
-                                window.CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
-                                window.TotalTimeText.Text = totalTime.ToString(@"hh\:mm\:ss");
-                                window.FrameNumberText.Text = frameNumber.ToString();
+                                var frameElapsed = DateTime.UtcNow - _lastFrameTime;
+                                if (frameElapsed.TotalSeconds > 0)
+                                    _actualFps = 1.0 / frameElapsed.TotalSeconds;
+                            }
+                            _lastFrameTime = DateTime.UtcNow;
 
-                                // 실제 FPS 계산
-                                if (!_isPaused && _lastFrameTime != DateTime.MinValue)
-                                {
-                                    var frameElapsed = DateTime.UtcNow - _lastFrameTime;
-                                    if (frameElapsed.TotalSeconds > 0)
-                                        _actualFps = 1.0 / frameElapsed.TotalSeconds;
-                                }
-                                _lastFrameTime = DateTime.UtcNow;
-
-                                // 속도 라벨도 즉시 업데이트
-                                SpeedController.UpdateSpeedLabel(window);
-                            });
-                        }, _cancellation.Token, () => window.Dispatcher.Invoke(() => Stop(window)));
-                    });
-                }
-                catch (Exception ex)
+                            // 속도 라벨도 즉시 업데이트
+                            SpeedController.UpdateSpeedLabel(window);
+                        });
+                    }, _cancellation.Token, () => window.Dispatcher.Invoke(() => Stop(window)));
+                });
+            }
+            catch (Exception ex)
+            {
+                // 예외 발생 시 사용자에게 알림
+                window.Dispatcher.Invoke(() =>
                 {
-                    // 예외 발생 시 사용자에게 알림
-                    window.Dispatcher.Invoke(() =>
-                    {
-                        string desc = LanguageManager.GetResourceString("Text.OpenVideoFailed");
-                        string title = LanguageManager.GetResourceString("Text.Error");
-                        MessageBox.Show(window, $"{desc}:\n{ex.Message}", title, MessageBoxButton.OK, MessageBoxImage.Error);
-                        Stop(window);
-                    });
-                }
+                    string desc = LanguageManager.GetResourceString("Text.OpenVideoFailed");
+                    string title = LanguageManager.GetResourceString("Text.Error");
+                    MessageBox.Show(window, $"{desc}:\n{ex.Message}", title, MessageBoxButton.OK, MessageBoxImage.Error);
+                    Stop(window);
+                });
             }
         }
 

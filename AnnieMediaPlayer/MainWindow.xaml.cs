@@ -170,5 +170,24 @@ namespace AnnieMediaPlayer
             await Task.Delay(300);
             ThemeToggleButton.IsEnabled = true;
         }
+
+        private void BaseWindow_DragEnter(object sender, DragEventArgs e)
+        {
+
+        }
+
+        private void BaseWindow_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files.Length > 0)
+                {
+                    // 비디오 파일 열기
+                    string filePath = files[0];
+                    VideoPlayerController.OpenVideo(this, filePath);
+                }
+            }
+        }
     }
 }

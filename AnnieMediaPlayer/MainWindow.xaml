@@ -12,6 +12,9 @@
         SizeChanged="Window_SizeChanged"
         PreviewKeyDown="Window_PreviewKeyDown"
         Loaded="Window_Loaded"
+        AllowDrop="True"
+        DragDrop.DragEnter="BaseWindow_DragEnter"
+        DragDrop.Drop="BaseWindow_Drop"
         Closing="Window_Closing">
     <local:BaseWindow.Resources>
         <local:FileNameConverter x:Key="FileNameConverter"/>
