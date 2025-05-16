@@ -70,14 +70,14 @@
                     <!-- 🎛 컨트롤 영역 -->
                     <StackPanel Grid.Row="1" Background="Transparent" Margin="15">
                         <!-- 재생 슬라이더 -->
-                        <Slider Name="PlaybackSlider" Style="{StaticResource CustomSliderStyle}"
+                        <local:DraggableSlider x:Name="PlaybackSlider" Style="{StaticResource DraggableSliderDefaultStyle}"
                             IsEnabled="{Binding Path=IsEnabled, ElementName=StopButton}"
+                            Width="Auto"
                             Minimum="0" Maximum="100" Value="0"
                             Margin="0,0,0,4"
                             PreviewMouseMove="PlaybackSlider_PreviewMouseMove"
                             MouseLeave="PlaybackSlider_MouseLeave"
-                            PreviewMouseDown="PlaybackSlider_PreviewMouseDown"
-                            PreviewMouseUp="PlaybackSlider_PreviewMouseUp"
+                            DragStateChanged="PlaybackSlider_DragStateChanged"
                             ValueChanged="PlaybackSlider_ValueChanged"/>
                         <Popup Name="PreviewSliderPopup" Placement="Absolute" IsOpen="{Binding ElementName=PlaybackSlider, Path=IsMouseOver, Mode=OneWay}"/>
 

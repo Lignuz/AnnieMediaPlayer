@@ -28,7 +28,8 @@ namespace AnnieMediaPlayer
             TimeSpan.FromSeconds(1),
             TimeSpan.FromMilliseconds(33.3) // placeholder, will override with actual FPS on open
         };
-        private static int _speedIndex = 4;
+        private const int _normalSpeedIndex = 5; // 기본 속도 (x1.0)
+        private static int _speedIndex = _normalSpeedIndex;
 
         private static ConcurrentQueue<MouseEventArgs> _previewQueue = new ConcurrentQueue<MouseEventArgs>();
         private static bool _isPreviewing = false;
@@ -36,10 +37,14 @@ namespace AnnieMediaPlayer
         public static string FilePath => _filePath;
         public static bool PauseForSeeking { get; set; } = false;
         public static bool WaitForPauseForSeeking { get; set; } = false;
+        
         private static DateTime _lastFrameTime = DateTime.MinValue;
         private static double _actualFps = 0.0;
-        public static double ActualFps => _actualFps;
+        private static int _currentFrameIndex = 0; // 현재 비디오 프레임 인덱스를 저장할 필드
         private static TimeSpan _currentVideoTime = TimeSpan.Zero; // 현재 비디오 시간을 저장할 필드
+
+        public static double ActualFps => _actualFps;
+        public static int CurrentFrameIndex => _currentFrameIndex;
         public static TimeSpan CurrentVideoTime => _currentVideoTime;
         public static DateTime PlaybackStartTime { get; set; }
         public static FFmpegFrameGrabber? ffmpegFrameGrabber { get; private set; } = null;
@@ -94,11 +99,12 @@ namespace AnnieMediaPlayer
                         unsafe { _streamTimeBase = context.FormatContext->streams[context.VideoStreamIndex]->time_base; }
                         _videoDuration = totalTime;
                         _currentVideoTime = currentTime; // 현재 비디오 시간 업데이트
+                        _currentFrameIndex = frameNumber;
 
-                        // ⚠ FPS 기반 딜레이 재계산 (playbackSpeeds[5])
+                        // ⚠ FPS 기반 딜레이 재계산 (playbackSpeeds[_baseSpeedIndex])
                         double fps = context.Fps;
                         if (fps > 0)
-                            _playbackSpeeds[5] = TimeSpan.FromMilliseconds(1000.0 / fps);
+                            _playbackSpeeds[_normalSpeedIndex] = TimeSpan.FromMilliseconds(1000.0 / fps);
 
                         window.Dispatcher.Invoke(() =>
                         {
@@ -162,6 +168,7 @@ namespace AnnieMediaPlayer
 
             _actualFps = 0.0;
             _lastFrameTime = DateTime.MinValue;
+            _currentFrameIndex = 0;
             _currentVideoTime = TimeSpan.Zero;
             WaitForPauseForSeeking = false;
 
@@ -289,37 +296,9 @@ namespace AnnieMediaPlayer
         {
             _isSliderDragging = false;
 
-            if (_isPlaying && _context != null)
-            {
-                PauseForSeeking = true;
-                Thread.Sleep(50); // 디코딩 쓰레드가 멈출 시간을 줌
-
-                try
-                {
-                    var seekTime = TimeSpan.FromSeconds(window.PlaybackSlider.Value);
-                    var timeBase = _streamTimeBase;
-                    long seekTarget = (long)(seekTime.TotalSeconds / ffmpeg.av_q2d(timeBase));
-
-                    var bmp = FFmpegHelper.SeekAndDecodeFrame(_context, seekTarget, out int frameNum, out TimeSpan currentTime);
-                    if (bmp != null)
-                    {
-                        _currentVideoTime = currentTime;
-                        PlaybackStartTime = DateTime.UtcNow - _currentVideoTime;
-                        WaitForPauseForSeeking = true;
-
-                        window.Dispatcher.Invoke(() =>
-                        {
-                            window.VideoImage.Source = bmp;
-                            window.CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
-                            window.FrameNumberText.Text = frameNum.ToString();
-                        });
-                    }
-                }
-                finally
-                {
-                    PauseForSeeking = false;
-                }
-            }
+            // 드래그 해서 탐색할 때에는 키프레임 위치로 이동하는데
+            // 완료되었을 때에 슬라이더의 위치를 실제 재생 위치에 맞게 동기화 해 줍니다.
+            window.PlaybackSlider.Value = _currentVideoTime.TotalSeconds;
         }
 
         public static void OnSliderValueChanged(MainWindow window)
@@ -328,6 +307,39 @@ namespace AnnieMediaPlayer
             {
                 var time = TimeSpan.FromSeconds(window.PlaybackSlider.Value);
                 window.CurrentTimeText.Text = time.ToString(@"hh\:mm\:ss");
+
+                if (_isPlaying && _context != null)
+                {
+                    PauseForSeeking = true;
+                    Thread.Sleep(50); // 디코딩 쓰레드가 멈출 시간을 줌
+
+                    try
+                    {
+                        var seekTime = TimeSpan.FromSeconds(window.PlaybackSlider.Value);
+                        var timeBase = _streamTimeBase;
+                        long seekTarget = (long)(seekTime.TotalSeconds / ffmpeg.av_q2d(timeBase));
+
+                        var bmp = FFmpegHelper.SeekAndDecodeFrame(_context, seekTarget, out int frameNum, out TimeSpan currentTime);
+                        if (bmp != null)
+                        {
+                            _currentFrameIndex = frameNum;
+                            _currentVideoTime = currentTime;
+                            PlaybackStartTime = DateTime.UtcNow - _currentVideoTime;
+                            WaitForPauseForSeeking = true;
+
+                            window.Dispatcher.Invoke(() =>
+                            {
+                                window.VideoImage.Source = bmp;
+                                window.CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
+                                window.FrameNumberText.Text = frameNum.ToString();
+                            });
+                        }
+                    }
+                    finally
+                    {
+                        PauseForSeeking = false;
+                    }
+                }
             }
         }
 
@@ -335,7 +347,7 @@ namespace AnnieMediaPlayer
         public static bool IsPlaying => _isPlaying;
         public static bool IsPaused => _isPaused;
         public static int SpeedIndex => _speedIndex;
-        public static bool IsNormalSpeed => SpeedIndex == 5; // 1배속인지 확인하는 속성
+        public static bool IsNormalSpeed => SpeedIndex == _normalSpeedIndex; // 1배속인지 확인하는 속성
         public static TimeSpan[] PlaybackSpeeds => _playbackSpeeds;
         public static TimeSpan VideoDuration => _videoDuration;
         public static AVRational streamTimeBase => _streamTimeBase;

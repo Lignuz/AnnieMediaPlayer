@@ -52,8 +52,16 @@ namespace AnnieMediaPlayer
 
         private void PlaybackSlider_PreviewMouseMove(object sender, MouseEventArgs e) => VideoPlayerController.OnSliderMouseHover(this, e);
         private void PlaybackSlider_MouseLeave(object sender, MouseEventArgs e) => VideoPlayerController.OnSliderMouseLeave(this, e);
-        private void PlaybackSlider_PreviewMouseDown(object sender, MouseButtonEventArgs e) => VideoPlayerController.OnSliderDragStart(this);
-        private void PlaybackSlider_PreviewMouseUp(object sender, MouseButtonEventArgs e) => VideoPlayerController.OnSliderDragEnd(this);
+        private void PlaybackSlider_DragStateChanged(object sender, EventArgs e)
+        {
+            if (sender == PlaybackSlider)
+            {
+                if (PlaybackSlider.isDragging)
+                    VideoPlayerController.OnSliderDragStart(this);
+                else
+                    VideoPlayerController.OnSliderDragEnd(this);
+            }
+        }
         private void PlaybackSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => VideoPlayerController.OnSliderValueChanged(this);
 
         private void Window_StateChanged(object sender, EventArgs e) => UpdateMaxRestoreButton();
