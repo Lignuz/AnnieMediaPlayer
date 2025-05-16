@@ -24,6 +24,12 @@ namespace AnnieMediaPlayer
                 };
                 win.ShowDialog();
             }
+            else if (e.Key == Key.F4)
+            {
+                // 정지
+                if (VideoPlayerController.IsPlaying)
+                    VideoPlayerController.Stop(window);
+            }
             else if (e.Key == Key.Space)
             {
                 // Ctrl + Space : 정지
@@ -44,6 +50,8 @@ namespace AnnieMediaPlayer
             }
             else if (e.Key == Key.Left || e.Key == Key.Right)
             {
+                // 1 프레임씩 전후 이동
+                // 일시 정지 상태에만 동작합니다.
                 if (VideoPlayerController.IsPlaying && VideoPlayerController.IsPaused && VideoPlayerController.Context != null)
                 {
                     double step = 1.0 / VideoPlayerController.Context.Fps;
