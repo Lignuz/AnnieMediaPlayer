@@ -77,6 +77,20 @@ namespace AnnieMediaPlayer.Options
                 }
             }
         }
+
+        private bool _useSeekFramePreview;
+        public bool UseSeekFramePreview
+        {
+            get { return _useSeekFramePreview; }
+            set
+            {
+                if (value != _useSeekFramePreview)
+                {
+                    _useSeekFramePreview = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
     }
 
     public class EnumToLocalizedStringConverter : IValueConverter

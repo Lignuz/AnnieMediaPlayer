@@ -215,13 +215,12 @@ namespace AnnieMediaPlayer
         // 오버레이 컨트롤을 위한 타이머와 플래그
         private bool _isControlsVisible = false;
         private bool _isMouseOverControls = false;
-        private System.Windows.Threading.DispatcherTimer _hideControlsTimer;
+        private System.Windows.Threading.DispatcherTimer _hideControlsTimer = new System.Windows.Threading.DispatcherTimer();
 
         // 오버레이를 위한 컨트롤 초기화 설정
         private void InitializeOverlayControls()
         {
-            // 컨트롤 숨김 타이머 초기화
-            _hideControlsTimer = new System.Windows.Threading.DispatcherTimer();
+            // 컨트롤 숨김 타이머 기본 설정 
             _hideControlsTimer.Interval = TimeSpan.FromSeconds(0.5);
             _hideControlsTimer.Tick += HideControlsTimer_Tick;
 

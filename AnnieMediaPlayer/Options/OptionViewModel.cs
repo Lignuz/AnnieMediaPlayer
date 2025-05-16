@@ -24,7 +24,7 @@ namespace AnnieMediaPlayer.Options
             }
         }
 
-        private Option _currentOption;
+        private Option _currentOption = null!; // CS8618 방지
         public Option CurrentOption
         {
             get { return _currentOption; }
@@ -90,6 +90,10 @@ namespace AnnieMediaPlayer.Options
                 case nameof(Option.UseOverlayControl):
                     HandleUseOverlayControlChanged(CurrentOption.UseOverlayControl);
                     break;
+                case (nameof(Option.UseSeekFramePreview)):
+                    HandleSeekFramePreviewChanged(CurrentOption.UseSeekFramePreview);
+                    break;
+
                 default:
                     System.Diagnostics.Debug.WriteLine($"알 수 없는 프로퍼티 변경: {e.PropertyName}");
                     break;
@@ -117,6 +121,16 @@ namespace AnnieMediaPlayer.Options
                 UseOverlayControlChanged(this, EventArgs.Empty);
             }
         }
+
+        public event EventHandler? UseSeekFramePreviewChanged;
+        private void HandleSeekFramePreviewChanged(bool newUseOverlayControl)
+        {
+            if (UseSeekFramePreviewChanged != null)
+            {
+                UseSeekFramePreviewChanged(this, EventArgs.Empty);
+            }
+        }
+        
 
         // 전체 옵션 적용 메서드
         private void ApplyAllOptions(Option? currentOptions)

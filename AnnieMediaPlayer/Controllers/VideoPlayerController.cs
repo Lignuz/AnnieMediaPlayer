@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Collections.Concurrent;
 using System.Windows.Media;
+using AnnieMediaPlayer.Options;
 
 namespace AnnieMediaPlayer
 {
@@ -188,6 +189,9 @@ namespace AnnieMediaPlayer
 
         public static void OnSliderMouseHover(MainWindow window, MouseEventArgs e)
         {
+            if (OptionViewModel.Instance.CurrentOption.UseSeekFramePreview == false)
+                return;
+
             if (_isPlaying && _context != null)
             {
                 _previewQueue.Enqueue(e);
