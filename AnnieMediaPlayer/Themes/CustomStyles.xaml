@@ -51,9 +51,12 @@
                         SnapsToDevicePixels="True"
                         Padding="0"
                         Effect="{DynamicResource ActiveWindowShadow}">
-                        <AdornerDecorator>
-                            <ContentPresenter />
-                        </AdornerDecorator>
+                        <!-- Clip 대상 -->
+                        <Grid x:Name="ContentClippingHost">
+                            <AdornerDecorator>
+                                <ContentPresenter />
+                            </AdornerDecorator>
+                        </Grid>
                     </Border>
 
                     <ControlTemplate.Triggers>

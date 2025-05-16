@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -33,6 +34,27 @@ namespace AnnieMediaPlayer
 
             this.Activated += (_, _) => IsWindowActive = true;
             this.Deactivated += (_, _) => IsWindowActive = false;
+        }
+
+        public override void OnApplyTemplate()
+        {
+            base.OnApplyTemplate();
+
+            var clipHost = GetTemplateChild("ContentClippingHost") as FrameworkElement;
+            var border = GetTemplateChild("RootBorder") as Border;
+
+            if (clipHost != null && border != null)
+            {
+                clipHost.SizeChanged += (s, e) =>
+                {
+                    clipHost.Clip = new RectangleGeometry
+                    {
+                        Rect = new Rect(0, 0, clipHost.ActualWidth, clipHost.ActualHeight),
+                        RadiusX = border.CornerRadius.TopLeft,
+                        RadiusY = border.CornerRadius.TopLeft
+                    };
+                };
+            }
         }
 
         private void OnTitleBarDrag(object sender, MouseButtonEventArgs e)
