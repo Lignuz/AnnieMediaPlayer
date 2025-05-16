@@ -255,9 +255,9 @@ namespace AnnieMediaPlayer
                                     Background = (SolidColorBrush)Application.Current.MainWindow.FindResource("BackgroundBrush")
                                 };
                                 grid.Children.Add(textblock);
-                                
+
                                 // set to popup
-                                var target = window.VideoImageContainer;
+                                var target = window.PlaybackSlider;
                                 mousePos = e.GetPosition(target);
 
                                 double targetWidth = target.ActualWidth;
@@ -266,11 +266,13 @@ namespace AnnieMediaPlayer
                                 double popupWidth = size.Width + (grid.Margin.Left + grid.Margin.Right);
                                 double popupHeight = size.Height + (grid.Margin.Top + grid.Margin.Bottom);
 
+                                // 재생 슬라이더 기준 10px 위로 배치
                                 double offsetX = mousePos.X - popupWidth / 2;
-                                double offsetY = targetHeight - (popupHeight - 5);
+                                double offsetY = -(popupHeight + 10);
                                 offsetX = Math.Max(0, Math.Min(offsetX, targetWidth - popupWidth));
 
-                                Point screenPos = target.PointToScreen(new Point (offsetX, offsetY));
+                                Point screenPos = target.PointToScreen(new Point(offsetX, offsetY));
+
                                 window.PreviewSliderPopup.HorizontalOffset = screenPos.X;
                                 window.PreviewSliderPopup.VerticalOffset = screenPos.Y;
                                 window.PreviewSliderPopup.Child = grid;

@@ -97,7 +97,7 @@
                                 MouseLeave="PlaybackSlider_MouseLeave"
                                 DragStateChanged="PlaybackSlider_DragStateChanged"
                                 ValueChanged="PlaybackSlider_ValueChanged"/>
-                            <Popup Name="PreviewSliderPopup" Placement="Absolute" IsOpen="{Binding ElementName=PlaybackSlider, Path=IsMouseOver, Mode=OneWay}"/>
+                            <Popup Name="PreviewSliderPopup" Placement="Absolute" Focusable="False" IsOpen="{Binding ElementName=PlaybackSlider, Path=IsMouseOver, Mode=OneWay}"/>
 
                             <!-- 시간 표시 -->
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
