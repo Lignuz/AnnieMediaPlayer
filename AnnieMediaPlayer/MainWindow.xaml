@@ -24,14 +24,16 @@
         <Grid>
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="40"/>
                     <!-- 커스텀 타이틀바 -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- 영상 출력 영역 -->
                     <RowDefinition Height="*"/>
-                    <!-- 영상 + 컨트롤 영역 -->
+                    <!-- 컨트롤 영역 -->
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- 🎀 커스텀 타이틀바 -->
-                <DockPanel Background="Transparent" Grid.Row="0" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" MouseMove="TitleBar_MouseMove" MouseLeftButtonUp="TitleBar_MouseLeftButtonUp" LastChildFill="False">
+                <DockPanel Background="Transparent" Grid.Row="0" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" MouseMove="TitleBar_MouseMove" MouseLeftButtonUp="TitleBar_MouseLeftButtonUp" LastChildFill="False" Height="40">
                     <!-- 🎨 아이콘 + 제목 묶기 -->
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
                         <Image Source="pack://application:,,,/Resources/AnnieMediaPlayer.ico" Width="20" Height="20" Margin="0,0,6,0" />
@@ -39,6 +41,7 @@
                         <TextBlock Name="FileNameText" VerticalAlignment="Center" Margin="20,0,0,0" Text="{Binding ElementName=FileNameText, Path=Tag, Converter={StaticResource FileNameConverter}}" ToolTip="{Binding ElementName=FileNameText, Path=Tag}"/>
                         <TextBlock Name="ActualFpsText" VerticalAlignment="Center" Margin="10,0,0,0"/>
                     </StackPanel>
+                    <!-- 오른쪽에 있는 버튼들 -->
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="0,0,5,0">
                         <Button Style="{StaticResource TitleBarButtonStyle}" Content="{StaticResource SettingIconData}" Width="24" Height="24" Margin="6,0,10,0" Click="SettingButton_Click"/>
                         <Button Name="ThemeToggleButton" Style="{StaticResource TitleBarButtonStyle}" Content="{StaticResource ThemeLightIconData}" local:ButtonHelper.IconMode="Fill" Click="ThemeToggleButton_Click" Margin="0,0,2,0" MinWidth="30" Width="30">
@@ -53,20 +56,15 @@
                     </StackPanel>
                 </DockPanel>
 
-                <!-- 🎞 영상 + 컨트롤 -->
+                <!-- 🎞 영상 출력 영역 -->
                 <Grid Grid.Row="1">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*" />
-                        <!-- 영상 표시 영역 -->
-                        <RowDefinition Height="Auto" />
-                        <!-- 컨트롤 영역 -->
-                    </Grid.RowDefinitions>
-
-                    <!-- 🎞 영상 표시 영역 -->
                     <Border Name="VideoImageContainer" Grid.Row="0" Background="Black">
                         <Image Name="VideoImage" Stretch="Uniform" />
                     </Border>
+                </Grid>
 
+                <!-- 컨트롤 영역 -->
+                <Grid Grid.Row="2">
                     <!-- 🎛 컨트롤 영역 -->
                     <StackPanel Grid.Row="1" Background="Transparent" Margin="15">
                         <!-- 재생 슬라이더 -->
