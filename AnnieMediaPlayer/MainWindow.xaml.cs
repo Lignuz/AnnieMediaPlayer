@@ -47,6 +47,15 @@ namespace AnnieMediaPlayer
             VideoPlayerController.Stop(this);
         }
 
+        // 기본영역 드래그로 이동 지원
+        private void win_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed && e.ChangedButton == MouseButton.Left)
+            {
+                DragMove();
+            }
+        }
+
         private void OpenVideo_Click(object sender, RoutedEventArgs e) => VideoPlayerController.OpenVideo(this);
         private void PlayPause_Click(object sender, RoutedEventArgs e) => VideoPlayerController.TogglePlayPause(this);
         private void Stop_Click(object sender, RoutedEventArgs e) => VideoPlayerController.Stop(this);
