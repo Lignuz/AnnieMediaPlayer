@@ -15,7 +15,8 @@
         AllowDrop="True"
         DragDrop.DragEnter="BaseWindow_DragEnter"
         DragDrop.Drop="BaseWindow_Drop"
-        Closing="Window_Closing">
+        Closing="Window_Closing"
+        x:Name="win">
     <local:BaseWindow.Resources>
         <local:FileNameConverter x:Key="FileNameConverter"/>
     </local:BaseWindow.Resources>
@@ -33,89 +34,93 @@
                 </Grid.RowDefinitions>
 
                 <!-- 🎀 커스텀 타이틀바 -->
-                <DockPanel Background="Transparent" Grid.Row="0" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" MouseMove="TitleBar_MouseMove" MouseLeftButtonUp="TitleBar_MouseLeftButtonUp" LastChildFill="False" Height="40">
-                    <!-- 🎨 아이콘 + 제목 묶기 -->
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
-                        <Image Source="pack://application:,,,/Resources/AnnieMediaPlayer.ico" Width="20" Height="20" Margin="0,0,6,0" />
-                        <TextBlock Text="{DynamicResource Text.AppTitle}" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="Bold"/>
-                        <TextBlock Name="FileNameText" VerticalAlignment="Center" Margin="20,0,0,0" Text="{Binding ElementName=FileNameText, Path=Tag, Converter={StaticResource FileNameConverter}}" ToolTip="{Binding ElementName=FileNameText, Path=Tag}"/>
-                        <TextBlock Name="ActualFpsText" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                    </StackPanel>
-                    <!-- 오른쪽에 있는 버튼들 -->
-                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="0,0,5,0">
-                        <Button Style="{StaticResource TitleBarButtonStyle}" Content="{StaticResource SettingIconData}" Width="24" Height="24" Margin="6,0,10,0" Click="SettingButton_Click"/>
-                        <Button Name="ThemeToggleButton" Style="{StaticResource TitleBarButtonStyle}" Content="{StaticResource ThemeLightIconData}" local:ButtonHelper.IconMode="Fill" Click="ThemeToggleButton_Click" Margin="0,0,2,0" MinWidth="30" Width="30">
-                            <Button.RenderTransform>
-                                <RotateTransform x:Name="ThemeToggleRotate" CenterX="0.5" CenterY="0.5"/>
-                            </Button.RenderTransform>
-                            <Button.RenderTransformOrigin>0.5,0.5</Button.RenderTransformOrigin>
-                        </Button>
-                        <Button Style="{StaticResource TitleBarButtonStyle}" Content="{StaticResource MinimizeIconData}" Click="MinimizeButton_Click" Margin="0,0,2,0"/>
-                        <Button x:Name="MaxRestoreButton" Style="{StaticResource TitleBarButtonStyle}" Content="{StaticResource MaximizeIconData}" Click="MaxRestoreButton_Click" Margin="0,0,2,0"/>
-                        <Button Style="{StaticResource CloseButtonStyle}" Content="{StaticResource CloseIconData}" Click="CloseButton_Click"/>
-                    </StackPanel>
-                </DockPanel>
+                <Grid Grid.Row="0" x:Name="grid_top">
+                    <DockPanel x:Name="panel_titlebar" Background="{DynamicResource BackgroundBrush}" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" MouseMove="TitleBar_MouseMove" MouseLeftButtonUp="TitleBar_MouseLeftButtonUp" LastChildFill="False" Height="40">
+                        <!-- 🎨 아이콘 + 제목 묶기 -->
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
+                            <Image Source="pack://application:,,,/Resources/AnnieMediaPlayer.ico" Width="20" Height="20" Margin="0,0,6,0" />
+                            <TextBlock Text="{DynamicResource Text.AppTitle}" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="Bold"/>
+                            <TextBlock Name="FileNameText" VerticalAlignment="Center" Margin="20,0,0,0" Text="{Binding ElementName=FileNameText, Path=Tag, Converter={StaticResource FileNameConverter}}" ToolTip="{Binding ElementName=FileNameText, Path=Tag}"/>
+                            <TextBlock Name="ActualFpsText" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                        </StackPanel>
+                        <!-- 오른쪽에 있는 버튼들 -->
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="0,0,5,0">
+                            <Button Style="{StaticResource TitleBarButtonStyle}" Content="{StaticResource SettingIconData}" Width="24" Height="24" Margin="6,0,10,0" Click="SettingButton_Click"/>
+                            <Button Name="ThemeToggleButton" Style="{StaticResource TitleBarButtonStyle}" Content="{StaticResource ThemeLightIconData}" local:ButtonHelper.IconMode="Fill" Click="ThemeToggleButton_Click" Margin="0,0,2,0" MinWidth="30" Width="30">
+                                <Button.RenderTransform>
+                                    <RotateTransform x:Name="ThemeToggleRotate" CenterX="0.5" CenterY="0.5"/>
+                                </Button.RenderTransform>
+                                <Button.RenderTransformOrigin>0.5,0.5</Button.RenderTransformOrigin>
+                            </Button>
+                            <Button Style="{StaticResource TitleBarButtonStyle}" Content="{StaticResource MinimizeIconData}" Click="MinimizeButton_Click" Margin="0,0,2,0"/>
+                            <Button x:Name="MaxRestoreButton" Style="{StaticResource TitleBarButtonStyle}" Content="{StaticResource MaximizeIconData}" Click="MaxRestoreButton_Click" Margin="0,0,2,0"/>
+                            <Button Style="{StaticResource CloseButtonStyle}" Content="{StaticResource CloseIconData}" Click="CloseButton_Click"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Grid>
 
                 <!-- 🎞 영상 출력 영역 -->
-                <Grid Grid.Row="1">
+                <Grid Grid.Row="1" x:Name="grid_center">
                     <Border Name="VideoImageContainer" Grid.Row="0" Background="Black">
                         <Image Name="VideoImage" Stretch="Uniform" />
                     </Border>
                 </Grid>
 
                 <!-- 컨트롤 영역 -->
-                <Grid Grid.Row="2">
+                <Grid Grid.Row="2" x:Name="grid_bottom">
                     <!-- 🎛 컨트롤 영역 -->
-                    <StackPanel Grid.Row="1" Background="Transparent" Margin="15">
-                        <!-- 재생 슬라이더 -->
-                        <local:DraggableSlider x:Name="PlaybackSlider" Style="{StaticResource DraggableSliderDefaultStyle}"
-                            IsEnabled="{Binding Path=IsEnabled, ElementName=StopButton}"
-                            Width="Auto"
-                            Minimum="0" Maximum="100" Value="0"
-                            Margin="0,0,0,4"
-                            PreviewMouseMove="PlaybackSlider_PreviewMouseMove"
-                            MouseLeave="PlaybackSlider_MouseLeave"
-                            DragStateChanged="PlaybackSlider_DragStateChanged"
-                            ValueChanged="PlaybackSlider_ValueChanged"/>
-                        <Popup Name="PreviewSliderPopup" Placement="Absolute" IsOpen="{Binding ElementName=PlaybackSlider, Path=IsMouseOver, Mode=OneWay}"/>
+                    <Grid x:Name="panel_control" Background="{DynamicResource BackgroundBrush}">
+                        <StackPanel Grid.Row="1" Margin="15">
+                            <!-- 재생 슬라이더 -->
+                            <local:DraggableSlider x:Name="PlaybackSlider" Style="{StaticResource DraggableSliderDefaultStyle}"
+                                IsEnabled="{Binding Path=IsEnabled, ElementName=StopButton}"
+                                Width="Auto"
+                                Minimum="0" Maximum="100" Value="0"
+                                Margin="0,0,0,4"
+                                PreviewMouseMove="PlaybackSlider_PreviewMouseMove"
+                                MouseLeave="PlaybackSlider_MouseLeave"
+                                DragStateChanged="PlaybackSlider_DragStateChanged"
+                                ValueChanged="PlaybackSlider_ValueChanged"/>
+                            <Popup Name="PreviewSliderPopup" Placement="Absolute" IsOpen="{Binding ElementName=PlaybackSlider, Path=IsMouseOver, Mode=OneWay}"/>
 
-                        <!-- 시간 표시 -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Name="CurrentTimeText" Text="00:00:00" FontWeight="Bold" />
-                            <TextBlock Text=" / " />
-                            <TextBlock Name="TotalTimeText" Text="00:00:00" Margin="0,0,10,0"/>
-                            <TextBlock>
-                                <Run Text="{DynamicResource Text.Frame}"/>
-                                <Run Text=":"/>
-                            </TextBlock>
-                            <TextBlock Name="FrameNumberText" Text="0" FontWeight="Bold" Margin="5,0"/>
-                        </StackPanel>
-
-                        <!-- 버튼 + 속도 컨트롤 -->
-                        <DockPanel LastChildFill="False">
-                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" HorizontalAlignment="Left">
-                                <Button Name="OpenButton" Content="{DynamicResource Text.Open}" Click="OpenVideo_Click" Width="80" Margin="0,0,10,0"/>
-                                <Button Name="PlayPauseButton" Content="{DynamicResource Text.Play}" Click="PlayPause_Click" Width="80" Margin="0,0,10,0"/>
-                                <Button Name="StopButton" Content="{DynamicResource Text.Stop}" Click="Stop_Click" Width="80" Margin="0,0,10,0"/>
-                            </StackPanel>
-
-                            <!-- 재생 속도 조절 -->
-                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
-                                <TextBlock VerticalAlignment="Center" Margin="10,0,4,0" FontWeight="SemiBold">
-                                    <Run Text="{DynamicResource Text.Speed}"/>
+                            <!-- 시간 표시 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Name="CurrentTimeText" Text="00:00:00" FontWeight="Bold" />
+                                <TextBlock Text=" / " />
+                                <TextBlock Name="TotalTimeText" Text="00:00:00" Margin="0,0,10,0"/>
+                                <TextBlock>
+                                    <Run Text="{DynamicResource Text.Frame}"/>
                                     <Run Text=":"/>
                                 </TextBlock>
-                                <Button Content="-" Width="30" Click="SpeedDown_Click"/>
-                                <TextBlock Name="SpeedLabel" Width="90" TextAlignment="Center" VerticalAlignment="Center" Padding="2,0" Margin="5,0" FontWeight="Medium">
-                                    <Run Text="1"/>
-                                    <Run Text="{DynamicResource Text.Sec}"/>
-                                    <Run Text="/"/>
-                                    <Run Text="{DynamicResource Text.Frame}"/>
-                                </TextBlock>
-                                <Button Content="+" Width="30" Click="SpeedUp_Click"/>
+                                <TextBlock Name="FrameNumberText" Text="0" FontWeight="Bold" Margin="5,0"/>
                             </StackPanel>
-                        </DockPanel>
-                    </StackPanel>
+
+                            <!-- 버튼 + 속도 컨트롤 -->
+                            <DockPanel LastChildFill="False">
+                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" HorizontalAlignment="Left">
+                                    <Button Name="OpenButton" Content="{DynamicResource Text.Open}" Click="OpenVideo_Click" Width="80" Margin="0,0,10,0"/>
+                                    <Button Name="PlayPauseButton" Content="{DynamicResource Text.Play}" Click="PlayPause_Click" Width="80" Margin="0,0,10,0"/>
+                                    <Button Name="StopButton" Content="{DynamicResource Text.Stop}" Click="Stop_Click" Width="80" Margin="0,0,10,0"/>
+                                </StackPanel>
+
+                                <!-- 재생 속도 조절 -->
+                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                                    <TextBlock VerticalAlignment="Center" Margin="10,0,4,0" FontWeight="SemiBold">
+                                        <Run Text="{DynamicResource Text.Speed}"/>
+                                        <Run Text=":"/>
+                                    </TextBlock>
+                                    <Button Content="-" Width="30" Click="SpeedDown_Click"/>
+                                    <TextBlock Name="SpeedLabel" Width="90" TextAlignment="Center" VerticalAlignment="Center" Padding="2,0" Margin="5,0" FontWeight="Medium">
+                                        <Run Text="1"/>
+                                        <Run Text="{DynamicResource Text.Sec}"/>
+                                        <Run Text="/"/>
+                                        <Run Text="{DynamicResource Text.Frame}"/>
+                                    </TextBlock>
+                                    <Button Content="+" Width="30" Click="SpeedUp_Click"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </StackPanel>
+                    </Grid>
                 </Grid>
             </Grid>
 
