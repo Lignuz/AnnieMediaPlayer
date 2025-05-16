@@ -44,6 +44,9 @@
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
+            
+            <!-- 오버레이 컨트롤 모드 -->
+            <CheckBox Content="{DynamicResource Text.Layout.OverlayControlToggle}" IsChecked="{Binding CurrentOption.UseOverlayControl}" Margin="0,15,0,5"/>
         </StackPanel>
     </Grid>
 </UserControl>

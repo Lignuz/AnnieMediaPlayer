@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AnnieMediaPlayer"
+        xmlns:option="clr-namespace:AnnieMediaPlayer.Options"
         mc:Ignorable="d"
         MinWidth="540" MinHeight="310"
         Title="Annie Media Player" Height="600" Width="900"
@@ -19,6 +20,14 @@
         x:Name="win">
     <local:BaseWindow.Resources>
         <local:FileNameConverter x:Key="FileNameConverter"/>
+
+        <!-- 오버레이 영역을 위한 애니메이션 정의 -->
+        <Storyboard x:Key="ShowControls">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.3" />
+        </Storyboard>
+        <Storyboard x:Key="HideControls">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.3" />
+        </Storyboard>
     </local:BaseWindow.Resources>
 
     <Border>
@@ -35,7 +44,10 @@
 
                 <!-- 🎀 커스텀 타이틀바 -->
                 <Grid Grid.Row="0" x:Name="grid_top">
-                    <DockPanel x:Name="panel_titlebar" Background="{DynamicResource BackgroundBrush}" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" MouseMove="TitleBar_MouseMove" MouseLeftButtonUp="TitleBar_MouseLeftButtonUp" LastChildFill="False" Height="40">
+                    <DockPanel x:Name="panel_titlebar" Background="{DynamicResource BackgroundBrush}" 
+                               MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" MouseMove="TitleBar_MouseMove" MouseLeftButtonUp="TitleBar_MouseLeftButtonUp" 
+                               PreviewMouseMove="overlayCheck_PreviewMouseMove" MouseEnter="panel_MouseEnter" MouseLeave="panel_MouseLeave"
+                               LastChildFill="False" Height="40">
                         <!-- 🎨 아이콘 + 제목 묶기 -->
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
                             <Image Source="pack://application:,,,/Resources/AnnieMediaPlayer.ico" Width="20" Height="20" Margin="0,0,6,0" />
@@ -61,15 +73,18 @@
 
                 <!-- 🎞 영상 출력 영역 -->
                 <Grid Grid.Row="1" x:Name="grid_center">
-                    <Border Name="VideoImageContainer" Grid.Row="0" Background="Black">
+                    <Border Name="VideoImageContainer" Background="Black">
                         <Image Name="VideoImage" Stretch="Uniform" />
                     </Border>
+                    <Grid x:Name="grid_center_top" Background="Transparent" VerticalAlignment="Top" Height="{Binding ElementName=panel_titlebar, Path=ActualHeight}" PreviewMouseMove="overlayCheck_PreviewMouseMove"/>
+                    <Grid x:Name="grid_center_bottom" Background="Transparent" VerticalAlignment="Bottom" Height="{Binding ElementName=panel_control, Path=ActualHeight}" PreviewMouseMove="overlayCheck_PreviewMouseMove"/>
                 </Grid>
 
                 <!-- 컨트롤 영역 -->
                 <Grid Grid.Row="2" x:Name="grid_bottom">
                     <!-- 🎛 컨트롤 영역 -->
-                    <Grid x:Name="panel_control" Background="{DynamicResource BackgroundBrush}">
+                    <Grid x:Name="panel_control" Background="{DynamicResource BackgroundBrush}"
+                          PreviewMouseMove="overlayCheck_PreviewMouseMove" MouseEnter="panel_MouseEnter" MouseLeave="panel_MouseLeave">
                         <StackPanel Grid.Row="1" Margin="15">
                             <!-- 재생 슬라이더 -->
                             <local:DraggableSlider x:Name="PlaybackSlider" Style="{StaticResource DraggableSliderDefaultStyle}"

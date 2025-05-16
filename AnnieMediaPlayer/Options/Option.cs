@@ -63,6 +63,20 @@ namespace AnnieMediaPlayer.Options
                 }
             }
         }
+
+        private bool _useOverlayControl;
+        public bool UseOverlayControl
+        {
+            get { return _useOverlayControl; }
+            set
+            {
+                if (value != _useOverlayControl)
+                {
+                    _useOverlayControl = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
     }
 
     public class EnumToLocalizedStringConverter : IValueConverter

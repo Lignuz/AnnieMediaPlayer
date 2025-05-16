@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -36,6 +37,9 @@ namespace AnnieMediaPlayer
                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
             };
             this.BeginAnimation(Window.OpacityProperty, fadeIn);
+
+            InitializeOverlayControls();
+            OptionViewModel.Instance.UseOverlayControlChanged += UseOverlayControlChanged;
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -195,6 +199,127 @@ namespace AnnieMediaPlayer
                     string filePath = files[0];
                     VideoPlayerController.OpenVideo(this, filePath);
                 }
+            }
+        }
+
+
+        // 오버레이 컨트롤을 위한 타이머와 플래그
+        private bool _isControlsVisible = false;
+        private bool _isMouseOverControls = false;
+        private System.Windows.Threading.DispatcherTimer _hideControlsTimer;
+
+        // 오버레이를 위한 컨트롤 초기화 설정
+        private void InitializeOverlayControls()
+        {
+            // 컨트롤 숨김 타이머 초기화
+            _hideControlsTimer = new System.Windows.Threading.DispatcherTimer();
+            _hideControlsTimer.Interval = TimeSpan.FromSeconds(0.5);
+            _hideControlsTimer.Tick += HideControlsTimer_Tick;
+
+            // 초기 상태 설정
+            panel_control.Opacity = 1;
+            panel_titlebar.Opacity = 1;
+        }
+
+        private void HideControlsTimer_Tick(object? sender, EventArgs e)
+        {
+            if (!_isMouseOverControls)
+            {
+                HideControls();
+            }
+            _hideControlsTimer.Stop();
+        }
+
+        private void ShowControls()
+        {
+            if (!_isControlsVisible)
+            {
+                _isControlsVisible = true;
+
+                var showTitleBarAnimation = (Storyboard)FindResource("ShowControls");
+                var showControlsAnimation = (Storyboard)FindResource("ShowControls");
+
+                showTitleBarAnimation.Begin(panel_control);
+                showControlsAnimation.Begin(panel_titlebar);
+
+                _hideControlsTimer.Stop();
+                _hideControlsTimer.Start();
+            }
+        }
+
+        private void HideControls()
+        {
+            if (_isControlsVisible && !_isMouseOverControls)
+            {
+                _isControlsVisible = false;
+
+                var hideTitleBarAnimation = (Storyboard)FindResource("HideControls");
+                var hideControlsAnimation = (Storyboard)FindResource("HideControls");
+
+                hideTitleBarAnimation.Begin(panel_control);
+                hideControlsAnimation.Begin(panel_titlebar);
+            }
+        }
+
+        private void overlayCheck_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (UseOverlayControl)
+            {
+                // 마우스가 움직일 때마다 컨트롤 표시
+                ShowControls();
+
+                // 마우스가 움직일 때마다 타이머 재설정
+                _hideControlsTimer.Stop();
+                _hideControlsTimer.Start();
+            }
+        }
+
+        private bool UseOverlayControl => OptionViewModel.Instance.CurrentOption.UseOverlayControl;
+        private void UseOverlayControlChanged(object? sender, EventArgs e)
+        {
+            Grid? oldParent = panel_control.Parent as Grid;
+            oldParent?.Children.Remove(panel_control);
+            oldParent = panel_titlebar.Parent as Grid;
+            oldParent?.Children.Remove(panel_titlebar);
+
+            // 기본 모드
+            if (UseOverlayControl == false)
+            {
+                grid_bottom.Children.Add(panel_control);
+                grid_top.Children.Add(panel_titlebar);
+
+                ShowControls();
+                _hideControlsTimer.Interval = TimeSpan.FromSeconds(0.5);
+                _hideControlsTimer.Stop();
+            }
+            // 컨트롤 자동 숨김 모드
+            else
+            {
+                grid_center_bottom.Children.Add(panel_control);
+                grid_center_top.Children.Add(panel_titlebar);
+
+                _isControlsVisible = true;
+                _isMouseOverControls = false;
+                _hideControlsTimer.Interval = TimeSpan.FromSeconds(0.1);
+                _hideControlsTimer.Start();
+            }
+        }
+
+        private void panel_MouseEnter(object sender, MouseEventArgs e)
+        {
+            if (UseOverlayControl)
+            {
+                _isMouseOverControls = true;
+                ShowControls();
+            }
+        }
+
+        private void panel_MouseLeave(object sender, MouseEventArgs e)
+        {
+            if (UseOverlayControl)
+            {
+                _isMouseOverControls = false;
+                _hideControlsTimer.Start();
             }
         }
     }

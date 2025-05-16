@@ -28,4 +28,6 @@
     <sys:String x:Key="Text.Themes.Light">라이트 모드</sys:String>
     <sys:String x:Key="Text.Themes.Dark">다크 모드</sys:String>
 
+    <sys:String x:Key="Text.Layout.OverlayControlToggle">화면 위 오버레이 컨트롤 표시 및 자동 숨김</sys:String>
+
 </ResourceDictionary>

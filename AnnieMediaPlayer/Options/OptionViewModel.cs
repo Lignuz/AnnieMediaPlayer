@@ -67,6 +67,7 @@ namespace AnnieMediaPlayer.Options
             {
                 SelectedTheme = Themes.Light,
                 SelectedLanguage = Languages.ko,
+                UseOverlayControl = false,
             };
         }
 
@@ -86,6 +87,9 @@ namespace AnnieMediaPlayer.Options
                 case nameof(Option.SelectedLanguage):
                     HandleLanguageChanged(CurrentOption.SelectedLanguage);
                     break;
+                case nameof(Option.UseOverlayControl):
+                    HandleUseOverlayControlChanged(CurrentOption.UseOverlayControl);
+                    break;
                 default:
                     System.Diagnostics.Debug.WriteLine($"알 수 없는 프로퍼티 변경: {e.PropertyName}");
                     break;
@@ -103,6 +107,15 @@ namespace AnnieMediaPlayer.Options
         private void HandleThemeChanged(Themes newTheme)
         {
             ThemeManager.ApplyThemeColors(newTheme);
+        }
+
+        public event EventHandler? UseOverlayControlChanged;
+        private void HandleUseOverlayControlChanged(bool newUseOverlayControl)
+        {
+            if (UseOverlayControlChanged != null)
+            {
+                UseOverlayControlChanged(this, EventArgs.Empty);
+            }
         }
 
         // 전체 옵션 적용 메서드

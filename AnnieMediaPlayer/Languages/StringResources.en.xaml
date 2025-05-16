@@ -28,4 +28,6 @@
     <sys:String x:Key="Text.Themes.Light">Light Mode</sys:String>
     <sys:String x:Key="Text.Themes.Dark">Dark Mode</sys:String>
 
+    <sys:String x:Key="Text.Layout.OverlayControlToggle">Show overlay controls on video and auto-hide</sys:String>
+
 </ResourceDictionary>
