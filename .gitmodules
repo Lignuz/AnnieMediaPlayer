@@ -1,0 +1,3 @@
+[submodule "ExternalLibs/FFME"]
+	path = ExternalLibs/FFME
+	url = https://github.com/Lignuz/ffmediaelement.git
