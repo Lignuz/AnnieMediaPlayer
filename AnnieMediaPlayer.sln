@@ -5,6 +5,12 @@ VisualStudioVersion = 17.8.34309.116
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnnieMediaPlayer", "AnnieMediaPlayer\AnnieMediaPlayer.csproj", "{1F4592AF-7058-45D3-9C9B-984E27BB9DDB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unosquare.FFME.Windows", "ExternalLibs\FFME\Unosquare.FFME.Windows\Unosquare.FFME.Windows.csproj", "{123307DB-7112-A9EF-2FC7-50EDCF70FD0C}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Unosquare.FFME.MediaElement", "ExternalLibs\FFME\Unosquare.FFME.MediaElement\Unosquare.FFME.MediaElement.shproj", "{4F84C6A1-BA3A-4A1E-84EE-7A7AA214F317}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Unosquare.FFME", "ExternalLibs\FFME\Unosquare.FFME\Unosquare.FFME.shproj", "{B14A1CD8-E4E8-44E1-805A-66D0FAFC6263}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,11 +21,21 @@ Global
 		{1F4592AF-7058-45D3-9C9B-984E27BB9DDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1F4592AF-7058-45D3-9C9B-984E27BB9DDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1F4592AF-7058-45D3-9C9B-984E27BB9DDB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{123307DB-7112-A9EF-2FC7-50EDCF70FD0C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{123307DB-7112-A9EF-2FC7-50EDCF70FD0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{123307DB-7112-A9EF-2FC7-50EDCF70FD0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{123307DB-7112-A9EF-2FC7-50EDCF70FD0C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2EDDF7BF-33C4-47B1-9845-2ACFD4C8C9A7}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		ExternalLibs\FFME\Unosquare.FFME.MediaElement\Unosquare.FFME.MediaElement.projitems*{123307db-7112-a9ef-2fc7-50edcf70fd0c}*SharedItemsImports = 5
+		ExternalLibs\FFME\Unosquare.FFME\Unosquare.FFME.projitems*{123307db-7112-a9ef-2fc7-50edcf70fd0c}*SharedItemsImports = 5
+		ExternalLibs\FFME\Unosquare.FFME.MediaElement\Unosquare.FFME.MediaElement.projitems*{4f84c6a1-ba3a-4a1e-84ee-7a7aa214f317}*SharedItemsImports = 13
+		ExternalLibs\FFME\Unosquare.FFME\Unosquare.FFME.projitems*{b14a1cd8-e4e8-44e1-805a-66d0fafc6263}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

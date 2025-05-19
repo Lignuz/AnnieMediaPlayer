@@ -36,6 +36,10 @@
 	</ItemGroup>
 	
 	<ItemGroup>
+	  <ProjectReference Include="..\ExternalLibs\FFME\Unosquare.FFME.Windows\Unosquare.FFME.Windows.csproj" />
+	</ItemGroup>
+	
+	<ItemGroup>
 	  <Page Update="Languages\StringResources.en.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	    <CopyToOutputDirectory></CopyToOutputDirectory>
