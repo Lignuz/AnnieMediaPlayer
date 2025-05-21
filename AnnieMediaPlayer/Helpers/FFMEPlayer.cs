@@ -1,19 +1,9 @@
-﻿using Unosquare.FFME;
+﻿using System.Diagnostics;
+using Unosquare.FFME;
 using Unosquare.FFME.Common;
 
 namespace AnnieMediaPlayer
 {
-    // 미디어 상태 정보 
-    public class FFMEPlayerInfo
-    {
-        public TimeSpan CurrentPosition { get; set; }
-        public TimeSpan TotalDuration { get; set; }
-        public long CurrentFrameNumber { get; set; }
-        public bool IsPlaying { get; set; }
-        public bool IsPaused { get; set; }
-        public MediaPlaybackState PlaybackState { get; set; }
-    }
-
     // FFMpeg 라이브러리 초기화
     public static class FFMELoader
     {
@@ -31,13 +21,14 @@ namespace AnnieMediaPlayer
 
     internal class FFMEPlayer
     {
-        public MediaElement? _mediaElement { get; private set; }
-
-        public event EventHandler<FFMEPlayerInfo>? OnMediaStatusChanged;
-        public event EventHandler? OnMediaOpened;
-        public event EventHandler? OnMediaEnded;
-        public event EventHandler<string>? OnMediaFailed;
-        public event EventHandler<long>? OnVideoFrameRendered;
+        public MediaElement _mediaElement { get; private set; } = null!;
+        
+        public event EventHandler<MediaOpenedEventArgs>? OnMediaOpened;
+        public event EventHandler<EventArgs>? OnMediaEnded;
+        public event EventHandler<MediaFailedEventArgs>? OnMediaFailed;
+        public event EventHandler<PositionChangedEventArgs>? OnPositionChanged;
+        public event EventHandler<MediaStateChangedEventArgs>? OnMediaStateChanged;
+        public event EventHandler<RenderingVideoEventArgs>? OnVideoFrameRendered;
 
         public long LastRenderedFrameNumber { get; private set; }
 
@@ -47,8 +38,8 @@ namespace AnnieMediaPlayer
 
             // MediaElement 이벤트 핸들러 등록
             _mediaElement.MediaOpened += MediaElement_MediaOpened;
-            _mediaElement.MediaFailed += MediaElement_MediaFailed;
             _mediaElement.MediaEnded += MediaElement_MediaEnded;
+            _mediaElement.MediaFailed += MediaElement_MediaFailed;
             _mediaElement.PositionChanged += MediaElement_PositionChanged;
             _mediaElement.MediaStateChanged += MediaElement_MediaStateChanged;
             _mediaElement.RenderingVideo += MediaElement_RenderingVideo;
@@ -61,13 +52,15 @@ namespace AnnieMediaPlayer
 
             try
             {
-                await _mediaElement.Open(new Uri(filePath));
-                await _mediaElement.Play();
-                UpdateMediaStatus();
+                bool ret = await _mediaElement.Open(new Uri(filePath));
+                if (ret)
+                {
+                    await _mediaElement.Play();
+                }
             }
             catch (Exception ex)
             {
-                OnMediaFailed?.Invoke(this, $"OpenAndPlay: {ex.Message}");
+                Debug.WriteLine($"OpenAndPlay: {ex}");
             }
         }
 
@@ -77,7 +70,6 @@ namespace AnnieMediaPlayer
             if (_mediaElement != null)
             {
                 await _mediaElement.Play();
-                UpdateMediaStatus();
             }
         }
 
@@ -87,7 +79,6 @@ namespace AnnieMediaPlayer
             if (_mediaElement != null)
             {
                 await _mediaElement.Pause();
-                UpdateMediaStatus();
             }
         }
 
@@ -97,7 +88,6 @@ namespace AnnieMediaPlayer
             if (_mediaElement != null)
             {
                 await _mediaElement.Stop();
-                UpdateMediaStatus();
             }
         }
 
@@ -107,20 +97,10 @@ namespace AnnieMediaPlayer
             if (_mediaElement == null)
                 return;
 
-            bool wasPlaying = !_mediaElement.IsPaused;
-
-            if (wasPlaying)
-                await _mediaElement.Pause();
-
             if (keyFrame)
                 await _mediaElement.SeekKeyFrame(position);
             else
                 await _mediaElement.SeekAccurate(position);
-
-            if (wasPlaying)
-                await _mediaElement.Play();
-
-            UpdateMediaStatus();
         }
 
         // 재생 속도를 설정합니다.
@@ -141,55 +121,40 @@ namespace AnnieMediaPlayer
             }
         }
 
-        // 미디어 상태를 업데이트하고 OnMediaStausChanged 이벤트를 발생시킵니다.
-        private void UpdateMediaStatus()
-        {
-            if (_mediaElement == null) return;
-
-            var info = new FFMEPlayerInfo
-            {
-                CurrentPosition = _mediaElement.Position,
-                TotalDuration = _mediaElement.NaturalDuration.HasValue ? _mediaElement.NaturalDuration.Value : TimeSpan.Zero,
-                IsPlaying = _mediaElement.MediaState == MediaPlaybackState.Play,
-                IsPaused = _mediaElement.MediaState == MediaPlaybackState.Pause,
-                PlaybackState = _mediaElement.MediaState,
-                CurrentFrameNumber = LastRenderedFrameNumber,
-            };
-            OnMediaStatusChanged?.Invoke(this, info);
-        }
-
         private void MediaElement_MediaOpened(object? sender, MediaOpenedEventArgs e)
         {
-            OnMediaOpened?.Invoke(this, EventArgs.Empty);
-            UpdateMediaStatus();
+            OnMediaOpened?.Invoke(this, e);
         }
 
         private void MediaElement_MediaEnded(object? sender, EventArgs e)
         {
-            OnMediaEnded?.Invoke(this, EventArgs.Empty);
-            UpdateMediaStatus();
+            OnMediaEnded?.Invoke(this, e);
         }
 
         private void MediaElement_MediaFailed(object? sender, MediaFailedEventArgs e)
         {
-            OnMediaFailed?.Invoke(this, e.ErrorException.Message);
-            UpdateMediaStatus();
+            OnMediaFailed?.Invoke(this, e);
         }
 
         private void MediaElement_PositionChanged(object? sender, PositionChangedEventArgs e)
         {
-            UpdateMediaStatus();
+            OnPositionChanged?.Invoke(this, e);
         }
 
         private void MediaElement_MediaStateChanged(object? sender, MediaStateChangedEventArgs e)
         {
-            UpdateMediaStatus();
+            if (e.MediaState == MediaPlaybackState.Close || 
+                e.MediaState == MediaPlaybackState.Stop)
+            {
+                LastRenderedFrameNumber = 0;
+            }
+            OnMediaStateChanged?.Invoke(this, e);
         }
 
         private void MediaElement_RenderingVideo(object? sender, RenderingVideoEventArgs e)
         {
             LastRenderedFrameNumber = e.PictureNumber;
-            OnVideoFrameRendered?.Invoke(this, e.PictureNumber);
+            OnVideoFrameRendered?.Invoke(this, e);
         }
 
         public async Task DisposeAsync()
@@ -204,7 +169,9 @@ namespace AnnieMediaPlayer
                 _mediaElement.RenderingVideo -= MediaElement_RenderingVideo;
 
                 await _mediaElement.Close();
+#pragma warning disable CS8625 // Null 리터럴을 null을 허용하지 않는 참조 형식으로 변환할 수 없습니다.
                 _mediaElement = null;
+#pragma warning restore CS8625 // Null 리터럴을 null을 허용하지 않는 참조 형식으로 변환할 수 없습니다.
             }
         }
     }
