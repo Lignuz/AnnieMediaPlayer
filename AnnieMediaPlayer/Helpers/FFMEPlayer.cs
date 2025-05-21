@@ -46,61 +46,66 @@ namespace AnnieMediaPlayer
         }
 
         // 미디어 파일을 열고 재생합니다.
-        public async Task OpenAndPlay(string filePath)
+        public async Task<bool> OpenAndPlay(string filePath)
         {
-            if (_mediaElement == null) return;
-
-            try
+            if (_mediaElement != null)
             {
-                bool ret = await _mediaElement.Open(new Uri(filePath));
-                if (ret)
+                try
                 {
-                    await _mediaElement.Play();
+                    if (await _mediaElement.Open(new Uri(filePath)))
+                    {
+                        return await _mediaElement.Play();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"OpenAndPlay: {ex}");
                 }
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"OpenAndPlay: {ex}");
-            }
+            return false;
         }
 
         // 미디어 재생을 시작합니다.
-        public async Task Play()
+        public async Task<bool> Play()
         {
             if (_mediaElement != null)
             {
-                await _mediaElement.Play();
+                return await _mediaElement.Play();
             }
+            return false;
         }
 
         // 미디어 재생을 일시정지합니다.
-        public async Task Pause()
+        public async Task<bool> Pause()
         {
             if (_mediaElement != null)
             {
-                await _mediaElement.Pause();
+                return await _mediaElement.Pause();
             }
+            return false;
         }
 
         // 미디어 재생을 중지합니다.
-        public async Task Stop()
+        public async Task<bool> Stop()
         {
             if (_mediaElement != null)
             {
-                await _mediaElement.Stop();
+                return await _mediaElement.Stop();
             }
+            return false;
         }
 
         // 지정된 시간으로 탐색합니다.
-        public async Task Seek(TimeSpan position, bool keyFrame = true)
+        public async Task<bool> Seek(TimeSpan position, bool keyFrame = true)
         {
-            if (_mediaElement == null)
-                return;
-
-            if (keyFrame)
-                await _mediaElement.SeekKeyFrame(position);
-            else
-                await _mediaElement.SeekAccurate(position);
+            if (_mediaElement != null)
+            {
+                if (keyFrame)
+                    return await _mediaElement.SeekKeyFrame(position);
+                else
+                    return await _mediaElement.SeekAccurate(position);
+            }
+            return false;
         }
 
         // 재생 속도를 설정합니다.
@@ -121,6 +126,9 @@ namespace AnnieMediaPlayer
             }
         }
 
+
+        /////////////////////////
+        // 이벤트 핸들러 
         private void MediaElement_MediaOpened(object? sender, MediaOpenedEventArgs e)
         {
             OnMediaOpened?.Invoke(this, e);
