@@ -17,10 +17,13 @@ namespace AnnieMediaPlayer
         private static MediaElement _mediaElement = null!;
 
         // 현재 상태 확인용 프로퍼티 (외부에서 접근할 때 오류 발생 가능성이 있어서 왠만하면 이벤트 핸들러로 받아온 값으로 처리하도록 합시다.)
-        private static TimeSpan CurrentPosition { get => IsOpened ? _ffmePlayer._mediaElement.Position : TimeSpan.Zero; }
-        private static TimeSpan TotalDuration { get => (IsOpened && _ffmePlayer._mediaElement.NaturalDuration != null) ? (TimeSpan)_ffmePlayer._mediaElement.NaturalDuration : TimeSpan.Zero; }
-        private static MediaPlaybackState PlaybackState { get => _ffmePlayer._mediaElement.MediaState; }
-        
+        private static bool IsMediaValid => _ffmePlayer != null && _mediaElement != null;
+        public static TimeSpan CurrentPosition => IsMediaValid && IsOpened ? _ffmePlayer._mediaElement.Position : TimeSpan.Zero;
+        public static TimeSpan TotalDuration => IsMediaValid && IsOpened && _ffmePlayer._mediaElement.NaturalDuration != null
+            ? (TimeSpan)_ffmePlayer._mediaElement.NaturalDuration
+            : TimeSpan.Zero;
+        public static MediaPlaybackState PlaybackState => IsMediaValid ? _ffmePlayer._mediaElement.MediaState : MediaPlaybackState.Close;
+
         public static bool IsOpened { get => (PlaybackState != MediaPlaybackState.Close && PlaybackState != MediaPlaybackState.Stop); }
         public static bool IsPaused { get => (PlaybackState == MediaPlaybackState.Pause); }
         public static bool IsPlaying { get => (PlaybackState == MediaPlaybackState.Play); }
@@ -141,7 +144,8 @@ namespace AnnieMediaPlayer
                     return false;
                 }
 
-                var completed = await Task.WhenAny(tcs.Task, Task.Delay(1000));
+                int timeout = 3000;
+                var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeout));
                 if (completed != tcs.Task)
                 {
                     Debug.WriteLine($"[OpenAndPlay] Timeout waiting for media ready.");
@@ -335,6 +339,8 @@ namespace AnnieMediaPlayer
         // VideoPlayerController 해제 (애플리케이션 종료 시 호출)
         public static async Task DisposeAsync()
         {
+            UnsubscribeFFMEPlayerEvents();
+
             if (_ffmePlayer != null)
             {
                 await _ffmePlayer.DisposeAsync();
@@ -343,6 +349,24 @@ namespace AnnieMediaPlayer
                 _mediaElement = null;
 #pragma warning restore CS8625 // Null 리터럴을 null을 허용하지 않는 참조 형식으로 변환할 수 없습니다.
             }
+        }
+
+        private static void UnsubscribeFFMEPlayerEvents()
+        {
+            if (_ffmePlayer == null) return;
+
+            _ffmePlayer.OnMediaInitializing -= FfmePlayer_OnMediaInitializing;
+            _ffmePlayer.OnMediaOpening -= FfmePlayer_OnMediaOpening;
+            _ffmePlayer.OnMediaOpened -= FfmePlayer_OnMediaOpened;
+            _ffmePlayer.OnMediaReady -= FfmePlayer_OnMediaReady;
+            _ffmePlayer.OnMediaEnded -= FfmePlayer_OnMediaEnded;
+            _ffmePlayer.OnMediaFailed -= FfmePlayer_OnMediaFailed;
+            _ffmePlayer.OnMediaClosed -= FfmePlayer_OnMediaClosed;
+            _ffmePlayer.OnMediaChanging -= FfmePlayer_OnMediaChanging;
+            _ffmePlayer.OnMediaChanged -= FfmePlayer_OnMediaChanged;
+            _ffmePlayer.OnPositionChanged -= FfmePlayer_OnPositionChanged;
+            _ffmePlayer.OnMediaStateChanged -= FfmePlayer_OnMediaStateChanged;
+            _ffmePlayer.OnVideoFrameRendered -= FfmePlayer_OnVideoFrameRendered;
         }
 
 

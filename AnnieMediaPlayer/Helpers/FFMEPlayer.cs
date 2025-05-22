@@ -211,22 +211,27 @@ namespace AnnieMediaPlayer
             OnVideoFrameRendered?.Invoke(this, e);
         }
 
+        private bool _isDisposed = false;
         public async Task DisposeAsync()
         {
-            if (_mediaElement != null)
-            {
-                _mediaElement.MediaOpened -= MediaElement_MediaOpened;
-                _mediaElement.MediaEnded -= MediaElement_MediaEnded;
-                _mediaElement.MediaFailed -= MediaElement_MediaFailed;
-                _mediaElement.PositionChanged -= MediaElement_PositionChanged;
-                _mediaElement.MediaStateChanged -= MediaElement_MediaStateChanged;
-                _mediaElement.RenderingVideo -= MediaElement_RenderingVideo;
+            if (_isDisposed || _mediaElement == null)
+                return;
 
-                await _mediaElement.Close();
-#pragma warning disable CS8625 // Null 리터럴을 null을 허용하지 않는 참조 형식으로 변환할 수 없습니다.
-                _mediaElement = null;
-#pragma warning restore CS8625 // Null 리터럴을 null을 허용하지 않는 참조 형식으로 변환할 수 없습니다.
-            }
+            _mediaElement.MediaInitializing -= MediaElement_MediaInitializing;
+            _mediaElement.MediaOpening -= MediaElement_MediaOpening;
+            _mediaElement.MediaOpened -= MediaElement_MediaOpened;
+            _mediaElement.MediaReady -= MediaElement_MediaReady;
+            _mediaElement.MediaEnded -= MediaElement_MediaEnded;
+            _mediaElement.MediaFailed -= MediaElement_MediaFailed;
+            _mediaElement.MediaClosed -= MediaElement_MediaClosed;
+            _mediaElement.MediaChanging -= MediaElement_MediaChanging;
+            _mediaElement.MediaChanged -= MediaElement_MediaChanged;
+            _mediaElement.PositionChanged -= MediaElement_PositionChanged;
+            _mediaElement.MediaStateChanged -= MediaElement_MediaStateChanged;
+            _mediaElement.RenderingVideo -= MediaElement_RenderingVideo;
+            await _mediaElement.Close();
+
+            _isDisposed = true;
         }
     }
 }
