@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AnnieMediaPlayer"
+        xmlns:ffme="clr-namespace:Unosquare.FFME;assembly=ffme.win"
         xmlns:option="clr-namespace:AnnieMediaPlayer.Options"
         mc:Ignorable="d"
         MinWidth="540" MinHeight="310"
@@ -21,6 +22,7 @@
         x:Name="win">
     <local:BaseWindow.Resources>
         <local:FileNameConverter x:Key="FileNameConverter"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
 
         <!-- 오버레이 영역을 위한 애니메이션 정의 -->
         <Storyboard x:Key="ShowControls">
@@ -42,6 +44,9 @@
                     <!-- 컨트롤 영역 -->
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
+
+                <!-- 팝업 대신 사용하기 위한 오버레이 캔버스 -->
+                <Canvas x:Name="OverlayCanvas" IsHitTestVisible="False" Panel.ZIndex="10"  Focusable="False" Visibility="{Binding ElementName=PlaybackSlider, Path=IsMouseOver, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" IsVisibleChanged="OverlayCanvas_IsVisibleChanged"/>
 
                 <!-- 🎀 커스텀 타이틀바 -->
                 <Grid Grid.Row="0" x:Name="grid_top">
@@ -74,9 +79,10 @@
 
                 <!-- 🎞 영상 출력 영역 -->
                 <Grid Grid.Row="1" x:Name="grid_center">
-                    <Border Name="VideoImageContainer" Background="Black">
-                        <Image Name="VideoImage" Stretch="Uniform" />
+                    <Border Name="VideoImageContainer">
+                        <ffme:MediaElement Name="ffmeMediaElement" Background="Black" LoadedBehavior="Play" IsDesignPreviewEnabled="True" />
                     </Border>
+                    <Image Name="BackgroundImage" Stretch="UniformToFill" Visibility="Visible"/>
                     <Grid x:Name="grid_center_top" Background="Transparent" VerticalAlignment="Top" Height="{Binding ElementName=panel_titlebar, Path=ActualHeight}" PreviewMouseMove="overlayCheck_PreviewMouseMove"/>
                     <Grid x:Name="grid_center_bottom" Background="Transparent" VerticalAlignment="Bottom" Height="{Binding ElementName=panel_control, Path=ActualHeight}" PreviewMouseMove="overlayCheck_PreviewMouseMove"/>
                 </Grid>
@@ -97,7 +103,6 @@
                                 MouseLeave="PlaybackSlider_MouseLeave"
                                 DragStateChanged="PlaybackSlider_DragStateChanged"
                                 ValueChanged="PlaybackSlider_ValueChanged"/>
-                            <Popup Name="PreviewSliderPopup" Placement="Absolute" Focusable="False" IsOpen="{Binding ElementName=PlaybackSlider, Path=IsMouseOver, Mode=OneWay}"/>
 
                             <!-- 시간 표시 -->
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">

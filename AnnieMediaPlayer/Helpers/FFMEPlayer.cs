@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using Unosquare.FFME;
+﻿using Unosquare.FFME;
 using Unosquare.FFME.Common;
 
 namespace AnnieMediaPlayer
@@ -23,9 +22,15 @@ namespace AnnieMediaPlayer
     {
         public MediaElement _mediaElement { get; private set; } = null!;
         
+        public event EventHandler<MediaInitializingEventArgs>? OnMediaInitializing;
+        public event EventHandler<MediaOpeningEventArgs>? OnMediaOpening;
         public event EventHandler<MediaOpenedEventArgs>? OnMediaOpened;
+        public event EventHandler<EventArgs>? OnMediaReady;
         public event EventHandler<EventArgs>? OnMediaEnded;
         public event EventHandler<MediaFailedEventArgs>? OnMediaFailed;
+        public event EventHandler<EventArgs>? OnMediaClosed;
+        public event EventHandler<MediaOpeningEventArgs>? OnMediaChanging;
+        public event EventHandler<MediaOpenedEventArgs>? OnMediaChanged;
         public event EventHandler<PositionChangedEventArgs>? OnPositionChanged;
         public event EventHandler<MediaStateChangedEventArgs>? OnMediaStateChanged;
         public event EventHandler<RenderingVideoEventArgs>? OnVideoFrameRendered;
@@ -37,30 +42,26 @@ namespace AnnieMediaPlayer
             _mediaElement = mediaElement ?? throw new ArgumentNullException(nameof(mediaElement));
 
             // MediaElement 이벤트 핸들러 등록
+            _mediaElement.MediaInitializing += MediaElement_MediaInitializing;
+            _mediaElement.MediaOpening += MediaElement_MediaOpening;
             _mediaElement.MediaOpened += MediaElement_MediaOpened;
+            _mediaElement.MediaReady += MediaElement_MediaReady;
             _mediaElement.MediaEnded += MediaElement_MediaEnded;
             _mediaElement.MediaFailed += MediaElement_MediaFailed;
+            _mediaElement.MediaClosed += MediaElement_MediaClosed;
+            _mediaElement.MediaChanging += MediaElement_MediaChanging;
+            _mediaElement.MediaChanged += MediaElement_MediaChanged;
             _mediaElement.PositionChanged += MediaElement_PositionChanged;
             _mediaElement.MediaStateChanged += MediaElement_MediaStateChanged;
             _mediaElement.RenderingVideo += MediaElement_RenderingVideo;
         }
 
-        // 미디어 파일을 열고 재생합니다.
-        public async Task<bool> OpenAndPlay(string filePath)
+        // 미디어 파일을 열기 합니다.
+        public async Task<bool> Open(string filePath)
         {
             if (_mediaElement != null)
             {
-                try
-                {
-                    if (await _mediaElement.Open(new Uri(filePath)))
-                    {
-                        return await _mediaElement.Play();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"OpenAndPlay: {ex}");
-                }
+                return await _mediaElement.Open(new Uri(filePath));
             }
             return false;
         }
@@ -108,6 +109,19 @@ namespace AnnieMediaPlayer
             return false;
         }
 
+        // 프레임단위로 이동합니다.
+        public async Task<bool> SeekStep(bool next = true)
+        {
+            if (_mediaElement != null)
+            {
+                if (next)
+                    return await _mediaElement.StepForward();
+                else
+                    return await _mediaElement.StepBackward();
+            }
+            return false;
+        }
+
         // 재생 속도를 설정합니다.
         public void SetSpeedRatio(double speed)
         {
@@ -127,11 +141,28 @@ namespace AnnieMediaPlayer
         }
 
 
-        /////////////////////////
-        // 이벤트 핸들러 
+        ///////////////////
+        // 이벤트 핸들러 //
+        ///////////////////
+
+        private void MediaElement_MediaInitializing(object? sender, MediaInitializingEventArgs e)
+        {
+            OnMediaInitializing?.Invoke(this, e);
+        }
+
+        private void MediaElement_MediaOpening(object? sender, MediaOpeningEventArgs e)
+        {
+            OnMediaOpening?.Invoke(this, e);
+        }
+
         private void MediaElement_MediaOpened(object? sender, MediaOpenedEventArgs e)
         {
             OnMediaOpened?.Invoke(this, e);
+        }
+
+        private void MediaElement_MediaReady(object? sender, EventArgs e)
+        {
+            OnMediaReady?.Invoke(this, e);
         }
 
         private void MediaElement_MediaEnded(object? sender, EventArgs e)
@@ -142,6 +173,21 @@ namespace AnnieMediaPlayer
         private void MediaElement_MediaFailed(object? sender, MediaFailedEventArgs e)
         {
             OnMediaFailed?.Invoke(this, e);
+        }
+
+        private void MediaElement_MediaClosed(object? sender, EventArgs e)
+        {
+            OnMediaClosed?.Invoke(this, e);
+        }
+
+        private void MediaElement_MediaChanging(object? sender, MediaOpeningEventArgs e)
+        {
+            OnMediaChanging?.Invoke(this, e);
+        }
+
+        private void MediaElement_MediaChanged(object? sender, MediaOpenedEventArgs e)
+        {
+            OnMediaChanged?.Invoke(this, e);
         }
 
         private void MediaElement_PositionChanged(object? sender, PositionChangedEventArgs e)
@@ -161,7 +207,7 @@ namespace AnnieMediaPlayer
 
         private void MediaElement_RenderingVideo(object? sender, RenderingVideoEventArgs e)
         {
-            LastRenderedFrameNumber = e.PictureNumber;
+            LastRenderedFrameNumber = e.PictureNumber - 1;
             OnVideoFrameRendered?.Invoke(this, e);
         }
 

@@ -1,11 +1,15 @@
-﻿using System.Windows;
+﻿using System.Diagnostics;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using AnnieMediaPlayer.Options;
 using AnnieMediaPlayer.Windows.Settings;
+using Unosquare.FFME.Common;
 
 namespace AnnieMediaPlayer
 {
@@ -17,10 +21,19 @@ namespace AnnieMediaPlayer
         public MainWindow()
         {
             InitializeComponent();
-            FFmpegLoader.RegisterFFmpeg();
-            SpeedController.UpdateSpeedLabel(this);
 
-            VideoPlayerController.Stop(this);
+            FFMELoader.Initialize();
+            VideoPlayerController.Initialize(ffmeMediaElement);
+            VideoPlayerController.OnMediaOpened += VideoPlayerController_OnMediaOpened;
+            VideoPlayerController.OnMediaEnded += VideoPlayerController_OnMediaEnded;
+            VideoPlayerController.OnMediaFailed += VideoPlayerController_OnMediaFailed;
+            VideoPlayerController.OnPositionChanged += VideoPlayerController_OnPositionChanged;
+            VideoPlayerController.OnMediaStateChanged += VideoPlayerController_OnMediaStateChanged;
+            VideoPlayerController.OnVideoFrameRendered += VideoPlayerController_OnVideoFrameRendered;
+            UpdateSetSpeedLabel();
+
+            BackgroundImage.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/background01.png"));
+
             PlayPauseButton.IsEnabled = false;
             StopButton.IsEnabled = false;
 
@@ -42,9 +55,9 @@ namespace AnnieMediaPlayer
             OptionViewModel.Instance.UseOverlayControlChanged += UseOverlayControlChanged;
         }
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            VideoPlayerController.Stop(this);
+            await VideoPlayerController.Stop();
         }
 
         // 기본영역 드래그로 이동 지원
@@ -56,12 +69,234 @@ namespace AnnieMediaPlayer
             }
         }
 
-        private void OpenVideo_Click(object sender, RoutedEventArgs e) => VideoPlayerController.OpenVideo(this);
-        private void PlayPause_Click(object sender, RoutedEventArgs e) => VideoPlayerController.TogglePlayPause(this);
-        private void Stop_Click(object sender, RoutedEventArgs e) => VideoPlayerController.Stop(this);
 
-        private void SpeedDown_Click(object sender, RoutedEventArgs e) => SpeedController.SpeedDown(this);
-        private void SpeedUp_Click(object sender, RoutedEventArgs e) => SpeedController.SpeedUp(this);
+        /////////////////////////////////////////
+        // 컨트롤러 콜백에 대한 UI 이벤트 처리 //
+        /////////////////////////////////////////
+
+        // 파일 열림 처리. 
+        // 파일 닫힘 처리는 OnMediaStateChanged 에서 합니다.
+        private void VideoPlayerController_OnMediaOpened(object? sender, MediaOpenedEventArgs e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                FileNameText.Tag = e.Info.MediaSource;
+                BackgroundImage.Visibility = Visibility.Collapsed;
+                StopButton.IsEnabled = true;
+                PlayPauseButton.IsEnabled = true;
+                PlayPauseButton.SetResourceReference(ContentControl.ContentProperty, "Text.Pause");
+
+                TimeSpan duration = e.Info.Duration;
+                TimeSpan startTime = TimeSpan.Zero;
+                long frameNumber = 0;
+                PlaybackSlider.Maximum = duration.TotalSeconds;
+                PlaybackSlider.Value = startTime.TotalSeconds;
+                TotalTimeText.Text = duration.ToString(@"hh\:mm\:ss");
+                CurrentTimeText.Text = startTime.ToString(@"hh\:mm\:ss");
+                FrameNumberText.Text = frameNumber.ToString();
+            });
+        }
+
+        private void VideoPlayerController_OnMediaEnded(object? sender, EventArgs e)
+        {
+
+        }
+
+        private void VideoPlayerController_OnMediaFailed(object? sender, MediaFailedEventArgs e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                MessageBox.Show($"재생 오류: {e.ErrorException.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            });
+        }
+
+        private void VideoPlayerController_OnPositionChanged(object? sender, PositionChangedEventArgs e)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                TimeSpan currentTime = e.Position;
+                if (VideoPlayerController.IsSliderDragging == false)
+                {
+                    PlaybackSlider.Value = currentTime.TotalSeconds;
+                }
+                CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
+            });
+        }
+
+        // 미디어 상태 변경시 이벤트 
+        private void VideoPlayerController_OnMediaStateChanged(object? sender, MediaStateChangedEventArgs e)
+        {
+            // 닫힌 상태에서는 값을 가져올 때 오류가 발생할 수 있으므로 일단 처리하지 않도록 합니다 .
+            if (e.MediaState == MediaPlaybackState.Close)
+            {
+                return;
+            }
+
+            bool isOpened = VideoPlayerController.IsOpened;
+            bool isPlaying = VideoPlayerController.IsPlaying;
+            string playPauseText = string.Empty;
+
+            // 정지 or 닫힘 상태
+            if (e.MediaState == MediaPlaybackState.Close ||
+                e.MediaState == MediaPlaybackState.Stop)
+            {
+                playPauseText = "Text.Play";
+            }
+            // 파일이 열려있는 상태
+            else
+            {
+                // 재생중
+                if (e.MediaState == MediaPlaybackState.Play)
+                {
+                    if (VideoPlayerController.IsSliderDragging == false)
+                    {
+                        playPauseText = "Text.Pause";
+                    }
+                }
+                // 일시정지중
+                else if (e.MediaState == MediaPlaybackState.Pause)
+                {
+                    if (VideoPlayerController.IsSliderDragging == false)
+                    {
+                        playPauseText = "Text.Play";
+                    }
+                }
+                else // if (e.MediaState == MediaPlaybackState.Manual)
+                {
+                    // ...
+                }
+            }
+
+            Dispatcher.Invoke(() =>
+            {
+                StopButton.IsEnabled = isOpened;
+                PlayPauseButton.IsEnabled = isOpened;
+
+                if (isOpened == false)
+                {
+                    FileNameText.Tag = string.Empty;
+                    BackgroundImage.Visibility = Visibility.Visible;
+
+                    TimeSpan duration = TimeSpan.Zero;
+                    TimeSpan startTime = TimeSpan.Zero;
+                    long frameNumber = 0;
+                    PlaybackSlider.Maximum = duration.TotalSeconds;
+                    PlaybackSlider.Value = startTime.TotalSeconds;
+                    TotalTimeText.Text = duration.ToString(@"hh\:mm\:ss");
+                    CurrentTimeText.Text = startTime.ToString(@"hh\:mm\:ss");
+                    FrameNumberText.Text = frameNumber.ToString();
+                }
+
+                if (string.IsNullOrEmpty(playPauseText) == false)
+                    PlayPauseButton.SetResourceReference(ContentControl.ContentProperty, playPauseText);
+            });
+            UpdateSpeedInfo();
+        }
+
+        // 렌더 될때마다 
+        private void VideoPlayerController_OnVideoFrameRendered(object? sender, RenderingVideoEventArgs e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                long frameNumber = e.PictureNumber - 1;
+                FrameNumberText.Text = frameNumber.ToString();
+            });
+            UpdateCalcSpeedLabel();
+        }
+
+        void UpdateSpeedInfo()
+        {
+            UpdateSetSpeedLabel();
+            UpdateCalcSpeedLabel();
+        }
+
+        void UpdateSetSpeedLabel()
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                var speed = VideoPlayerController.PlaybackSpeeds[VideoPlayerController.SpeedIndex];
+                TextBlock textBlock = SpeedLabel;
+                textBlock.Inlines.Clear();
+
+                // 원본 속도 (1배속) 표시
+                if (VideoPlayerController.IsNormalSpeed)
+                {
+                    if (VideoPlayerController.IsOpened)
+                    {
+                        double fps = VideoPlayerController.VideoFps;
+                        string fpsStr = fps.ToString("0.00");
+
+                        Run speedRun = new Run("1배속 (");
+                        Run fpsRun = new Run(fpsStr + "fps");
+                        Run closeParen = new Run(")");
+                        textBlock.Inlines.Add(speedRun);
+                        textBlock.Inlines.Add(fpsRun);
+                        textBlock.Inlines.Add(closeParen);
+                    }
+                    else
+                    {
+                        // 영상이 없을 때는 단순히 "1배속"만 표시
+                        textBlock.Inlines.Add(new Run("1배속"));
+                    }
+                }
+                else
+                {
+                    if (speed.TotalSeconds >= 1)
+                    {
+                        // 속도 값
+                        Run valueRun = new Run(speed.TotalSeconds.ToString());
+                        textBlock.Inlines.Add(valueRun);
+
+                        // 단위 (초)
+                        Run secondRun = LanguageManager.GetLocalizedRun("Text.Sec");
+                        textBlock.Inlines.Add(secondRun);
+
+                        // 슬래시
+                        textBlock.Inlines.Add(new Run("/"));
+
+                        // 단위 (프레임)
+                        Run frameRun = LanguageManager.GetLocalizedRun("Text.Frame");
+                        textBlock.Inlines.Add(frameRun);
+                    }
+                    else
+                    {
+                        int fps = (int)Math.Round(1.0 / speed.TotalSeconds);
+                        textBlock.Text = $"{fps}fps";
+                    }
+                }
+            });
+        }
+
+        void UpdateCalcSpeedLabel()
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                string actualStr = "";
+                double actualFps = VideoPlayerController.ActualFps;
+                if (VideoPlayerController.IsOpened)
+                {
+                    actualStr = actualFps > 0 ? actualFps.ToString("0.00") : "-";
+                    actualStr = $"{actualStr}fps";
+                }
+                ActualFpsText.Text = actualStr;
+            });
+        }
+        
+
+        private void OpenVideo_Click(object sender, RoutedEventArgs e) => _ = VideoPlayerController.OpenAndPlay();
+        private void PlayPause_Click(object sender, RoutedEventArgs e) => _ = VideoPlayerController.TogglePlayPause();
+        private void Stop_Click(object sender, RoutedEventArgs e) => _ = VideoPlayerController.Stop();
+
+        private void SpeedDown_Click(object sender, RoutedEventArgs e)
+        {
+            VideoPlayerController.IncreaseSpeed();
+            UpdateSetSpeedLabel();
+        }
+        private void SpeedUp_Click(object sender, RoutedEventArgs e)
+        {
+            VideoPlayerController.DecreaseSpeed();
+            UpdateSetSpeedLabel();
+        }
 
         private void PlaybackSlider_PreviewMouseMove(object sender, MouseEventArgs e) => VideoPlayerController.OnSliderMouseHover(this, e);
         private void PlaybackSlider_MouseLeave(object sender, MouseEventArgs e) => VideoPlayerController.OnSliderMouseLeave(this, e);
@@ -206,7 +441,7 @@ namespace AnnieMediaPlayer
                 {
                     // 비디오 파일 열기
                     string filePath = files[0];
-                    VideoPlayerController.OpenVideo(this, filePath);
+                    _ = VideoPlayerController.OpenAndPlay(filePath);
                 }
             }
         }
@@ -328,6 +563,15 @@ namespace AnnieMediaPlayer
             {
                 _isMouseOverControls = false;
                 _hideControlsTimer.Start();
+            }
+        }
+
+        private void OverlayCanvas_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if ((bool)e.NewValue == false)
+            {
+                // 숨길 때에 내용을 지워줍니다.
+                OverlayCanvas.Children.Clear();
             }
         }
     }

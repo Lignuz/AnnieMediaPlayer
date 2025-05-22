@@ -205,7 +205,7 @@ namespace AnnieMediaPlayer
                                     ffmpeg.sws_scale(_scaledSwsContext, frame->data, frame->linesize, 0, _height,
                                         _scaledRgbFrame->data, _scaledRgbFrame->linesize);
 
-                                    result = FFmpegHelper.ConvertFrameToBitmapSource(_scaledRgbFrame, _previewWidth, _previewHeight);
+                                    result = ConvertFrameToBitmapSource(_scaledRgbFrame, _previewWidth, _previewHeight);
                                     frameFound = true;
                                 }
                                 ffmpeg.av_frame_unref(frame);
@@ -267,6 +267,31 @@ namespace AnnieMediaPlayer
         ~FFmpegFrameGrabber()
         {
             Dispose(false);
+        }
+
+        public static unsafe BitmapSource ConvertFrameToBitmapSource(AVFrame* pFrameRGB, int width, int height)
+        {
+            int stride = pFrameRGB->linesize[0];
+            IntPtr pixelData = (IntPtr)pFrameRGB->data[0];
+
+            var bitmapSource = new WriteableBitmap(
+                width,
+                height,
+                96, // DpiX (adjust as needed)
+                96, // DpiY (adjust as needed)
+                System.Windows.Media.PixelFormats.Bgr24, // Or whichever format matches pFrameRGB->data
+                null
+            );
+
+            bitmapSource.WritePixels(
+                new Int32Rect(0, 0, width, height),
+                pixelData,
+                height * stride,
+                stride
+            );
+
+            bitmapSource.Freeze();
+            return bitmapSource;
         }
     }
 }

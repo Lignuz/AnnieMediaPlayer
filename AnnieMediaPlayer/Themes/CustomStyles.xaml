@@ -328,6 +328,7 @@
                                                     </Trigger>
                                                     <Trigger Property="IsEnabled" Value="False">
                                                         <Setter Property="Background" Value="{DynamicResource ThumbDisabledBrush}"/>
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
                                                     </Trigger>
                                                 </Style.Triggers>
                                             </Style>
