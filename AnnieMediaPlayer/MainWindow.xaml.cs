@@ -289,12 +289,12 @@ namespace AnnieMediaPlayer
 
         private void SpeedDown_Click(object sender, RoutedEventArgs e)
         {
-            VideoPlayerController.IncreaseSpeed();
+            VideoPlayerController.DecreaseSpeed();
             UpdateSetSpeedLabel();
         }
         private void SpeedUp_Click(object sender, RoutedEventArgs e)
         {
-            VideoPlayerController.DecreaseSpeed();
+            VideoPlayerController.IncreaseSpeed();
             UpdateSetSpeedLabel();
         }
 
