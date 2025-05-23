@@ -140,6 +140,14 @@ namespace AnnieMediaPlayer
             }
         }
 
+        public double GetVolume()
+        {
+            if (_mediaElement != null)
+            {
+                return _mediaElement.Volume;
+            }
+            return 0.0;
+        }
 
         ///////////////////
         // 이벤트 핸들러 //

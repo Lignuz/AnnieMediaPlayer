@@ -270,7 +270,7 @@
     </Style>
 
     <!-- DraggableSlider -->
-    <Style x:Key="DraggableSliderDefaultStyle" TargetType="{x:Type base:DraggableSlider}">
+    <Style x:Key="DraggableSliderPlaybackStyle" TargetType="{x:Type base:DraggableSlider}">
         <Setter Property="AutoMove" Value="True"/>
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="Template">
@@ -359,5 +359,51 @@
             </Setter.Value>
         </Setter>
     </Style>
-    
+
+    <Style x:Key="DraggableSliderDefaultStyle" TargetType="{x:Type base:DraggableSlider}">
+        <Setter Property="AutoMove" Value="True"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type base:DraggableSlider}">
+                    <Border Margin="4" Background="Transparent" x:Name="SliderBackground">
+                        <Grid>
+                            <Grid.Resources>
+                                <base:DraggableSliderValueConverter x:Key="conv"/>
+                            </Grid.Resources>
+                            <Grid Height="2" Background="{TemplateBinding Background}"/>
+                            <Grid Height="2" Background="{TemplateBinding Background}" HorizontalAlignment="Left">
+                                <Grid.Width>
+                                    <MultiBinding Converter="{StaticResource conv}">
+                                        <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Value"/>
+                                        <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ActualWidth"/>
+                                        <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Minimum"/>
+                                        <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Maximum"/>
+                                    </MultiBinding>
+                                </Grid.Width>
+                            </Grid>
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge" Style="{x:Null}" IsTabStop="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Rectangle Fill="{DynamicResource SliderBarBrush}" Height="4" VerticalAlignment="Center"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                
+                            </Track>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="SliderBackground" Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

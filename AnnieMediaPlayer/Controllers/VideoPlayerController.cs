@@ -263,6 +263,24 @@ namespace AnnieMediaPlayer
             _ffmePlayer.SetVolume(volume);
         }
 
+        public static double GetVolume()
+        {
+            if (_ffmePlayer == null) return 0.0;
+            return _ffmePlayer.GetVolume();
+        }
+
+        public static void SetVolumeChange(bool up = true)
+        {
+            if (_ffmePlayer == null) return;
+
+            double volume = _ffmePlayer.GetVolume();
+            double setVolume = volume + (up ? 0.1 : -0.1);
+            setVolume = Math.Max(0.0, Math.Min(setVolume, 1.0)); // 볼륨 범위 제한 (0.0 ~ 1.0)
+            if (volume != setVolume)
+            {
+                _ffmePlayer.SetVolume(setVolume);
+            }
+        }
 
         /////////////////////////////
         // UI 업데이트를 위한 FFMEPlayer 이벤트 핸들러들
