@@ -8,6 +8,7 @@ using AnnieMediaPlayer.Options;
 using Unosquare.FFME.Common;
 using MediaElement = Unosquare.FFME.MediaElement;
 using System.Diagnostics;
+using System.Windows.Threading;
 
 namespace AnnieMediaPlayer
 {
@@ -51,6 +52,7 @@ namespace AnnieMediaPlayer
         public static event EventHandler<PositionChangedEventArgs>? OnPositionChanged;
         public static event EventHandler<MediaStateChangedEventArgs>? OnMediaStateChanged;
         public static event EventHandler<RenderingVideoEventArgs>? OnVideoFrameRendered;
+        public static event EventHandler? OnFrameStepStateChanged;
 
         // 초기화 메서드 
         public static void Initialize(MediaElement mediaElement)
@@ -175,6 +177,11 @@ namespace AnnieMediaPlayer
         // 재생
         public static async Task<bool> Play()
         {
+            if (_isFrameStepMode)
+            {
+                ResumeFrameStep();
+                return true;
+            }
             if (_ffmePlayer == null) return false;
             return await _ffmePlayer.Play();
         }
@@ -182,6 +189,11 @@ namespace AnnieMediaPlayer
         // 일시 정지
         public static async Task<bool> Pause()
         {
+            if (_isFrameStepMode)
+            {
+                PauseFrameStep();
+                return true;
+            }
             if (_ffmePlayer == null) return false;
             return await _ffmePlayer.Pause();
         }
@@ -189,6 +201,18 @@ namespace AnnieMediaPlayer
         // 재생 / 일시 정지 토글
         public static async Task<bool> TogglePlayPause()
         {
+            if (_isFrameStepMode)
+            {
+                if (_isFrameStepPaused)
+                {
+                    ResumeFrameStep();
+                }
+                else
+                {
+                    PauseFrameStep();
+                }
+                return true;
+            }
             if (PlaybackState == MediaPlaybackState.Play)
                 return await Pause();
             else if (PlaybackState == MediaPlaybackState.Pause)
@@ -381,17 +405,26 @@ namespace AnnieMediaPlayer
         };
         private const int _normalSpeedIndex = 5; // 기본 속도 (x1.0)
         private static int _speedIndex = _normalSpeedIndex;
+        private static bool _isFrameStepMode = false;
+        private static bool _isFrameStepPaused = false;
+        private static DispatcherTimer? _frameStepTimer = null;
 
+        private static double _actualFps = 0.0;
+        private static DateTime? _lastRenderDateTime;
+
+        // 슬라이더 탐색에 대한 상태 변수 추가
         private static bool _isPreviewing = false;
         private static ConcurrentQueue<MouseEventArgs> _previewQueue = new ConcurrentQueue<MouseEventArgs>();
 
-        private static double _actualFps = 0.0;
+        private static TimeSpan? _pendingSeekValue = null; // 대기 중인 Seek 값
+
+        public static TimeSpan[] PlaybackSpeeds => _playbackSpeeds;
+        public static int SpeedIndex => _speedIndex;
+        public static bool IsNormalSpeed => SpeedIndex == _normalSpeedIndex; // 1배속인지 확인하는 속성
+        public static bool IsFrameStepMode => _isFrameStepMode;
+        public static bool IsFrameStepPaused => _isFrameStepPaused;
         public static double ActualFps => _actualFps;
-
-        private static DateTime? _lastRenderDateTime;
-
         public static FFmpegFrameGrabber? ffmpegFrameGrabber { get; private set; } = null;
-
 
         public static void OnSliderMouseHover(MainWindow window, MouseEventArgs e)
         {
@@ -539,11 +572,6 @@ namespace AnnieMediaPlayer
             }
         }
 
-
-        // 슬라이더 탐색에 대한 상태 변수 추가
-        private static TimeSpan? _pendingSeekValue = null; // 대기 중인 Seek 값
-
-
         // 비동기적인 Seek 작업을 관리하는 메서드
         public static async Task PerformSeek(TimeSpan position)
         {
@@ -588,20 +616,63 @@ namespace AnnieMediaPlayer
             }
         }
 
-        
-        public static int SpeedIndex => _speedIndex;
-        public static bool IsNormalSpeed => SpeedIndex == _normalSpeedIndex; // 1배속인지 확인하는 속성
-        public static TimeSpan[] PlaybackSpeeds => _playbackSpeeds;
+        public static void StartFrameStepMode(TimeSpan interval)
+        {
+            StopFrameStepMode();
+            _isFrameStepMode = true;
+            _isFrameStepPaused = false;
+            _frameStepTimer = new DispatcherTimer();
+            _frameStepTimer.Interval = interval;
+            _frameStepTimer.Tick += async (s, e) =>
+            {
+                if (!_isFrameStepPaused)
+                    await SeekStep(true);
+            };
+            _frameStepTimer.Start();
+        }
+
+        public static void StopFrameStepMode()
+        {
+            _isFrameStepMode = false;
+            _isFrameStepPaused = false;
+            _frameStepTimer?.Stop();
+            _frameStepTimer = null;
+        }
+
+        public static void PauseFrameStep()
+        {
+            if (_isFrameStepMode && !_isFrameStepPaused)
+            {
+                _isFrameStepPaused = true;
+                _frameStepTimer?.Stop();
+                OnFrameStepStateChanged?.Invoke(null, EventArgs.Empty); // 상태 변경 알림
+            }
+        }
+        public static void ResumeFrameStep()
+        {
+            if (_isFrameStepMode && _isFrameStepPaused)
+            {
+                _isFrameStepPaused = false;
+                _frameStepTimer?.Start();
+                OnFrameStepStateChanged?.Invoke(null, EventArgs.Empty); // 상태 변경 알림
+            }
+        }
+
+        public static bool IsActuallyPlaying
+        {
+            get
+            {
+                // 일반 재생이거나, 슬로우 재생 모드면 "재생 중"으로 간주
+                return (PlaybackState == MediaPlaybackState.Play) || _isFrameStepMode;
+            }
+        }
 
         public static void IncreaseSpeed()
         {
             if (_speedIndex < _playbackSpeeds.Length - 1)
             {
                 _speedIndex++;
-#if false
-                _actualFps = 0;
-                PlaybackStartTime = DateTime.UtcNow - _currentVideoTime;
-#endif
+                ApplyCurrentSpeed();
             }
         }
 
@@ -610,10 +681,39 @@ namespace AnnieMediaPlayer
             if (_speedIndex > 0)
             {
                 _speedIndex--;
-#if false
-                _actualFps = 0;
-                PlaybackStartTime = DateTime.UtcNow - _currentVideoTime;
-#endif
+                ApplyCurrentSpeed();
+            }
+        }
+
+        public static async void ApplyCurrentSpeed()
+        {
+            // 프레임스텝 모드 해제 전에 "실제 사용자가 원했던 상태"를 저장
+            bool wasFrameStepMode = _isFrameStepMode;
+            bool wasFrameStepPaused = _isFrameStepPaused;
+            bool wasActuallyPlaying = false;
+
+            if (wasFrameStepMode)
+                wasActuallyPlaying = !_isFrameStepPaused; // 프레임스텝 모드에서 일시정지 아니면 재생 중
+            else
+                wasActuallyPlaying = IsPlaying; // 일반 모드에서는 IsPlaying
+
+            if (_speedIndex < _normalSpeedIndex)
+            {
+                await Pause();
+                StartFrameStepMode(_playbackSpeeds[_speedIndex]);
+                if (!wasActuallyPlaying)
+                    PauseFrameStep();
+                else
+                    ResumeFrameStep();
+            }
+            else
+            {
+                StopFrameStepMode();
+                SetSpeedRatio(1.0);
+                if (wasActuallyPlaying)
+                    await Play();
+                else
+                    await Pause();
             }
         }
     }

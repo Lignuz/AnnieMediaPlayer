@@ -30,6 +30,7 @@ namespace AnnieMediaPlayer
             VideoPlayerController.OnPositionChanged += VideoPlayerController_OnPositionChanged;
             VideoPlayerController.OnMediaStateChanged += VideoPlayerController_OnMediaStateChanged;
             VideoPlayerController.OnVideoFrameRendered += VideoPlayerController_OnVideoFrameRendered;
+            VideoPlayerController.OnFrameStepStateChanged += VideoPlayerController_OnFrameStepStateChanged;
             UpdateSetSpeedLabel();
 
             BackgroundImage.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/background01.png"));
@@ -133,7 +134,6 @@ namespace AnnieMediaPlayer
             }
 
             bool isOpened = VideoPlayerController.IsOpened;
-            bool isPlaying = VideoPlayerController.IsPlaying;
             string playPauseText = string.Empty;
 
             // 정지 or 닫힘 상태
@@ -145,25 +145,20 @@ namespace AnnieMediaPlayer
             // 파일이 열려있는 상태
             else
             {
-                // 재생중
-                if (e.MediaState == MediaPlaybackState.Play)
+                if (VideoPlayerController.IsSliderDragging == false)
                 {
-                    if (VideoPlayerController.IsSliderDragging == false)
+                    // 느린 재생(프레임스텝) 모드일 때
+                    if (VideoPlayerController.IsFrameStepMode)
                     {
-                        playPauseText = "Text.Pause";
+                        playPauseText = VideoPlayerController.IsFrameStepPaused ? "Text.Play" : "Text.Pause";
                     }
-                }
-                // 일시정지중
-                else if (e.MediaState == MediaPlaybackState.Pause)
-                {
-                    if (VideoPlayerController.IsSliderDragging == false)
+                    else
                     {
-                        playPauseText = "Text.Play";
+                        if (e.MediaState == MediaPlaybackState.Pause)
+                            playPauseText = "Text.Play";
+                        else if (e.MediaState == MediaPlaybackState.Play)
+                            playPauseText = "Text.Pause";
                     }
-                }
-                else // if (e.MediaState == MediaPlaybackState.Manual)
-                {
-                    // ...
                 }
             }
 
@@ -202,6 +197,24 @@ namespace AnnieMediaPlayer
                 FrameNumberText.Text = frameNumber.ToString();
             });
             UpdateCalcSpeedLabel();
+        }
+
+        private void VideoPlayerController_OnFrameStepStateChanged(object? sender, EventArgs e)
+        {
+            // MediaStateChanged와 동일하게 버튼 텍스트 갱신
+            Dispatcher.Invoke(() =>
+            {
+                string playPauseText;
+                if (VideoPlayerController.IsFrameStepMode)
+                {
+                    playPauseText = VideoPlayerController.IsFrameStepPaused ? "Text.Play" : "Text.Pause";
+                }
+                else
+                {
+                    playPauseText = VideoPlayerController.IsPlaying ? "Text.Pause" : "Text.Play";
+                }
+                PlayPauseButton.SetResourceReference(ContentControl.ContentProperty, playPauseText);
+            });
         }
 
         void UpdateSpeedInfo()
