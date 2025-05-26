@@ -1,5 +1,8 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace AnnieMediaPlayer.Options
 {
@@ -44,6 +47,8 @@ namespace AnnieMediaPlayer.Options
             }
         }
 
+        public Option DefaultOption => new Option(); // 기본 옵션 인스턴스 생성
+
         /// <summary>
         /// Enum 값의 다국어 처리를 위한 연결 리소스 딕셔너리
         /// </summary>
@@ -62,13 +67,8 @@ namespace AnnieMediaPlayer.Options
 
         private OptionViewModel()
         {
-            // 옵션 초기값 지정
-            CurrentOption = new Option
-            {
-                SelectedTheme = Themes.Light,
-                SelectedLanguage = Languages.ko,
-                UseOverlayControl = false,
-            };
+            // 옵션 불러오기
+            CurrentOption = Option.Load();
         }
 
         private void OnAllOptionsChanged()
@@ -78,8 +78,13 @@ namespace AnnieMediaPlayer.Options
 
         private void CurrentOption_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            CurrentOption_PropertyChanged(e.PropertyName);
+        }
+
+        private void CurrentOption_PropertyChanged(string? propertyName)
+        {
             // 개별 프로퍼티 변경에 따른 처리
-            switch (e.PropertyName)
+            switch (propertyName)
             {
                 case nameof(Option.SelectedTheme):
                     HandleThemeChanged(CurrentOption.SelectedTheme);
@@ -90,15 +95,55 @@ namespace AnnieMediaPlayer.Options
                 case nameof(Option.UseOverlayControl):
                     HandleUseOverlayControlChanged(CurrentOption.UseOverlayControl);
                     break;
-                case (nameof(Option.UseSeekFramePreview)):
+                case nameof(Option.UseSeekFramePreview):
                     HandleSeekFramePreviewChanged(CurrentOption.UseSeekFramePreview);
                     break;
-
                 default:
-                    System.Diagnostics.Debug.WriteLine($"알 수 없는 프로퍼티 변경: {e.PropertyName}");
+                    Debug.WriteLine($"알 수 없는 프로퍼티 변경: {propertyName}");
                     break;
             }
         }
+
+        public class ChangedOptionProperty
+        {
+            public ChangedOptionProperty(string name, object? def, object? cur)
+            {
+                this.name = name;
+                this.def = def;
+                this.cur = cur;
+            }
+
+            public string name { get; set; } = string.Empty;
+            public object? def { get; set; }
+            public object? cur { get; set; }
+        }
+
+        // 기준옵션과 비교하여 변경된 프로퍼티를 확인합니다.
+        public List<ChangedOptionProperty> CheckOptionChanged(Option baseOption, Option currentOption)
+        {
+            // 변경된 프로퍼티 이름과 값을 저장할 리스트
+            var changedProperties = new List<ChangedOptionProperty>();
+
+            foreach (var prop in typeof(Option).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+            {
+                // 읽기/쓰기 가능한 프로퍼티만
+                if (!prop.CanRead || !prop.CanWrite) continue;
+
+                // [JsonIgnore] 등으로 제외하고 싶은 프로퍼티는 Attribute로 필터링 가능
+                if (prop.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
+
+                var defaultValue = prop.GetValue(baseOption);
+                var currentValue = prop.GetValue(currentOption);
+
+                if (!Equals(defaultValue, currentValue))
+                {
+                    changedProperties.Add(new ChangedOptionProperty(prop.Name, defaultValue, currentValue));
+                }
+            }
+
+            return changedProperties;
+        }
+
 
         /// <summary>
         /// 개별 프로퍼티 변경 처리 메서드
@@ -136,8 +181,18 @@ namespace AnnieMediaPlayer.Options
         private void ApplyAllOptions(Option? currentOptions)
         {
             if (currentOptions != null)
+            {   
+            }
+        }
+
+        // 기본 옵션과 현재 옵션을 비교하여 변경된 프로퍼티를 확인해서 알림을 발생시킵니다.
+        public void OptionChanged(Option baseOption, Option currentOption)
+        {   
+            var changedProperties = CheckOptionChanged(baseOption, currentOption);
+            foreach (var changedProperty in changedProperties)
             {
-                
+                Debug.WriteLine($"{changedProperty.name}: 기본값={changedProperty.def}, 현재값={changedProperty.cur}");
+                CurrentOption_PropertyChanged(changedProperty.name);
             }
         }
 

@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -54,6 +53,7 @@ namespace AnnieMediaPlayer
 
             InitializeOverlayControls();
             OptionViewModel.Instance.UseOverlayControlChanged += UseOverlayControlChanged;
+            OptionViewModel.Instance.OptionChanged(OptionViewModel.Instance.DefaultOption, OptionViewModel.Instance.CurrentOption);
         }
 
         private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

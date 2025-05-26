@@ -1,6 +1,10 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Windows;
 using System.Windows.Data;
 
@@ -27,27 +31,21 @@ namespace AnnieMediaPlayer.Options
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public List<Languages> AvailableLanguages { get; set; }
-        public List<Themes> AvailableThemes { get; set; }
+        [JsonIgnore]
+        public List<Languages> AvailableLanguages => Enum.GetValues(typeof(Languages)).Cast<Languages>().ToList();
+        [JsonIgnore]
+        public List<Themes> AvailableThemes => Enum.GetValues(typeof(Themes)).Cast<Themes>().ToList();
+
+        private static readonly string OptionFilePath =
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AnnieMediaPlayer", "options.json");
 
         public Option()
         {
-            AvailableLanguages = Enum.GetValues(typeof(Languages)).Cast<Languages>().ToList();
-            AvailableThemes = Enum.GetValues(typeof(Themes)).Cast<Themes>().ToList();
-        }
-
-        private Languages _selectedLanguage;
-        public Languages SelectedLanguage
-        {
-            get { return _selectedLanguage; }
-            set 
-            {
-                if (value != _selectedLanguage)
-                {
-                    _selectedLanguage = value; 
-                    OnPropertyChanged(); 
-                }
-            }
+            // 옵션 초기값 지정
+            SelectedTheme = Themes.Light;
+            SelectedLanguage = Languages.ko;
+            UseOverlayControl = false;
+            UseSeekFramePreview = false;
         }
 
         private Themes _selectedTheme;
@@ -60,6 +58,20 @@ namespace AnnieMediaPlayer.Options
                 {
                     _selectedTheme = value;
                     OnPropertyChanged();
+                }
+            }
+        }
+
+        private Languages _selectedLanguage;
+        public Languages SelectedLanguage
+        {
+            get { return _selectedLanguage; }
+            set 
+            {
+                if (value != _selectedLanguage)
+                {
+                    _selectedLanguage = value; 
+                    OnPropertyChanged(); 
                 }
             }
         }
@@ -90,6 +102,47 @@ namespace AnnieMediaPlayer.Options
                     OnPropertyChanged();
                 }
             }
+        }
+
+        // 옵션 저장
+        public void Save()
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(OptionFilePath);
+                if (!Directory.Exists(dir))
+                    Directory.CreateDirectory(dir!);
+
+                var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(OptionFilePath, json);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"옵션 저장 실패: {ex.Message}");
+            }
+        }
+
+        // 옵션 불러오기
+        public static Option Load()
+        {
+            try
+            {
+                if (File.Exists(OptionFilePath))
+                {
+                    var json = File.ReadAllText(OptionFilePath);
+                    var option = JsonSerializer.Deserialize<Option>(json);
+                    if (option != null)
+                    {
+                        return option;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"옵션 불러오기 실패: {ex.Message}");
+            }
+            // 기본값 반환
+            return new Option();
         }
     }
 
