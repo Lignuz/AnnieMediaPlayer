@@ -13,13 +13,17 @@ This software includes third-party libraries. Their respective licenses and attr
    - License: GNU Lesser General Public License v3.0 (LGPLv3)
    - Website: https://github.com/Ruslan-B/FFmpeg.AutoGen
 
-3. System.Drawing.Common
-   - License: MIT License
-   - Website: https://www.nuget.org/packages/System.Drawing.Common/9.0.4
-   
+3. FFME.Windows
+   - License: Microsoft Public License (Ms-PL)
+   - Website: https://github.com/unosquare/ffmediaelement
+
 4. NAudio
    - License: MIT License
    - Website: https://github.com/naudio/NAudio
+
+5. System.Drawing.Common
+   - License: MIT License
+   - Website: https://www.nuget.org/packages/System.Drawing.Common/9.0.4
 
 ---
 
