@@ -1,8 +1,6 @@
-﻿using System.ComponentModel;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
@@ -23,14 +21,8 @@ namespace AnnieMediaPlayer.Options
     };
 
 
-    public class Option : INotifyPropertyChanged
+    public class Option : ViewModelBase
     {
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
         [JsonIgnore]
         public List<Languages> AvailableLanguages => Enum.GetValues(typeof(Languages)).Cast<Languages>().ToList();
         [JsonIgnore]
@@ -48,61 +40,12 @@ namespace AnnieMediaPlayer.Options
             UseSeekFramePreview = false;
         }
 
-        private Themes _selectedTheme;
-        public Themes SelectedTheme
-        {
-            get { return _selectedTheme; }
-            set
-            {
-                if (value != _selectedTheme)
-                {
-                    _selectedTheme = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        private Languages _selectedLanguage;
-        public Languages SelectedLanguage
-        {
-            get { return _selectedLanguage; }
-            set 
-            {
-                if (value != _selectedLanguage)
-                {
-                    _selectedLanguage = value; 
-                    OnPropertyChanged(); 
-                }
-            }
-        }
-
-        private bool _useOverlayControl;
-        public bool UseOverlayControl
-        {
-            get { return _useOverlayControl; }
-            set
-            {
-                if (value != _useOverlayControl)
-                {
-                    _useOverlayControl = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        private bool _useSeekFramePreview;
-        public bool UseSeekFramePreview
-        {
-            get { return _useSeekFramePreview; }
-            set
-            {
-                if (value != _useSeekFramePreview)
-                {
-                    _useSeekFramePreview = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
+        // 옵션 멤버 프로퍼티
+        public Themes SelectedTheme { get => Get(); set => Set(value); }
+        public Languages SelectedLanguage { get => Get(); set => Set(value); }
+        public bool UseOverlayControl { get => Get(); set => Set(value); }
+        public bool UseSeekFramePreview { get => Get(); set => Set(value); }
+        
 
         // 옵션 저장
         public void Save()
