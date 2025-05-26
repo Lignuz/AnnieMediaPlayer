@@ -239,7 +239,7 @@ namespace AnnieMediaPlayer
                         double fps = VideoPlayerController.VideoFps;
                         string fpsStr = fps.ToString("0.00");
 
-                        Run speedRun = new Run("1배속 (");
+                        Run speedRun = LanguageManager.GetLocalizedRun("Text.1x.Speed");
                         Run fpsRun = new Run(fpsStr + "fps");
                         Run closeParen = new Run(")");
                         textBlock.Inlines.Add(speedRun);
@@ -249,7 +249,8 @@ namespace AnnieMediaPlayer
                     else
                     {
                         // 영상이 없을 때는 단순히 "1배속"만 표시
-                        textBlock.Inlines.Add(new Run("1배속"));
+                        Run speedRun = LanguageManager.GetLocalizedRun("Text.1x.Speed");
+                        textBlock.Inlines.Add(speedRun);
                     }
                 }
                 else

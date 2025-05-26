@@ -9,6 +9,7 @@
     <sys:String x:Key="Text.Stop">정지</sys:String>
     <sys:String x:Key="Text.Sec">초</sys:String>
     <sys:String x:Key="Text.Speed">속도</sys:String>
+    <sys:String x:Key="Text.1x.Speed">1배속</sys:String>
     <sys:String x:Key="Text.Frame">프레임</sys:String>
     <sys:String x:Key="Text.Error">오류</sys:String>
 

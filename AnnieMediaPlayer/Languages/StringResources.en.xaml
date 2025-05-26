@@ -9,6 +9,7 @@
     <sys:String x:Key="Text.Stop">Stop</sys:String>
     <sys:String x:Key="Text.Sec">Sec</sys:String>
     <sys:String x:Key="Text.Speed">Speed</sys:String>
+    <sys:String x:Key="Text.1x.Speed">1x speed</sys:String>
     <sys:String x:Key="Text.Frame">Frame</sys:String>
     <sys:String x:Key="Text.Error">Error</sys:String>
 
