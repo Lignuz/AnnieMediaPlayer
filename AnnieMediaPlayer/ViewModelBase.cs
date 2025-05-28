@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace AnnieMediaPlayer.Options
+namespace AnnieMediaPlayer
 {
     // OnPropertyChanged() 를 재사용하기 위한 Base Class 입니다.
     // 심플하게 아래와 같이 Backing Field 없이 코드 작성이 가능합니다. (OnPropertyChanged 알림 자동 호출)

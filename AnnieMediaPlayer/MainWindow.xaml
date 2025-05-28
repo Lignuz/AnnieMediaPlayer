@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:AnnieMediaPlayer"
         xmlns:ffme="clr-namespace:Unosquare.FFME;assembly=ffme.win"
         xmlns:option="clr-namespace:AnnieMediaPlayer.Options"
+        xmlns:panels="clr-namespace:AnnieMediaPlayer.Windows.Panels"
         mc:Ignorable="d"
         MinWidth="540" MinHeight="310"
         Title="Annie Media Player" Height="600" Width="900"
@@ -19,6 +20,7 @@
         DragDrop.DragEnter="BaseWindow_DragEnter"
         DragDrop.Drop="BaseWindow_Drop"
         Closing="Window_Closing"
+        DataContext="{StaticResource vm}"
         x:Name="win">
     <local:BaseWindow.Resources>
         <local:FileNameConverter x:Key="FileNameConverter"/>
@@ -81,11 +83,12 @@
                 <!-- 🎞 영상 출력 영역 -->
                 <Grid Grid.Row="1" x:Name="grid_center">
                     <Border Name="VideoImageContainer">
-                        <ffme:MediaElement Name="ffmeMediaElement" Background="Black" LoadedBehavior="Pause" IsDesignPreviewEnabled="True" />
+                        <ffme:MediaElement Name="ffmeMediaElement" Background="Black" LoadedBehavior="Pause" UnloadedBehavior="Close" IsDesignPreviewEnabled="True" />
                     </Border>
                     <Image Name="BackgroundImage" Stretch="UniformToFill" Visibility="Visible"/>
                     <Grid x:Name="grid_center_top" Background="Transparent" VerticalAlignment="Top" Height="{Binding ElementName=panel_titlebar, Path=ActualHeight}" PreviewMouseMove="overlayCheck_PreviewMouseMove"/>
                     <Grid x:Name="grid_center_bottom" Background="Transparent" VerticalAlignment="Bottom" Height="{Binding ElementName=panel_control, Path=ActualHeight}" PreviewMouseMove="overlayCheck_PreviewMouseMove"/>
+                    <panels:PropertiesPanelControl x:Name="PropertiesPanel" HorizontalAlignment="Right" Visibility="{Binding IsPropertiesPanelOpen, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                 </Grid>
 
                 <!-- 컨트롤 영역 -->

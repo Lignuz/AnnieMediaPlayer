@@ -17,6 +17,8 @@ namespace AnnieMediaPlayer
     /// </summary>
     public partial class MainWindow : BaseWindow
     {
+        public static MainViewModel MainViewModel => (App.Current.MainWindow.DataContext as MainViewModel)!;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -251,9 +253,13 @@ namespace AnnieMediaPlayer
                         string fpsStr = fps.ToString("0.00");
 
                         Run speedRun = LanguageManager.GetLocalizedRun("Text.1x.Speed");
+                        Run linefeedRun = new Run("\n");
+                        Run openParen = new Run(" (");
                         Run fpsRun = new Run(fpsStr + "fps");
                         Run closeParen = new Run(")");
                         textBlock.Inlines.Add(speedRun);
+                        textBlock.Inlines.Add(linefeedRun);
+                        textBlock.Inlines.Add(openParen);
                         textBlock.Inlines.Add(fpsRun);
                         textBlock.Inlines.Add(closeParen);
                     }
