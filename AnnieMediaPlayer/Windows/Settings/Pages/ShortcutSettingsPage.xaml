@@ -7,95 +7,99 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <DataGrid x:Name="ShortcutKeysDataGrid"
-                  AutoGenerateColumns="False"
-                  CanUserAddRows="False"
-                  CanUserDeleteRows="False"
-                  CanUserResizeRows="False"
-                  CanUserReorderColumns="False"
-                  CanUserResizeColumns="False"
-                  HeadersVisibility="Column"
-                  IsReadOnly="True"
-                  GridLinesVisibility="None"
-                  BorderThickness="1"
-                  Background="{DynamicResource DataGridBackgroundBrush}"
-                  Foreground="{DynamicResource DataGridForegroundBrush}"
-                  BorderBrush="{DynamicResource DataGridBorderBrush}"
-                  RowBackground="{DynamicResource DataGridRowBackgroundBrush}"
-                  AlternatingRowBackground="{DynamicResource DataGridAlternatingRowBackgroundBrush}"
-                  SelectionUnit="FullRow"
-                  RowHeaderWidth="0">
-            <DataGrid.Resources>
-                <Style TargetType="{x:Type DataGridRow}">
-                    <Setter Property="Background" Value="{DynamicResource DataGridRowBackgroundBrush}"/>
-                    <Setter Property="Foreground" Value="{DynamicResource DataGridForegroundBrush}"/>
-                    <Setter Property="BorderBrush" Value="{DynamicResource DataGridBorderBrush}"/>
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Style.Triggers>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Background" Value="{DynamicResource DataGridSelectionBackgroundBrush}"/>
-                            <Setter Property="Foreground" Value="{DynamicResource DataGridSelectionForegroundBrush}"/>
-                        </Trigger>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="{DynamicResource DataGridMouseOverBackgroundBrush}"/>
-                            <Setter Property="Foreground" Value="{DynamicResource DataGridMouseOverForegroundBrush}"/>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
+        <StackPanel Orientation="Vertical">
+            <TextBlock Text="{DynamicResource Text.Shortcut}" FontWeight="Bold" Margin="0,0,0,10"/>
+        
+            <DataGrid x:Name="ShortcutKeysDataGrid"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserResizeRows="False"
+                      CanUserReorderColumns="False"
+                      CanUserResizeColumns="False"
+                      HeadersVisibility="Column"
+                      IsReadOnly="True"
+                      GridLinesVisibility="None"
+                      BorderThickness="1"
+                      Background="{DynamicResource DataGridBackgroundBrush}"
+                      Foreground="{DynamicResource DataGridForegroundBrush}"
+                      BorderBrush="{DynamicResource DataGridBorderBrush}"
+                      RowBackground="{DynamicResource DataGridRowBackgroundBrush}"
+                      AlternatingRowBackground="{DynamicResource DataGridAlternatingRowBackgroundBrush}"
+                      SelectionUnit="FullRow"
+                      RowHeaderWidth="0">
+                <DataGrid.Resources>
+                    <Style TargetType="{x:Type DataGridRow}">
+                        <Setter Property="Background" Value="{DynamicResource DataGridRowBackgroundBrush}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource DataGridForegroundBrush}"/>
+                        <Setter Property="BorderBrush" Value="{DynamicResource DataGridBorderBrush}"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource DataGridSelectionBackgroundBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource DataGridSelectionForegroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource DataGridMouseOverBackgroundBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource DataGridMouseOverForegroundBrush}"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
 
-                <Style TargetType="{x:Type DataGridColumnHeader}">
-                    <Setter Property="Background" Value="{DynamicResource DataGridHeaderBackgroundBrush}"/>
-                    <Setter Property="Foreground" Value="{DynamicResource DataGridHeaderForegroundBrush}"/>
-                    <Setter Property="BorderBrush" Value="{DynamicResource DataGridHeaderBorderBrush}"/>
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="Padding" Value="8,5,8,5"/>
-                    <Setter Property="HorizontalContentAlignment" Value="Left"/>
-                </Style>
+                    <Style TargetType="{x:Type DataGridColumnHeader}">
+                        <Setter Property="Background" Value="{DynamicResource DataGridHeaderBackgroundBrush}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource DataGridHeaderForegroundBrush}"/>
+                        <Setter Property="BorderBrush" Value="{DynamicResource DataGridHeaderBorderBrush}"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding" Value="8,5,8,5"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                    </Style>
 
-                <Style TargetType="{x:Type DataGridCell}">
-                    <Setter Property="BorderBrush" Value="{DynamicResource DataGridGridLineBrush}"/>
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="VerticalContentAlignment" Value="Center"/>
-                    <Style.Triggers>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Background}"/>
-                            <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Foreground}"/>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
+                    <Style TargetType="{x:Type DataGridCell}">
+                        <Setter Property="BorderBrush" Value="{DynamicResource DataGridGridLineBrush}"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Background}"/>
+                                <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridRow}}, Path=Foreground}"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
 
-                <Style TargetType="{x:Type TextBlock}" x:Key="DataGridCellTextStyle">
-                    <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGridRow}}, Path=Foreground}"/>
-                    <Setter Property="TextWrapping" Value="WrapWithOverflow"/>
-                    <Setter Property="TextTrimming" Value="None"/>
-                    <Setter Property="VerticalAlignment" Value="Center"/>
-                    <Setter Property="Padding" Value="8,5,8,5"/>
-                </Style>
-            </DataGrid.Resources>
+                    <Style TargetType="{x:Type TextBlock}" x:Key="DataGridCellTextStyle">
+                        <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGridRow}}, Path=Foreground}"/>
+                        <Setter Property="TextWrapping" Value="WrapWithOverflow"/>
+                        <Setter Property="TextTrimming" Value="None"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="Padding" Value="8,5,8,5"/>
+                    </Style>
+                </DataGrid.Resources>
 
-            <DataGrid.Columns>
-                <DataGridTemplateColumn Header="{DynamicResource Text.Shortcut.ColumnHeader.Shortcut}" Width="Auto">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Shortcut}" Style="{StaticResource DataGridCellTextStyle}" Foreground="{DynamicResource DataGridHeaderForegroundBrush}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="{DynamicResource Text.Shortcut.ColumnHeader.Action}" Width="*">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Action}" Style="{StaticResource DataGridCellTextStyle}" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="{DynamicResource Text.Shortcut.ColumnHeader.Description}" Width="3*">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Description}" Style="{StaticResource DataGridCellTextStyle}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="{DynamicResource Text.Shortcut.ColumnHeader.Shortcut}" Width="Auto">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Shortcut}" Style="{StaticResource DataGridCellTextStyle}" Foreground="{DynamicResource DataGridHeaderForegroundBrush}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="{DynamicResource Text.Shortcut.ColumnHeader.Action}" Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Action}" Style="{StaticResource DataGridCellTextStyle}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="{DynamicResource Text.Shortcut.ColumnHeader.Description}" Width="3*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Description}" Style="{StaticResource DataGridCellTextStyle}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </StackPanel>
     </Grid>
 </UserControl>

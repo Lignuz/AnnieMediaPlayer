@@ -166,6 +166,7 @@ namespace AnnieMediaPlayer
             {
                 StopButton.IsEnabled = isOpened;
                 PlayPauseButton.IsEnabled = isOpened;
+                PlayStateText.Visibility = isOpened ? Visibility.Visible : Visibility.Collapsed;
 
                 if (isOpened == false)
                 {
@@ -180,6 +181,16 @@ namespace AnnieMediaPlayer
                     TotalTimeText.Text = duration.ToString(@"hh\:mm\:ss");
                     CurrentTimeText.Text = startTime.ToString(@"hh\:mm\:ss");
                     FrameNumberText.Text = frameNumber.ToString();
+                }
+                else
+                {
+                    string playStateText = (playPauseText == "Text.Play") ? "Text.Pause" : "Text.Playing";
+                    playStateText = LanguageManager.GetResourceString(playStateText);
+                    if (string.IsNullOrEmpty(playStateText) == false)
+                    {
+                        playStateText = $"[{playStateText}]";
+                        PlayStateText.Text = LanguageManager.GetResourceString(playStateText);
+                    }
                 }
 
                 if (string.IsNullOrEmpty(playPauseText) == false)

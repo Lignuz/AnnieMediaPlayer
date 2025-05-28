@@ -5,6 +5,7 @@
     <sys:String x:Key="Text.AppTitle">Annie Media Player</sys:String>
     <sys:String x:Key="Text.Open">열기</sys:String>
     <sys:String x:Key="Text.Play">재생</sys:String>
+    <sys:String x:Key="Text.Playing">재생중</sys:String>
     <sys:String x:Key="Text.Pause">일시정지</sys:String>
     <sys:String x:Key="Text.Stop">정지</sys:String>
     <sys:String x:Key="Text.Sec">초</sys:String>
