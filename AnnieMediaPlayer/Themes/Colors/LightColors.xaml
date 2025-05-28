@@ -22,5 +22,19 @@
 	<Color x:Key="LightThumbDisabledColor">#FFCCCCCC</Color>
 	<Color x:Key="LightVideoBackgroundColor">#FF000000</Color>
     <Color x:Key="LightInactiveBorderColor">#FFDDDDDD</Color>
-	
+
+    <Color x:Key="LightDataGridBackgroundColor">#FFFFFFFF</Color>
+    <Color x:Key="LightDataGridForegroundColor">#FF000000</Color>
+    <Color x:Key="LightDataGridBorderColor">#FFCCCCCC</Color>
+    <Color x:Key="LightDataGridRowBackgroundColor">#FFFFFFFF</Color>
+    <Color x:Key="LightDataGridAlternatingRowBackgroundColor">#FFF7F7F7</Color>
+    <Color x:Key="LightDataGridGridLineColor">#FFE0E0E0</Color>
+    <Color x:Key="LightDataGridHeaderBackgroundColor">#FFE0E0E0</Color>
+    <Color x:Key="LightDataGridHeaderForegroundColor">#FF000000</Color>
+    <Color x:Key="LightDataGridHeaderBorderColor">#FFCCCCCC</Color>
+    <Color x:Key="LightDataGridSelectionBackgroundColor">#FFADD8E6</Color>
+    <Color x:Key="LightDataGridSelectionForegroundColor">#FF000000</Color>
+    <Color x:Key="LightDataGridMouseOverBackgroundColor">#FFE0E0E0</Color>
+    <Color x:Key="LightDataGridMouseOverForegroundColor">#FF000000</Color>
+
 </ResourceDictionary>

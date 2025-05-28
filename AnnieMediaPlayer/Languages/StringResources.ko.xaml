@@ -19,6 +19,7 @@
 
     <sys:String x:Key="Text.Settings">환경설정</sys:String>
     <sys:String x:Key="Text.General">일반설정</sys:String>
+    <sys:String x:Key="Text.Shortcut">단축키</sys:String>
     <sys:String x:Key="Text.Advanced">고급설정</sys:String>
 
     <sys:String x:Key="Text.Languages">언어</sys:String>
@@ -31,5 +32,27 @@
 
     <sys:String x:Key="Text.Layout.OverlayControlToggle">화면 위 오버레이 컨트롤 표시 및 자동 숨김</sys:String>
     <sys:String x:Key="Text.SeekFramePreview">탐색 프레임 미리보기</sys:String>
+
+    <sys:String x:Key="Text.Shortcut.ColumnHeader.Shortcut">단축키</sys:String>
+    <sys:String x:Key="Text.Shortcut.ColumnHeader.Action">동작</sys:String>
+    <sys:String x:Key="Text.Shortcut.ColumnHeader.Description">설명</sys:String>
+    <sys:String x:Key="Text.Shortcut.F5.Shortcut">F5</sys:String>
+    <sys:String x:Key="Text.Shortcut.F5.Action">환경설정 열기</sys:String>
+    <sys:String x:Key="Text.Shortcut.F5.Description">프로그램의 환경설정 창을 엽니다.</sys:String>
+    <sys:String x:Key="Text.Shortcut.F4.Shortcut">F4</sys:String>
+    <sys:String x:Key="Text.Shortcut.F4.Action">정지</sys:String>
+    <sys:String x:Key="Text.Shortcut.F4.Description">현재 재생 중인 미디어를 정지합니다.</sys:String>
+    <sys:String x:Key="Text.Shortcut.Space.Shortcut">Space</sys:String>
+    <sys:String x:Key="Text.Shortcut.Space.Action">열기 / 재생 및 일시정지</sys:String>
+    <sys:String x:Key="Text.Shortcut.Space.Description">미디어가 열려있지 않으면 새 미디어를 열고 재생하며, 열려있으면 재생과 일시정지를 전환합니다.</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlSpace.Shortcut">Ctrl + Space</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlSpace.Action">정지</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlSpace.Description">현재 재생 중인 미디어를 정지합니다.</sys:String>
+    <sys:String x:Key="Text.Shortcut.LeftArrow.Shortcut">←\n(왼쪽 화살표)</sys:String>
+    <sys:String x:Key="Text.Shortcut.LeftArrow.Action">1 프레임 뒤로 이동</sys:String>
+    <sys:String x:Key="Text.Shortcut.LeftArrow.Description">미디어가 일시 정지 상태일 때 1 프레임 뒤로 이동합니다.</sys:String>
+    <sys:String x:Key="Text.Shortcut.RightArrow.Shortcut">→\n(오른쪽 화살표)</sys:String>
+    <sys:String x:Key="Text.Shortcut.RightArrow.Action">1 프레임 앞으로 이동</sys:String>
+    <sys:String x:Key="Text.Shortcut.RightArrow.Description">미디어가 일시 정지 상태일 때 1 프레임 앞으로 이동합니다.</sys:String>
 
 </ResourceDictionary>

@@ -19,6 +19,7 @@
 
     <sys:String x:Key="Text.Settings">Settings</sys:String>
     <sys:String x:Key="Text.General">General</sys:String>
+    <sys:String x:Key="Text.Shortcut">Shortcut</sys:String>
     <sys:String x:Key="Text.Advanced">Advanced</sys:String>
 
     <sys:String x:Key="Text.Languages">Languages</sys:String>
@@ -31,5 +32,27 @@
 
     <sys:String x:Key="Text.Layout.OverlayControlToggle">Show overlay controls on video and auto-hide</sys:String>
     <sys:String x:Key="Text.SeekFramePreview">Seek Frame Preview</sys:String>
+
+    <sys:String x:Key="Text.Shortcut.ColumnHeader.Shortcut">Shortcut</sys:String>
+    <sys:String x:Key="Text.Shortcut.ColumnHeader.Action">Action</sys:String>
+    <sys:String x:Key="Text.Shortcut.ColumnHeader.Description">Description</sys:String>
+    <sys:String x:Key="Text.Shortcut.F5.Shortcut">F5</sys:String>
+    <sys:String x:Key="Text.Shortcut.F5.Action">Open Settings</sys:String>
+    <sys:String x:Key="Text.Shortcut.F5.Description">Opens the program's settings window.</sys:String>
+    <sys:String x:Key="Text.Shortcut.F4.Shortcut">F4</sys:String>
+    <sys:String x:Key="Text.Shortcut.F4.Action">Stop</sys:String>
+    <sys:String x:Key="Text.Shortcut.F4.Description">Stops the currently playing media.</sys:String>
+    <sys:String x:Key="Text.Shortcut.Space.Shortcut">Space</sys:String>
+    <sys:String x:Key="Text.Shortcut.Space.Action">Open / Play and Pause</sys:String>
+    <sys:String x:Key="Text.Shortcut.Space.Description">If no media is open, it opens and plays new media. If media is open, it toggles between play and pause.</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlSpace.Shortcut">Ctrl + Space</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlSpace.Action">Stop</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlSpace.Description">Stops the currently playing media.</sys:String>
+    <sys:String x:Key="Text.Shortcut.LeftArrow.Shortcut">←\n(Left Arrow)</sys:String>
+    <sys:String x:Key="Text.Shortcut.LeftArrow.Action">Move 1 frame back</sys:String>
+    <sys:String x:Key="Text.Shortcut.LeftArrow.Description">Moves back 1 frame when media is paused.</sys:String>
+    <sys:String x:Key="Text.Shortcut.RightArrow.Shortcut">→\n(Right Arrow)</sys:String>
+    <sys:String x:Key="Text.Shortcut.RightArrow.Action">Move 1 frame forward</sys:String>
+    <sys:String x:Key="Text.Shortcut.RightArrow.Description">Moves forward 1 frame when media is paused.</sys:String>
 
 </ResourceDictionary>

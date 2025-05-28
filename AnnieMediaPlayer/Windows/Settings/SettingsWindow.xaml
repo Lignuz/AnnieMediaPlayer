@@ -15,14 +15,15 @@
         <!-- main area -->
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="100"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <!-- Navigation List -->
             <ListBox x:Name="SettingsNav" Grid.Column="0" Background="Transparent" BorderThickness="0" SelectionChanged="SettingsNav_SelectionChanged">
-                <ListBoxItem Tag="General" Content="{DynamicResource Text.General}"/>
-                <ListBoxItem Tag="Advanced" Content="{DynamicResource Text.Advanced}"/>
+                <ListBoxItem Tag="General" Content="{DynamicResource Text.General}" Margin="0,0,0,5"/>
+                <ListBoxItem Tag="Shortcut" Content="{DynamicResource Text.Shortcut}" Margin="0,0,0,5"/>
+                <ListBoxItem Tag="Advanced" Content="{DynamicResource Text.Advanced}" Margin="0,0,0,5" Visibility="Hidden"/>
             </ListBox>
 
             <!-- Content Presenter for Pages -->

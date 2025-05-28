@@ -23,4 +23,18 @@
     <SolidColorBrush x:Key="VideoBackgroundBrush" Color="{DynamicResource LightVideoBackgroundColor}"/>
     <SolidColorBrush x:Key="InactiveBorderBrush" Color="{DynamicResource LightInactiveBorderColor}"/>
 
+    <SolidColorBrush x:Key="DataGridBackgroundBrush" Color="{DynamicResource LightDataGridBackgroundColor}"/>
+    <SolidColorBrush x:Key="DataGridForegroundBrush" Color="{DynamicResource LightDataGridForegroundColor}"/>
+    <SolidColorBrush x:Key="DataGridBorderBrush" Color="{DynamicResource LightDataGridBorderColor}"/>
+    <SolidColorBrush x:Key="DataGridRowBackgroundBrush" Color="{DynamicResource LightDataGridRowBackgroundColor}"/>
+    <SolidColorBrush x:Key="DataGridAlternatingRowBackgroundBrush" Color="{DynamicResource LightDataGridAlternatingRowBackgroundColor}"/>
+    <SolidColorBrush x:Key="DataGridGridLineBrush" Color="{DynamicResource LightDataGridGridLineColor}"/>
+    <SolidColorBrush x:Key="DataGridHeaderBackgroundBrush" Color="{DynamicResource LightDataGridHeaderBackgroundColor}"/>
+    <SolidColorBrush x:Key="DataGridHeaderForegroundBrush" Color="{DynamicResource LightDataGridHeaderForegroundColor}"/>
+    <SolidColorBrush x:Key="DataGridHeaderBorderBrush" Color="{DynamicResource LightDataGridHeaderBorderColor}"/>
+    <SolidColorBrush x:Key="DataGridSelectionBackgroundBrush" Color="{DynamicResource LightDataGridSelectionBackgroundColor}"/>
+    <SolidColorBrush x:Key="DataGridSelectionForegroundBrush" Color="{DynamicResource LightDataGridSelectionForegroundColor}"/>
+    <SolidColorBrush x:Key="DataGridMouseOverBackgroundBrush" Color="{DynamicResource LightDataGridMouseOverBackgroundColor}"/>
+    <SolidColorBrush x:Key="DataGridMouseOverForegroundBrush" Color="{DynamicResource LightDataGridMouseOverForegroundColor}"/>
+
 </ResourceDictionary>

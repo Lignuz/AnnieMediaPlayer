@@ -22,5 +22,19 @@
 	<Color x:Key="DarkThumbDisabledColor">#FF666666</Color>
 	<Color x:Key="DarkVideoBackgroundColor">#FF000000</Color>
     <Color x:Key="DarkInactiveBorderColor">#FF444444</Color>
-	
+
+    <Color x:Key="DarkDataGridBackgroundColor">#FF2B2B2B</Color>
+    <Color x:Key="DarkDataGridForegroundColor">#FFE0E0E0</Color>
+    <Color x:Key="DarkDataGridBorderColor">#FF404040</Color>
+    <Color x:Key="DarkDataGridRowBackgroundColor">#FF2B2B2B</Color>
+    <Color x:Key="DarkDataGridAlternatingRowBackgroundColor">#FF333333</Color>
+    <Color x:Key="DarkDataGridGridLineColor">#FF404040</Color>
+    <Color x:Key="DarkDataGridHeaderBackgroundColor">#FF1C1C1C</Color>
+    <Color x:Key="DarkDataGridHeaderForegroundColor">#FFF0F0F0</Color>
+    <Color x:Key="DarkDataGridHeaderBorderColor">#FF404040</Color>
+    <Color x:Key="DarkDataGridSelectionBackgroundColor">#FF4A4A4A</Color>
+    <Color x:Key="DarkDataGridSelectionForegroundColor">#FFFFFFFF</Color>
+    <Color x:Key="DarkDataGridMouseOverBackgroundColor">#FF3A3A3A</Color>
+    <Color x:Key="DarkDataGridMouseOverForegroundColor">#FFF0F0F0</Color>
+
 </ResourceDictionary>
