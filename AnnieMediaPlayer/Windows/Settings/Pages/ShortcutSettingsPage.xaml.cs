@@ -42,53 +42,24 @@ namespace AnnieMediaPlayer.Windows.Settings.Pages
 
         private void LoadShortcutKeys()
         {
-            // LanguageManager.GetResourceString 메서드를 사용하여 리소스 문자열을 가져옵니다.
-            var shortcutKeys = new List<ShortcutKeyInfo>
+            // LanguageManager.GetResourceString 메서드를 사용하여 규격에 맞는 리소스 문자열을 가져옵니다.
+            ShortcutKeyInfo MakeShortcutInfo(string key) => new()
             {
-                new ShortcutKeyInfo
-                {
-                    Shortcut = LanguageManager.GetResourceString("Text.Shortcut.F5.Shortcut"),
-                    Action = LanguageManager.GetResourceString("Text.Shortcut.F5.Action"),
-                    Description = LanguageManager.GetResourceString("Text.Shortcut.F5.Description")
-                },
-                new ShortcutKeyInfo
-                {
-                    Shortcut = LanguageManager.GetResourceString("Text.Shortcut.F4.Shortcut"),
-                    Action = LanguageManager.GetResourceString("Text.Shortcut.F4.Action"),
-                    Description = LanguageManager.GetResourceString("Text.Shortcut.F4.Description")
-                },
-                new ShortcutKeyInfo
-                {
-                    Shortcut = LanguageManager.GetResourceString("Text.Shortcut.Space.Shortcut"),
-                    Action = LanguageManager.GetResourceString("Text.Shortcut.Space.Action"),
-                    Description = LanguageManager.GetResourceString("Text.Shortcut.Space.Description")
-                },
-                new ShortcutKeyInfo
-                {
-                    Shortcut = LanguageManager.GetResourceString("Text.Shortcut.CtrlSpace.Shortcut"),
-                    Action = LanguageManager.GetResourceString("Text.Shortcut.CtrlSpace.Action"),
-                    Description = LanguageManager.GetResourceString("Text.Shortcut.CtrlSpace.Description")
-                },
-                new ShortcutKeyInfo
-                {
-                    Shortcut = LanguageManager.GetResourceString("Text.Shortcut.LeftArrow.Shortcut"),
-                    Action = LanguageManager.GetResourceString("Text.Shortcut.LeftArrow.Action"),
-                    Description = LanguageManager.GetResourceString("Text.Shortcut.LeftArrow.Description")
-                },
-                new ShortcutKeyInfo
-                {
-                    Shortcut = LanguageManager.GetResourceString("Text.Shortcut.RightArrow.Shortcut"),
-                    Action = LanguageManager.GetResourceString("Text.Shortcut.RightArrow.Action"),
-                    Description = LanguageManager.GetResourceString("Text.Shortcut.RightArrow.Description")
-                },
-                new ShortcutKeyInfo
-                {
-                    Shortcut = LanguageManager.GetResourceString("Text.Shortcut.Tab.Shortcut"),
-                    Action = LanguageManager.GetResourceString("Text.Shortcut.Tab.Action"),
-                    Description = LanguageManager.GetResourceString("Text.Shortcut.Tab.Description")
-                },
+                Shortcut = LanguageManager.GetResourceString($"Text.Shortcut.{key}.Shortcut"),
+                Action = LanguageManager.GetResourceString($"Text.Shortcut.{key}.Action"),
+                Description = LanguageManager.GetResourceString($"Text.Shortcut.{key}.Description")
             };
 
+            var shortcutKeys = new List<ShortcutKeyInfo>
+            {
+                MakeShortcutInfo("F5"),
+                MakeShortcutInfo("F4"),
+                MakeShortcutInfo("Space"),
+                MakeShortcutInfo("CtrlSpace"),
+                MakeShortcutInfo("LeftArrow"),
+                MakeShortcutInfo("RightArrow"),
+                MakeShortcutInfo("Tab")
+            };
             ShortcutKeysDataGrid.ItemsSource = shortcutKeys;
         }
     }
