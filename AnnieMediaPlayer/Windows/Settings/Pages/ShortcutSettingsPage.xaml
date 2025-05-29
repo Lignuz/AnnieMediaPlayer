@@ -7,27 +7,36 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <StackPanel Orientation="Vertical">
-            <TextBlock Text="{DynamicResource Text.Shortcut}" FontWeight="Bold" Margin="0,0,0,10"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
         
-            <DataGrid x:Name="ShortcutKeysDataGrid"
-                      AutoGenerateColumns="False"
-                      CanUserAddRows="False"
-                      CanUserDeleteRows="False"
-                      CanUserResizeRows="False"
-                      CanUserReorderColumns="False"
-                      CanUserResizeColumns="False"
-                      HeadersVisibility="Column"
-                      IsReadOnly="True"
-                      GridLinesVisibility="None"
-                      BorderThickness="1"
-                      Background="{DynamicResource DataGridBackgroundBrush}"
-                      Foreground="{DynamicResource DataGridForegroundBrush}"
-                      BorderBrush="{DynamicResource DataGridBorderBrush}"
-                      RowBackground="{DynamicResource DataGridRowBackgroundBrush}"
-                      AlternatingRowBackground="{DynamicResource DataGridAlternatingRowBackgroundBrush}"
-                      SelectionUnit="FullRow"
-                      RowHeaderWidth="0">
+        <StackPanel Grid.Row="0" Orientation="Vertical">
+            <TextBlock Text="{DynamicResource Text.Shortcut}" FontWeight="Bold" Margin="0,0,0,10"/>
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <DataGrid x:Name="ShortcutKeysDataGrid" 
+                Visibility="Visible"
+                AutoGenerateColumns="False"
+                CanUserAddRows="False"
+                CanUserDeleteRows="False"
+                CanUserResizeRows="False"
+                CanUserReorderColumns="False"
+                CanUserResizeColumns="False"
+                HeadersVisibility="Column"
+                IsReadOnly="True"
+                GridLinesVisibility="None"
+                BorderThickness="1"
+                Background="{DynamicResource DataGridBackgroundBrush}"
+                Foreground="{DynamicResource DataGridForegroundBrush}"
+                BorderBrush="{DynamicResource DataGridBorderBrush}"
+                RowBackground="{DynamicResource DataGridRowBackgroundBrush}"
+                AlternatingRowBackground="{DynamicResource DataGridAlternatingRowBackgroundBrush}"
+                SelectionUnit="FullRow"
+                VerticalAlignment="Top"
+                RowHeaderWidth="0">
                 <DataGrid.Resources>
                     <Style TargetType="{x:Type DataGridRow}">
                         <Setter Property="Background" Value="{DynamicResource DataGridRowBackgroundBrush}"/>
@@ -100,6 +109,6 @@
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
-        </StackPanel>
+        </Grid>
     </Grid>
 </UserControl>

@@ -57,5 +57,8 @@
     <sys:String x:Key="Text.Shortcut.RightArrow.Shortcut">→\n(오른쪽 화살표)</sys:String>
     <sys:String x:Key="Text.Shortcut.RightArrow.Action">1 프레임 앞으로 이동</sys:String>
     <sys:String x:Key="Text.Shortcut.RightArrow.Description">미디어가 일시 정지 상태일 때 1 프레임 앞으로 이동합니다.</sys:String>
+    <sys:String x:Key="Text.Shortcut.Tab.Shortcut">Tab</sys:String>
+    <sys:String x:Key="Text.Shortcut.Tab.Action">재생 정보 창 토글</sys:String>
+    <sys:String x:Key="Text.Shortcut.Tab.Description">현재 재생 속성 정보를 보여주는 창을 열거나 닫습니다.</sys:String>
 
 </ResourceDictionary>

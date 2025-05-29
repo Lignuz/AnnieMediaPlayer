@@ -144,6 +144,7 @@
                                     <Button Name="OpenButton" Content="{DynamicResource Text.Open}" Click="OpenVideo_Click" Width="80" Margin="0,0,10,0"/>
                                     <Button Name="PlayPauseButton" Content="{DynamicResource Text.Play}" Click="PlayPause_Click" Width="80" Margin="0,0,10,0"/>
                                     <Button Name="StopButton" Content="{DynamicResource Text.Stop}" Click="Stop_Click" Width="80" Margin="0,0,10,0"/>
+                                    <ToggleButton Name="InfoToggleButton" Content="i" Padding="10" IsChecked="{Binding Path=IsPropertiesPanelOpen}"/>
                                 </StackPanel>
 
                                 <!-- 재생 속도 조절 -->

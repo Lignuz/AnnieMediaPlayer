@@ -80,7 +80,13 @@ namespace AnnieMediaPlayer.Windows.Settings.Pages
                     Shortcut = LanguageManager.GetResourceString("Text.Shortcut.RightArrow.Shortcut"),
                     Action = LanguageManager.GetResourceString("Text.Shortcut.RightArrow.Action"),
                     Description = LanguageManager.GetResourceString("Text.Shortcut.RightArrow.Description")
-                }
+                },
+                new ShortcutKeyInfo
+                {
+                    Shortcut = LanguageManager.GetResourceString("Text.Shortcut.Tab.Shortcut"),
+                    Action = LanguageManager.GetResourceString("Text.Shortcut.Tab.Action"),
+                    Description = LanguageManager.GetResourceString("Text.Shortcut.Tab.Description")
+                },
             };
 
             ShortcutKeysDataGrid.ItemsSource = shortcutKeys;

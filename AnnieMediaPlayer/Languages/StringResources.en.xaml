@@ -57,5 +57,8 @@
     <sys:String x:Key="Text.Shortcut.RightArrow.Shortcut">→\n(Right Arrow)</sys:String>
     <sys:String x:Key="Text.Shortcut.RightArrow.Action">Move 1 frame forward</sys:String>
     <sys:String x:Key="Text.Shortcut.RightArrow.Description">Moves forward 1 frame when media is paused.</sys:String>
+    <sys:String x:Key="Text.Shortcut.Tab.Shortcut">Tab</sys:String>
+    <sys:String x:Key="Text.Shortcut.Tab.Action">Toggle Playback Info Window</sys:String>
+    <sys:String x:Key="Text.Shortcut.Tab.Description">Opens or closes the window that shows the current playback properties information.</sys:String>
 
 </ResourceDictionary>

@@ -13,9 +13,9 @@
     <base:BaseWindow.DataContext>
         <Binding Source="{x:Static option:OptionViewModel.Instance}"/>
     </base:BaseWindow.DataContext>
-    <StackPanel>
+    <DockPanel>
         <!-- titlebar -->
-        <cons:TitleBar TitleText="{Binding Path=Title, ElementName=uc}"/>
+        <cons:TitleBar DockPanel.Dock="Top" TitleText="{Binding Path=Title, ElementName=uc}"/>
         <!-- main area -->
         <Grid>
             <Grid.ColumnDefinitions>
@@ -33,5 +33,5 @@
             <!-- Content Presenter for Pages -->
             <ContentControl x:Name="ContentArea" Grid.Column="1" Margin="10"/>
         </Grid>
-    </StackPanel>
+    </DockPanel>
 </base:BaseWindow>

@@ -1,7 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Input;
 using AnnieMediaPlayer.Windows.Settings;
-using FFmpeg.AutoGen;
 
 namespace AnnieMediaPlayer
 {
@@ -9,7 +8,14 @@ namespace AnnieMediaPlayer
     {
         public static void HandleKeyDown(MainWindow window, KeyEventArgs e)
         {
-            if (e.Key == Key.F5)
+            if (e.Key == Key.Tab)
+            {
+                // 속성 패널 토글링
+                MainViewModel vm = MainWindow.MainViewModel;
+                vm.IsPropertiesPanelOpen = !vm.IsPropertiesPanelOpen;
+                e.Handled = true;
+            }
+            else if (e.Key == Key.F5)
             {
                 // 환경 설정 
                 var win = new SettingsWindow
