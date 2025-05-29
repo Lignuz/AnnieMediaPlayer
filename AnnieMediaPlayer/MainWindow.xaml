@@ -8,7 +8,7 @@
         xmlns:option="clr-namespace:AnnieMediaPlayer.Options"
         xmlns:panels="clr-namespace:AnnieMediaPlayer.Windows.Panels"
         mc:Ignorable="d"
-        MinWidth="540" MinHeight="310"
+        MinWidth="560" MinHeight="310"
         Title="Annie Media Player" Height="600" Width="900"
         StateChanged="Window_StateChanged"
         LocationChanged="Window_LocationChanged"
@@ -55,14 +55,11 @@
                     <DockPanel x:Name="panel_titlebar" Background="{DynamicResource BackgroundBrush}" 
                                MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" MouseMove="TitleBar_MouseMove" MouseLeftButtonUp="TitleBar_MouseLeftButtonUp" 
                                PreviewMouseMove="overlayCheck_PreviewMouseMove" MouseEnter="panel_MouseEnter" MouseLeave="panel_MouseLeave"
-                               LastChildFill="False" Height="40">
+                               LastChildFill="True" Height="40">
                         <!-- 🎨 아이콘 + 제목 묶기 -->
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
                             <Image Source="pack://application:,,,/Resources/AnnieMediaPlayer.ico" Width="20" Height="20" Margin="0,0,6,0" />
                             <TextBlock Text="{DynamicResource Text.AppTitle}" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="Bold"/>
-                            <TextBlock Name="FileNameText" VerticalAlignment="Center" Margin="20,0,0,0" Text="{Binding ElementName=FileNameText, Path=Tag, Converter={StaticResource FileNameConverter}}" ToolTip="{Binding ElementName=FileNameText, Path=Tag}"/>
-                            <TextBlock Name="PlayStateText" VerticalAlignment="Center" Margin="5,0,0,0"/>
-                            <TextBlock Name="ActualFpsText" VerticalAlignment="Center" Margin="10,0,0,0"/>
                         </StackPanel>
                         <!-- 오른쪽에 있는 버튼들 -->
                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="0,0,5,0">
@@ -77,6 +74,12 @@
                             <Button x:Name="MaxRestoreButton" Style="{StaticResource TitleBarButtonStyle}" Content="{StaticResource MaximizeIconData}" Click="MaxRestoreButton_Click" Margin="0,0,2,0"/>
                             <Button Style="{StaticResource CloseButtonStyle}" Content="{StaticResource CloseIconData}" Click="CloseButton_Click"/>
                         </StackPanel>
+                        <!-- 미디어 타이틀 표시 영역 -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="20,0,10,0">
+                            <TextBlock Name="FileNameText" VerticalAlignment="Center" Text="{Binding ElementName=FileNameText, Path=Tag, Converter={StaticResource FileNameConverter}}" ToolTip="{Binding ElementName=FileNameText, Path=Tag}"/>
+                            <TextBlock Name="PlayStateText" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                            <TextBlock Name="ActualFpsText" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                        </StackPanel>
                     </DockPanel>
                 </Grid>
 
@@ -86,9 +89,9 @@
                         <ffme:MediaElement Name="ffmeMediaElement" Background="Black" LoadedBehavior="Pause" UnloadedBehavior="Close" IsDesignPreviewEnabled="True" />
                     </Border>
                     <Image Name="BackgroundImage" Stretch="UniformToFill" Visibility="Visible"/>
-                    <Grid x:Name="grid_center_top" Background="Transparent" VerticalAlignment="Top" Height="{Binding ElementName=panel_titlebar, Path=ActualHeight}" PreviewMouseMove="overlayCheck_PreviewMouseMove"/>
-                    <Grid x:Name="grid_center_bottom" Background="Transparent" VerticalAlignment="Bottom" Height="{Binding ElementName=panel_control, Path=ActualHeight}" PreviewMouseMove="overlayCheck_PreviewMouseMove"/>
                     <panels:PropertiesPanelControl x:Name="PropertiesPanel" HorizontalAlignment="Right" Visibility="{Binding IsPropertiesPanelOpen, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <Grid x:Name="grid_center_top" Background="Transparent" VerticalAlignment="Top" Height="{Binding ElementName=panel_titlebar, Path=ActualHeight}" PreviewMouseMove="overlayCheck_PreviewMouseMove" DataContext="{Binding Source={x:Static option:OptionViewModel.Instance}}" Visibility="{Binding Path=CurrentOption.UseOverlayControl, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <Grid x:Name="grid_center_bottom" Background="Transparent" VerticalAlignment="Bottom" Height="{Binding ElementName=panel_control, Path=ActualHeight, Mode=OneTime}" PreviewMouseMove="overlayCheck_PreviewMouseMove" DataContext="{Binding Source={x:Static option:OptionViewModel.Instance}}" Visibility="{Binding Path=CurrentOption.UseOverlayControl, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                 </Grid>
 
                 <!-- 컨트롤 영역 -->
@@ -97,16 +100,18 @@
                     <Grid x:Name="panel_control" Background="{DynamicResource BackgroundBrush}"
                           PreviewMouseMove="overlayCheck_PreviewMouseMove" MouseEnter="panel_MouseEnter" MouseLeave="panel_MouseLeave">
                         <StackPanel Grid.Row="1" Margin="15">
-                            <!-- 재생 슬라이더 -->
-                            <local:DraggableSlider x:Name="PlaybackSlider" Style="{StaticResource DraggableSliderPlaybackStyle}"
-                                IsEnabled="{Binding Path=IsEnabled, ElementName=StopButton}"
-                                Width="Auto"
-                                Minimum="0" Maximum="100" Value="0"
-                                Margin="0,0,0,4"
-                                PreviewMouseMove="PlaybackSlider_PreviewMouseMove"
-                                MouseLeave="PlaybackSlider_MouseLeave"
-                                DragStateChanged="PlaybackSlider_DragStateChanged"
-                                ValueChanged="PlaybackSlider_ValueChanged"/>
+                            <Grid Height="24">
+                                <!-- 재생 슬라이더 -->
+                                <local:DraggableSlider x:Name="PlaybackSlider" Style="{StaticResource DraggableSliderPlaybackStyle}"
+                                    IsEnabled="{Binding Path=IsEnabled, ElementName=StopButton}"
+                                    Width="Auto"
+                                    Minimum="0" Maximum="100" Value="0"
+                                    Margin="0,0,0,4"
+                                    PreviewMouseMove="PlaybackSlider_PreviewMouseMove"
+                                    MouseLeave="PlaybackSlider_MouseLeave"
+                                    DragStateChanged="PlaybackSlider_DragStateChanged"
+                                    ValueChanged="PlaybackSlider_ValueChanged"/>
+                            </Grid>
 
                             <DockPanel>
                                 <!-- 시간 표시 -->
