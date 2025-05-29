@@ -9,9 +9,6 @@
              mc:Ignorable="d" 
              d:Background="White"
              d:DesignHeight="450" d:DesignWidth="800">
-    <UserControl.DataContext>
-        <Binding Source="{x:Static option:OptionViewModel.Instance}"/>
-    </UserControl.DataContext>
     <UserControl.Resources>
         <option:EnumToLocalizedStringConverter x:Key="EnumToLocalizedStringConverter"/>
     </UserControl.Resources>

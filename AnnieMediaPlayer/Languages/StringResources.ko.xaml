@@ -34,6 +34,8 @@
     <sys:String x:Key="Text.Layout.OverlayControlToggle">화면 위 오버레이 컨트롤 표시 및 자동 숨김</sys:String>
     <sys:String x:Key="Text.SeekFramePreview">탐색 프레임 미리보기</sys:String>
 
+    <sys:String x:Key="Text.UseHWAccelerator">하드웨어 가속 사용</sys:String>
+
     <sys:String x:Key="Text.Shortcut.ColumnHeader.Shortcut">단축키</sys:String>
     <sys:String x:Key="Text.Shortcut.ColumnHeader.Action">동작</sys:String>
     <sys:String x:Key="Text.Shortcut.ColumnHeader.Description">설명</sys:String>

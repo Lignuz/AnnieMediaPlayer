@@ -28,8 +28,8 @@ namespace AnnieMediaPlayer.Windows.Settings
             UserControl page = pageKey switch
             {
                 "General" => new Pages.GeneralSettingsPage(),
-                "Shortcut" => new Pages.ShortcutSettingsPage(),
                 "Advanced" => new Pages.AdvancedSettingsPage(),
+                "Shortcut" => new Pages.ShortcutSettingsPage(),
                 _ => new Pages.GeneralSettingsPage()
             };
             ContentArea.Content = page;

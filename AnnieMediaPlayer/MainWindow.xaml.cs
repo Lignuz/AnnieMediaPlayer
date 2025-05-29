@@ -8,6 +8,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using AnnieMediaPlayer.Options;
 using AnnieMediaPlayer.Windows.Settings;
+using FFmpeg.AutoGen;
 using Unosquare.FFME.Common;
 
 namespace AnnieMediaPlayer
@@ -25,6 +26,7 @@ namespace AnnieMediaPlayer
 
             FFMELoader.Initialize();
             VideoPlayerController.Initialize(ffmeMediaElement);
+            VideoPlayerController.OnMediaOpening += VideoPlayerController_OnMediaOpening;
             VideoPlayerController.OnMediaOpened += VideoPlayerController_OnMediaOpened;
             VideoPlayerController.OnMediaEnded += VideoPlayerController_OnMediaEnded;
             VideoPlayerController.OnMediaFailed += VideoPlayerController_OnMediaFailed;
@@ -76,6 +78,39 @@ namespace AnnieMediaPlayer
         /////////////////////////////////////////
         // 컨트롤러 콜백에 대한 UI 이벤트 처리 //
         /////////////////////////////////////////
+
+        // 파일 열기할 때 설정
+        private void VideoPlayerController_OnMediaOpening(object? sender, MediaOpeningEventArgs e)
+        {
+            // 하드웨어 가속 옵션이 꺼져있으면 하드웨어 디바이스 목록을 설정하지 않습니다.
+            if (OptionViewModel.Instance.CurrentOption.UseHWAccelerator == false)
+                return;
+
+            if (e.Options.VideoStream is StreamInfo videoStream)
+            {
+                // Hardware device priorities
+                var deviceCandidates = new[]
+                {
+                    AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA,
+                    AVHWDeviceType.AV_HWDEVICE_TYPE_DXVA2,
+                    AVHWDeviceType.AV_HWDEVICE_TYPE_QSV,
+                    AVHWDeviceType.AV_HWDEVICE_TYPE_CUDA,
+                    AVHWDeviceType.AV_HWDEVICE_TYPE_D3D12VA,
+                };
+
+                // Hardware device selection
+                var devices = new List<HardwareDeviceInfo>(deviceCandidates.Length);
+                foreach (var deviceType in deviceCandidates)
+                {
+                    var accelerator = videoStream.HardwareDevices.FirstOrDefault(d => d.DeviceType == deviceType);
+                    if (accelerator == null) continue;
+
+                    devices.Add(accelerator);
+                }
+
+                e.Options.VideoHardwareDevices = devices.ToArray();
+            }
+        }
 
         // 파일 열림 처리. 
         // 파일 닫힘 처리는 OnMediaStateChanged 에서 합니다.

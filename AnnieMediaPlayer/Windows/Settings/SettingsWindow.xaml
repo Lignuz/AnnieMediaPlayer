@@ -6,9 +6,13 @@
         xmlns:local="clr-namespace:AnnieMediaPlayer.Windows.Settings"
         xmlns:base="clr-namespace:AnnieMediaPlayer"
         xmlns:cons="clr-namespace:AnnieMediaPlayer.CustomControls"
+        xmlns:option="clr-namespace:AnnieMediaPlayer.Options"
         mc:Ignorable="d"
         Title="{DynamicResource Text.Settings}" Height="450" Width="600"
         x:Name="uc">
+    <base:BaseWindow.DataContext>
+        <Binding Source="{x:Static option:OptionViewModel.Instance}"/>
+    </base:BaseWindow.DataContext>
     <StackPanel>
         <!-- titlebar -->
         <cons:TitleBar TitleText="{Binding Path=Title, ElementName=uc}"/>
@@ -22,8 +26,8 @@
             <!-- Navigation List -->
             <ListBox x:Name="SettingsNav" Grid.Column="0" Background="Transparent" BorderThickness="0" SelectionChanged="SettingsNav_SelectionChanged">
                 <ListBoxItem Tag="General" Content="{DynamicResource Text.General}" Margin="0,0,0,5"/>
+                <ListBoxItem Tag="Advanced" Content="{DynamicResource Text.Advanced}" Margin="0,0,0,5"/>
                 <ListBoxItem Tag="Shortcut" Content="{DynamicResource Text.Shortcut}" Margin="0,0,0,5"/>
-                <ListBoxItem Tag="Advanced" Content="{DynamicResource Text.Advanced}" Margin="0,0,0,5" Visibility="Hidden"/>
             </ListBox>
 
             <!-- Content Presenter for Pages -->

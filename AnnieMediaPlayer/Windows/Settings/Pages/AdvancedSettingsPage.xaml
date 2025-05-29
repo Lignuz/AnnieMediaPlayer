@@ -5,10 +5,14 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:AnnieMediaPlayer.Windows.Settings.Pages"
              mc:Ignorable="d" 
+             d:Background="White"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
         <StackPanel Orientation="Vertical">
             <TextBlock Text="{DynamicResource Text.Advanced}" FontWeight="Bold" Margin="0,0,0,10"/>
+
+            <!-- 하드웨어 가속 디코딩 -->
+            <CheckBox Content="{DynamicResource Text.UseHWAccelerator}" IsChecked="{Binding CurrentOption.UseHWAccelerator}" Margin="0,20,0,5"/>
         </StackPanel>
     </Grid>
 </UserControl>

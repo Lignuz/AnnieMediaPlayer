@@ -34,6 +34,8 @@
     <sys:String x:Key="Text.Layout.OverlayControlToggle">Show overlay controls on video and auto-hide</sys:String>
     <sys:String x:Key="Text.SeekFramePreview">Seek Frame Preview</sys:String>
 
+    <sys:String x:Key="Text.UseHWAccelerator">Use hardware acceleration</sys:String>
+
     <sys:String x:Key="Text.Shortcut.ColumnHeader.Shortcut">Shortcut</sys:String>
     <sys:String x:Key="Text.Shortcut.ColumnHeader.Action">Action</sys:String>
     <sys:String x:Key="Text.Shortcut.ColumnHeader.Description">Description</sys:String>
