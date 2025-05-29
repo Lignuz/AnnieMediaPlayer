@@ -5,6 +5,25 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d" d:DesignHeight="700">
     <Border Name="PropertyExplorerPanel" Width="280" >
+        <Border.Style>
+            <Style TargetType="{x:Type Border}">
+                <Setter Property="Margin" Value="0,16,20,16" />
+                <Setter Property="Padding" Value="16,10,6,16" />
+                <Setter Property="Background">
+                    <Setter.Value>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#bb222222" Offset="0" />
+                            <GradientStop Color="#aa444444" Offset="0.6" />
+                            <GradientStop Color="#99222222" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="BorderBrush" Value="#66444444" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="DockPanel.Dock" Value="Right" />
+            </Style>
+        </Border.Style>
+        
         <DockPanel LastChildFill="True">
             <!-- The Content -->
             <Grid x:Name="PropertyExplorerPanelContent"
