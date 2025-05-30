@@ -14,7 +14,7 @@
         LocationChanged="Window_LocationChanged"
         SizeChanged="Window_SizeChanged"
         PreviewKeyDown="Window_PreviewKeyDown"
-        PreviewMouseWheel="win_PreviewMouseWheel"
+        MouseWheel="win_MouseWheel"
         MouseLeftButtonDown="win_MouseLeftButtonDown"
         Loaded="Window_Loaded"
         AllowDrop="True"
@@ -92,8 +92,8 @@
                     </Border>
                     <Image Name="BackgroundImage" Stretch="UniformToFill" Visibility="{Binding IsOpened, Converter={StaticResource BooleanToVisibilityInvertedConverter}}"/>
                     <panels:PropertiesPanelControl x:Name="PropertiesPanel" HorizontalAlignment="Right" Visibility="{Binding IsPropertiesPanelOpen, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                    <Grid x:Name="grid_center_top" Background="Transparent" VerticalAlignment="Top" Height="{Binding ElementName=panel_titlebar, Path=ActualHeight}" PreviewMouseMove="overlayCheck_PreviewMouseMove" DataContext="{Binding Source={x:Static option:OptionViewModel.Instance}}" Visibility="{Binding Path=CurrentOption.UseOverlayControl, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                    <Grid x:Name="grid_center_bottom" Background="Transparent" VerticalAlignment="Bottom" Height="{Binding ElementName=panel_control, Path=ActualHeight, Mode=OneTime}" PreviewMouseMove="overlayCheck_PreviewMouseMove" DataContext="{Binding Source={x:Static option:OptionViewModel.Instance}}" Visibility="{Binding Path=CurrentOption.UseOverlayControl, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <Grid x:Name="grid_center_top" Background="Transparent" VerticalAlignment="Top" Height="{Binding ElementName=panel_titlebar, Path=ActualHeight}" PreviewMouseMove="overlayCheck_PreviewMouseMove" Visibility="{Binding Path=CurrentOption.UseOverlayControl, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <Grid x:Name="grid_center_bottom" Background="Transparent" VerticalAlignment="Bottom" Height="{Binding ElementName=panel_control, Path=ActualHeight, Mode=OneTime}" PreviewMouseMove="overlayCheck_PreviewMouseMove" Visibility="{Binding Path=CurrentOption.UseOverlayControl, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                 </Grid>
 
                 <!-- 컨트롤 영역 -->

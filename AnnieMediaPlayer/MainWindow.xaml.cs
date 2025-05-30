@@ -62,7 +62,7 @@ namespace AnnieMediaPlayer
         }
 
         // 마우스 휠
-        private void win_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        private void win_MouseWheel(object sender, MouseWheelEventArgs e)
         {
             VideoPlayerController.SetVolumeChange(e.Delta > 0);
         }
