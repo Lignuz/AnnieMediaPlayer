@@ -274,7 +274,7 @@ namespace AnnieMediaPlayer
         }
         
 
-        private void OpenVideo_Click(object sender, RoutedEventArgs e) => _ = VideoPlayerController.OpenAndPlay();
+        private void OpenVideo_Click(object sender, RoutedEventArgs e) => _ = VideoPlayerController.Open();
         private void PlayPause_Click(object sender, RoutedEventArgs e) => _ = VideoPlayerController.TogglePlayPause();
         private void Stop_Click(object sender, RoutedEventArgs e) => _ = VideoPlayerController.Stop();
 
@@ -432,7 +432,7 @@ namespace AnnieMediaPlayer
                 {
                     // 비디오 파일 열기
                     string filePath = files[0];
-                    _ = VideoPlayerController.OpenAndPlay(filePath);
+                    _ = VideoPlayerController.Open(filePath);
                 }
             }
         }

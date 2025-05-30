@@ -45,7 +45,7 @@ namespace AnnieMediaPlayer
                     if (VideoPlayerController.IsOpened)
                         _ = VideoPlayerController.TogglePlayPause();
                     else
-                        _ = VideoPlayerController.OpenAndPlay();
+                        _ = VideoPlayerController.Open();
                 }
                 e.Handled = true;
             }

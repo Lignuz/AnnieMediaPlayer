@@ -59,6 +59,9 @@ namespace AnnieMediaPlayer
             }
         }
 
+        // 현재 옵션 
+        public Option CurrentOption => OptionViewModel.Instance.CurrentOption;
+
         // 프로퍼티 패널 열림 여부
         public bool IsPropertiesPanelOpen { get => Get(); set => Set(value); }
 

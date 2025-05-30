@@ -76,8 +76,8 @@ namespace AnnieMediaPlayer
             _ffmePlayer.OnVideoFrameRendered += FfmePlayer_OnVideoFrameRendered;
         }
 
-        // 파일 열기 및 재생
-        public static async Task<bool> OpenAndPlay()
+        // 열기 
+        public static async Task<bool> Open()
         {
             var dialog = new OpenFileDialog
             {
@@ -87,85 +87,9 @@ namespace AnnieMediaPlayer
 
             if (dialog.ShowDialog() == true)
             {
-                return await OpenAndPlay(dialog.FileName);
+                return await Open(dialog.FileName);
             }
             return false;
-        }
-        
-        // 열고 재생
-        public static async Task<bool> OpenAndPlay(string filePath)
-        {
-            if (_ffmePlayer == null) return false;
-
-            var tcs = new TaskCompletionSource<bool>();
-            
-            void OnMediaReady_OpenAndPlay(object? s, EventArgs e)
-            {
-                _ffmePlayer.OnMediaReady -= OnMediaReady_OpenAndPlay;
-                _ffmePlayer.OnMediaFailed -= OnMediaFailed_OpenAndPlay;
-
-                Task.Run(async () =>
-                {
-                    try
-                    {
-                        await Seek(TimeSpan.Zero);
-
-                        var result = await Play();
-                        tcs.TrySetResult(result);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"[MediaReady handler] Exception: {ex}");
-                        tcs.TrySetResult(false);
-                    }
-
-                });
-            }
-
-            void OnMediaFailed_OpenAndPlay(object? s, MediaFailedEventArgs e)
-            {
-                _ffmePlayer.OnMediaReady -= OnMediaReady_OpenAndPlay;
-                _ffmePlayer.OnMediaFailed -= OnMediaFailed_OpenAndPlay;
-
-                Debug.WriteLine($"[MediaFailed handler] Exception: {e.ErrorException}");
-                tcs.TrySetResult(false);
-            }
-
-            // 이벤트 한 번만 등록
-            _ffmePlayer.OnMediaReady -= OnMediaReady_OpenAndPlay;
-            _ffmePlayer.OnMediaReady += OnMediaReady_OpenAndPlay;
-            _ffmePlayer.OnMediaFailed -= OnMediaFailed_OpenAndPlay;
-            _ffmePlayer.OnMediaFailed += OnMediaFailed_OpenAndPlay;
-
-            try
-            {
-                if (!await Open(filePath))
-                {
-                    Debug.WriteLine($"[OpenAndPlay] Failed to open file: {filePath}");
-                    _ffmePlayer.OnMediaReady -= OnMediaReady_OpenAndPlay;
-                    _ffmePlayer.OnMediaFailed -= OnMediaFailed_OpenAndPlay;
-                    return false;
-                }
-
-                int timeout = 3000;
-                var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeout));
-                if (completed != tcs.Task)
-                {
-                    Debug.WriteLine($"[OpenAndPlay] Timeout waiting for media ready.");
-                    _ffmePlayer.OnMediaReady -= OnMediaReady_OpenAndPlay;
-                    _ffmePlayer.OnMediaFailed -= OnMediaFailed_OpenAndPlay;
-                    return false;
-                }
-
-                return tcs.Task.Result;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[OpenAndPlay] Exception: {ex}");
-                _ffmePlayer.OnMediaReady -= OnMediaReady_OpenAndPlay;
-                _ffmePlayer.OnMediaFailed -= OnMediaFailed_OpenAndPlay;
-                return false;
-            }
         }
 
         // 열기 

@@ -35,6 +35,7 @@
     <sys:String x:Key="Text.SeekFramePreview">탐색 프레임 미리보기</sys:String>
 
     <sys:String x:Key="Text.UseHWAccelerator">하드웨어 가속 사용</sys:String>
+    <sys:String x:Key="Text.UseOpenPlay">미디어 열기 후 바로 재생 시작</sys:String>
 
     <sys:String x:Key="Text.Shortcut.ColumnHeader.Shortcut">단축키</sys:String>
     <sys:String x:Key="Text.Shortcut.ColumnHeader.Action">동작</sys:String>

@@ -40,6 +40,7 @@ namespace AnnieMediaPlayer.Options
             UseSeekFramePreview = false;
 
             UseHWAccelerator = false;
+            UseOpenPlay = true;
         }
 
         // 옵션 멤버 프로퍼티
@@ -49,6 +50,7 @@ namespace AnnieMediaPlayer.Options
         public bool UseSeekFramePreview { get => Get(); set => Set(value); }
 
         public bool UseHWAccelerator { get => Get(); set => Set(value); }
+        public bool UseOpenPlay { get => Get(); set => Set(value); }
 
 
         // 옵션 저장

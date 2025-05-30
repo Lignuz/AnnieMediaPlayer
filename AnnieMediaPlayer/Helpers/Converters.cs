@@ -101,4 +101,19 @@ namespace AnnieMediaPlayer
             throw new NotImplementedException();
         }
     }
+
+    public class UseOpenPlayStringConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is true)
+                return "Play";
+            return "Pause";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

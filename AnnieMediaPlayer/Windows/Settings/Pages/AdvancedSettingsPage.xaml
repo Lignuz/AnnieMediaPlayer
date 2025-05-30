@@ -13,6 +13,8 @@
 
             <!-- 하드웨어 가속 디코딩 -->
             <CheckBox Content="{DynamicResource Text.UseHWAccelerator}" IsChecked="{Binding CurrentOption.UseHWAccelerator}" Margin="0,20,0,5"/>
+            <!-- 열기 후 바로 재생 시작 -->
+            <CheckBox Content="{DynamicResource Text.UseOpenPlay}" IsChecked="{Binding CurrentOption.UseOpenPlay}" Margin="0,15,0,5"/>
         </StackPanel>
     </Grid>
 </UserControl>
