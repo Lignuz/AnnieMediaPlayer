@@ -76,8 +76,8 @@
                         </StackPanel>
                         <!-- 미디어 타이틀 표시 영역 -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="20,0,10,0">
-                            <TextBlock Name="FileNameText" VerticalAlignment="Center" Text="{Binding ElementName=FileNameText, Path=Tag, Converter={StaticResource FileNameConverter}}" ToolTip="{Binding ElementName=FileNameText, Path=Tag}"/>
-                            <TextBlock Name="PlayStateText" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                            <TextBlock Name="FileNameText" VerticalAlignment="Center" Tag="{Binding FilePath}" Text="{Binding ElementName=FileNameText, Path=Tag, Converter={StaticResource FileNameConverter}}" ToolTip="{Binding ElementName=FileNameText, Path=Tag}"/>
+                            <TextBlock Name="PlayStateText" VerticalAlignment="Center" Margin="5,0,0,0" Visibility="{Binding Path=IsOpened, Converter={StaticResource BooleanToVisibilityConverter}}" Text="{Binding Path=PlayStateText}"/>
                             <TextBlock Name="ActualFpsText" VerticalAlignment="Center" Margin="10,0,0,0"/>
                         </StackPanel>
                     </DockPanel>
@@ -88,7 +88,7 @@
                     <Border Name="VideoImageContainer">
                         <ffme:MediaElement Name="ffmeMediaElement" Background="Black" LoadedBehavior="Pause" UnloadedBehavior="Close" IsDesignPreviewEnabled="True" />
                     </Border>
-                    <Image Name="BackgroundImage" Stretch="UniformToFill" Visibility="Visible"/>
+                    <Image Name="BackgroundImage" Stretch="UniformToFill" Visibility="{Binding IsOpened, Converter={StaticResource BooleanToVisibilityInvertedConverter}}"/>
                     <panels:PropertiesPanelControl x:Name="PropertiesPanel" HorizontalAlignment="Right" Visibility="{Binding IsPropertiesPanelOpen, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                     <Grid x:Name="grid_center_top" Background="Transparent" VerticalAlignment="Top" Height="{Binding ElementName=panel_titlebar, Path=ActualHeight}" PreviewMouseMove="overlayCheck_PreviewMouseMove" DataContext="{Binding Source={x:Static option:OptionViewModel.Instance}}" Visibility="{Binding Path=CurrentOption.UseOverlayControl, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                     <Grid x:Name="grid_center_bottom" Background="Transparent" VerticalAlignment="Bottom" Height="{Binding ElementName=panel_control, Path=ActualHeight, Mode=OneTime}" PreviewMouseMove="overlayCheck_PreviewMouseMove" DataContext="{Binding Source={x:Static option:OptionViewModel.Instance}}" Visibility="{Binding Path=CurrentOption.UseOverlayControl, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -103,9 +103,9 @@
                             <Grid Height="24">
                                 <!-- 재생 슬라이더 -->
                                 <local:DraggableSlider x:Name="PlaybackSlider" Style="{StaticResource DraggableSliderPlaybackStyle}"
-                                    IsEnabled="{Binding Path=IsEnabled, ElementName=StopButton}"
+                                    IsEnabled="{Binding Path=IsOpened}"
                                     Width="Auto"
-                                    Minimum="0" Maximum="100" Value="0"
+                                    Minimum="0" Maximum="{Binding Path=Duration.TotalSeconds, Mode=OneWay}" Value="{Binding Path=Position.TotalSeconds, Mode=OneWay}"
                                     Margin="0,0,0,4"
                                     PreviewMouseMove="PlaybackSlider_PreviewMouseMove"
                                     MouseLeave="PlaybackSlider_MouseLeave"
@@ -116,14 +116,16 @@
                             <DockPanel>
                                 <!-- 시간 표시 -->
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <TextBlock Name="CurrentTimeText" Text="00:00:00" FontWeight="Bold" />
+                                    <TextBlock Name="CurrentTimeText" Text="{Binding Path=Position, Converter={StaticResource TimeSpanFormatter}, ConverterParameter=sec}" FontWeight="Bold" />
                                     <TextBlock Text=" / " />
-                                    <TextBlock Name="TotalTimeText" Text="00:00:00" Margin="0,0,10,0"/>
-                                    <TextBlock>
-                                        <Run Text="{DynamicResource Text.Frame}"/>
-                                        <Run Text=":"/>
-                                    </TextBlock>
-                                    <TextBlock Name="FrameNumberText" Text="0" FontWeight="Bold" Margin="5,0"/>
+                                    <TextBlock Name="TotalTimeText" Text="{Binding Path=Duration, Converter={StaticResource TimeSpanFormatter}, ConverterParameter=sec}" Margin="0,0,10,0"/>
+                                    <StackPanel Orientation="Horizontal" Visibility="{Binding Path=IsOpened, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <TextBlock>
+                                            <Run Text="{DynamicResource Text.Frame}"/>
+                                            <Run Text=":"/>
+                                        </TextBlock>
+                                        <TextBlock Name="FrameNumberText" Text="{Binding Path=FrameIndex}" FontWeight="Bold" Margin="5,0"/>
+                                    </StackPanel>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                                     <Viewbox Width="20" Height="20">
@@ -142,8 +144,8 @@
                             <DockPanel LastChildFill="False">
                                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" HorizontalAlignment="Left">
                                     <Button Name="OpenButton" Content="{DynamicResource Text.Open}" Click="OpenVideo_Click" Width="80" Margin="0,0,10,0"/>
-                                    <Button Name="PlayPauseButton" Content="{DynamicResource Text.Play}" Click="PlayPause_Click" Width="80" Margin="0,0,10,0"/>
-                                    <Button Name="StopButton" Content="{DynamicResource Text.Stop}" Click="Stop_Click" Width="80" Margin="0,0,10,0"/>
+                                    <Button Name="PlayPauseButton" Content="{Binding Path=PlayPauseButtonText}" IsEnabled="{Binding IsOpened}" Click="PlayPause_Click" Width="80" Margin="0,0,10,0"/>
+                                    <Button Name="StopButton" Content="{DynamicResource Text.Stop}" IsEnabled="{Binding IsOpened}" Click="Stop_Click" Width="80" Margin="0,0,10,0"/>
                                     <ToggleButton Name="InfoToggleButton" Content="i" Padding="10" IsChecked="{Binding Path=IsPropertiesPanelOpen}"/>
                                 </StackPanel>
 

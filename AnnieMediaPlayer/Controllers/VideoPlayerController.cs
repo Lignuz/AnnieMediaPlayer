@@ -9,6 +9,7 @@ using Unosquare.FFME.Common;
 using MediaElement = Unosquare.FFME.MediaElement;
 using System.Diagnostics;
 using System.Windows.Threading;
+using System.Windows.Data;
 
 namespace AnnieMediaPlayer
 {
@@ -567,6 +568,14 @@ namespace AnnieMediaPlayer
         {
             IsSliderDragging = false;
             IsSliderDraggingOnPlaying = false;
+
+            // 다시 바인딩합니다.
+            Binding newBinding = new Binding("Position.TotalSeconds") // 바인딩할 ViewModel 속성 이름
+            {
+                Mode = BindingMode.OneWay, // 바인딩 모드 (XAML과 동일하게)
+            };
+            var slider = window.PlaybackSlider;
+            slider.SetBinding(Slider.ValueProperty, newBinding);
         }
 
         public static async void OnSliderValueChanged(MainWindow window)
@@ -575,8 +584,6 @@ namespace AnnieMediaPlayer
             {
                 var time = TimeSpan.FromSeconds(window.PlaybackSlider.Value);
                 Debug.WriteLine($"OnSliderValueChanged: {time}");
-
-                window.CurrentTimeText.Text = time.ToString(@"hh\:mm\:ss");
 
                 if (IsOpened)
                 {
@@ -636,7 +643,7 @@ namespace AnnieMediaPlayer
 
         public static void StartFrameStepMode(TimeSpan interval)
         {
-            StopFrameStepMode();
+            StopFrameStepMode(false);
             _isFrameStepMode = true;
             _isFrameStepPaused = false;
             _frameStepTimer = new DispatcherTimer();
@@ -647,14 +654,20 @@ namespace AnnieMediaPlayer
                     await SeekStep(true);
             };
             _frameStepTimer.Start();
+            OnFrameStepStateChanged?.Invoke(null, EventArgs.Empty);
         }
 
-        public static void StopFrameStepMode()
+        public static void StopFrameStepMode(bool notify = true)
         {
             _isFrameStepMode = false;
             _isFrameStepPaused = false;
             _frameStepTimer?.Stop();
             _frameStepTimer = null;
+
+            if (notify == true)
+            {
+                OnFrameStepStateChanged?.Invoke(null, EventArgs.Empty);
+            }
         }
 
         public static void PauseFrameStep()
@@ -663,7 +676,7 @@ namespace AnnieMediaPlayer
             {
                 _isFrameStepPaused = true;
                 _frameStepTimer?.Stop();
-                OnFrameStepStateChanged?.Invoke(null, EventArgs.Empty); // 상태 변경 알림
+                OnFrameStepStateChanged?.Invoke(null, EventArgs.Empty);
             }
         }
         public static void ResumeFrameStep()
@@ -672,7 +685,7 @@ namespace AnnieMediaPlayer
             {
                 _isFrameStepPaused = false;
                 _frameStepTimer?.Start();
-                OnFrameStepStateChanged?.Invoke(null, EventArgs.Empty); // 상태 변경 알림
+                OnFrameStepStateChanged?.Invoke(null, EventArgs.Empty);
             }
         }
 

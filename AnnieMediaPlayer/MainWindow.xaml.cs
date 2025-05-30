@@ -18,7 +18,7 @@ namespace AnnieMediaPlayer
     /// </summary>
     public partial class MainWindow : BaseWindow
     {
-        public static MainViewModel MainViewModel => (App.Current.MainWindow.DataContext as MainViewModel)!;
+        public static MainViewModel vm => (App.Current.MainWindow.DataContext as MainViewModel)!;
 
         public MainWindow()
         {
@@ -37,10 +37,6 @@ namespace AnnieMediaPlayer
             UpdateSetSpeedLabel();
 
             BackgroundImage.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/background01.png"));
-
-            PlayPauseButton.IsEnabled = false;
-            StopButton.IsEnabled = false;
-
             ThemeManager.ThemeChanged += ThemeManager_ThemeChanged;
         }
 
@@ -116,23 +112,12 @@ namespace AnnieMediaPlayer
         // 파일 닫힘 처리는 OnMediaStateChanged 에서 합니다.
         private void VideoPlayerController_OnMediaOpened(object? sender, MediaOpenedEventArgs e)
         {
-            Dispatcher.Invoke(() =>
-            {
-                FileNameText.Tag = e.Info.MediaSource;
-                BackgroundImage.Visibility = Visibility.Collapsed;
-                StopButton.IsEnabled = true;
-                PlayPauseButton.IsEnabled = true;
-                PlayPauseButton.SetResourceReference(ContentControl.ContentProperty, "Text.Pause");
-
-                TimeSpan duration = e.Info.Duration;
-                TimeSpan startTime = TimeSpan.Zero;
-                long frameNumber = 0;
-                PlaybackSlider.Maximum = duration.TotalSeconds;
-                PlaybackSlider.Value = startTime.TotalSeconds;
-                TotalTimeText.Text = duration.ToString(@"hh\:mm\:ss");
-                CurrentTimeText.Text = startTime.ToString(@"hh\:mm\:ss");
-                FrameNumberText.Text = frameNumber.ToString();
-            });
+            vm.IsOpened = true;
+            vm.FilePath = e.Info.MediaSource;
+            vm.Duration = e.Info.Duration;
+            vm.Position = e.Info.StartTime;
+            vm.FrameIndex = 0;
+            vm.IsPlaying = false;
         }
 
         private void VideoPlayerController_OnMediaEnded(object? sender, EventArgs e)
@@ -150,119 +135,59 @@ namespace AnnieMediaPlayer
 
         private void VideoPlayerController_OnPositionChanged(object? sender, PositionChangedEventArgs e)
         {
-            Dispatcher.BeginInvoke(() =>
-            {
-                TimeSpan currentTime = e.Position;
-                if (VideoPlayerController.IsSliderDragging == false)
-                {
-                    PlaybackSlider.Value = currentTime.TotalSeconds;
-                }
-                CurrentTimeText.Text = currentTime.ToString(@"hh\:mm\:ss");
-            });
+            vm.Position = e.Position;
         }
 
         // 미디어 상태 변경시 이벤트 
         private void VideoPlayerController_OnMediaStateChanged(object? sender, MediaStateChangedEventArgs e)
         {
-            // 닫힌 상태에서는 값을 가져올 때 오류가 발생할 수 있으므로 일단 처리하지 않도록 합니다 .
-            if (e.MediaState == MediaPlaybackState.Close)
-            {
-                return;
-            }
-
-            bool isOpened = VideoPlayerController.IsOpened;
             string playPauseText = string.Empty;
-
-            // 정지 or 닫힘 상태
-            if (e.MediaState == MediaPlaybackState.Close ||
+            if (e.MediaState == MediaPlaybackState.Close || 
                 e.MediaState == MediaPlaybackState.Stop)
             {
-                playPauseText = "Text.Play";
+                vm.IsOpened = false;
+                vm.FilePath = string.Empty;
+                vm.Duration = TimeSpan.Zero;
+                vm.Position = TimeSpan.Zero;
+                vm.FrameIndex = 0;
+                vm.IsPlaying = false;
+
+                if (e.MediaState == MediaPlaybackState.Close)
+                {
+                    return;
+                }
             }
-            // 파일이 열려있는 상태
             else
             {
+                vm.IsOpened = true;
+
                 if (VideoPlayerController.IsSliderDragging == false)
                 {
                     // 느린 재생(프레임스텝) 모드일 때
                     if (VideoPlayerController.IsFrameStepMode)
                     {
-                        playPauseText = VideoPlayerController.IsFrameStepPaused ? "Text.Play" : "Text.Pause";
+                        vm.IsPlaying = !VideoPlayerController.IsFrameStepPaused;
                     }
                     else
                     {
-                        if (e.MediaState == MediaPlaybackState.Pause)
-                            playPauseText = "Text.Play";
-                        else if (e.MediaState == MediaPlaybackState.Play)
-                            playPauseText = "Text.Pause";
+                        vm.IsPlaying = e.MediaState == MediaPlaybackState.Play ? true :
+                            e.MediaState == MediaPlaybackState.Pause ? false : vm.IsPlaying;
                     }
                 }
             }
-
-            Dispatcher.Invoke(() =>
-            {
-                StopButton.IsEnabled = isOpened;
-                PlayPauseButton.IsEnabled = isOpened;
-                PlayStateText.Visibility = isOpened ? Visibility.Visible : Visibility.Collapsed;
-
-                if (isOpened == false)
-                {
-                    FileNameText.Tag = string.Empty;
-                    BackgroundImage.Visibility = Visibility.Visible;
-
-                    TimeSpan duration = TimeSpan.Zero;
-                    TimeSpan startTime = TimeSpan.Zero;
-                    long frameNumber = 0;
-                    PlaybackSlider.Maximum = duration.TotalSeconds;
-                    PlaybackSlider.Value = startTime.TotalSeconds;
-                    TotalTimeText.Text = duration.ToString(@"hh\:mm\:ss");
-                    CurrentTimeText.Text = startTime.ToString(@"hh\:mm\:ss");
-                    FrameNumberText.Text = frameNumber.ToString();
-                }
-                else
-                {
-                    string playStateText = (playPauseText == "Text.Play") ? "Text.Pause" : "Text.Playing";
-                    playStateText = LanguageManager.GetResourceString(playStateText);
-                    if (string.IsNullOrEmpty(playStateText) == false)
-                    {
-                        playStateText = $"[{playStateText}]";
-                        PlayStateText.Text = LanguageManager.GetResourceString(playStateText);
-                    }
-                }
-
-                if (string.IsNullOrEmpty(playPauseText) == false)
-                    PlayPauseButton.SetResourceReference(ContentControl.ContentProperty, playPauseText);
-            });
             UpdateSpeedInfo();
         }
 
         // 렌더 될때마다 
         private void VideoPlayerController_OnVideoFrameRendered(object? sender, RenderingVideoEventArgs e)
         {
-            Dispatcher.Invoke(() =>
-            {
-                long frameNumber = e.PictureNumber - 1;
-                FrameNumberText.Text = frameNumber.ToString();
-            });
+            vm.FrameIndex = e.PictureNumber - 1;
             UpdateCalcSpeedLabel();
         }
 
         private void VideoPlayerController_OnFrameStepStateChanged(object? sender, EventArgs e)
         {
-            // MediaStateChanged와 동일하게 버튼 텍스트 갱신
-            Dispatcher.Invoke(() =>
-            {
-                string playPauseText;
-                if (VideoPlayerController.IsFrameStepMode)
-                {
-                    playPauseText = VideoPlayerController.IsFrameStepPaused ? "Text.Play" : "Text.Pause";
-                }
-                else
-                {
-                    playPauseText = VideoPlayerController.IsPlaying ? "Text.Pause" : "Text.Play";
-                }
-                PlayPauseButton.SetResourceReference(ContentControl.ContentProperty, playPauseText);
-            });
+            vm.IsPlaying = VideoPlayerController.IsFrameStepMode ? !VideoPlayerController.IsFrameStepPaused : VideoPlayerController.IsPlaying;
         }
 
         void UpdateSpeedInfo()

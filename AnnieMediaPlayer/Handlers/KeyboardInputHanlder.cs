@@ -11,7 +11,7 @@ namespace AnnieMediaPlayer
             if (e.Key == Key.Tab)
             {
                 // 속성 패널 토글링
-                MainViewModel vm = MainWindow.MainViewModel;
+                MainViewModel vm = MainWindow.vm;
                 vm.IsPropertiesPanelOpen = !vm.IsPropertiesPanelOpen;
                 e.Handled = true;
             }
