@@ -299,6 +299,55 @@ namespace AnnieMediaPlayer
                 return false;
         }
     }
+
+    public class GreaterThanToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null || parameter == null)
+            {
+                // 입력 또는 파라미터가 null이면 Hidden 반환 (또는 원하는 기본 동작)
+                return Visibility.Hidden;
+            }
+
+            try
+            {
+                // 입력 값 (바인딩된 값)을 double로 변환
+                double numericValue = System.Convert.ToDouble(value, culture);
+
+                // 파라미터 값을 double로 변환
+                double numericParameter = System.Convert.ToDouble(parameter, culture);
+
+                // 입력 값이 파라미터 값보다 큰 경우 Visible, 아니면 Hidden
+                if (numericValue > numericParameter)
+                {
+                    return Visibility.Visible;
+                }
+                else
+                {
+                    return Visibility.Hidden;
+                }
+            }
+            catch (FormatException)
+            {
+                // 숫자로 변환할 수 없는 경우 예외 처리
+                // (예: 문자열이 들어왔을 때)
+                return Visibility.Hidden;
+            }
+            catch (InvalidCastException)
+            {
+                // 잘못된 타입이 들어왔을 때 예외 처리
+                return Visibility.Hidden;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            // 이 컨버터는 단방향이므로 ConvertBack은 구현하지 않습니다.
+            throw new NotImplementedException("GreaterThanToVisibilityConverter는 단방향 컨버터입니다.");
+        }
+    }
+
 }
 #pragma warning restore CA1812 // Remove classes that are apparently never instantiated
 #pragma warning restore SA1649 // File name must match first type name

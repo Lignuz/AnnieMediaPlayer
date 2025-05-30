@@ -32,6 +32,7 @@
             <local:InverseBooleanConverter x:Key="InverseBooleanConverter" />
             <local:ClosedCaptionsChannelConverter x:Key="ClosedCaptionsChannelConverter" />
             <local:BooleanToVisibilityInvertedConverter x:Key="BooleanToVisibilityInvertedConverter" />
+            <local:GreaterThanToVisibilityConverter x:Key="GreaterThanToVisibilityConverter" />
             
         </ResourceDictionary>
     </Application.Resources>

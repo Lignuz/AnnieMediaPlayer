@@ -61,6 +61,12 @@ namespace AnnieMediaPlayer
             await VideoPlayerController.Stop();
         }
 
+        // 마우스 휠
+        private void win_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            VideoPlayerController.SetVolumeChange(e.Delta > 0);
+        }
+
         // 기본영역 드래그로 이동 지원
         private void win_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {

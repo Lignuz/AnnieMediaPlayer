@@ -14,6 +14,7 @@
         LocationChanged="Window_LocationChanged"
         SizeChanged="Window_SizeChanged"
         PreviewKeyDown="Window_PreviewKeyDown"
+        PreviewMouseWheel="win_PreviewMouseWheel"
         MouseLeftButtonDown="win_MouseLeftButtonDown"
         Loaded="Window_Loaded"
         AllowDrop="True"
@@ -132,9 +133,9 @@
                                     <Viewbox Width="20" Height="20">
                                         <Canvas Width="16" Height="16">
                                             <Path Fill="{DynamicResource ThemeButtonFillBrush}" Data="M3.5,6.5 L6,6.5 L9,4 L9,12 L6,9.5 L3.5,9.5 Z"/>
-                                            <Path Stroke="{DynamicResource ThemeButtonFillBrush}" StrokeThickness="1" StrokeLineJoin="Round" Data="M10.5,8 C11.5,7 11.5,9 10.5,8"/>
-                                            <Path Stroke="{DynamicResource ThemeButtonFillBrush}" StrokeThickness="1" StrokeLineJoin="Round" Data="M12,5.5 C13,8 13,8 12,10.5"/>
-                                            <Path Stroke="{DynamicResource ThemeButtonFillBrush}" StrokeThickness="1" StrokeLineJoin="Round" Data="M13.5,4.5 C15,8 15,8 13.5,11.5"/>
+                                            <Path Stroke="{DynamicResource ThemeButtonFillBrush}" StrokeThickness="1" StrokeLineJoin="Round" Data="M13.5,4.5 C15,8 15,8 13.5,11.5" Visibility="{Binding ElementName=ffmeMediaElement, Path=Volume, Converter={StaticResource GreaterThanToVisibilityConverter}, ConverterParameter=0.8}"/>
+                                            <Path Stroke="{DynamicResource ThemeButtonFillBrush}" StrokeThickness="1" StrokeLineJoin="Round" Data="M12,5.5 C13,8 13,8 12,10.5" Visibility="{Binding ElementName=ffmeMediaElement, Path=Volume, Converter={StaticResource GreaterThanToVisibilityConverter}, ConverterParameter=0.4}"/>
+                                            <Path Stroke="{DynamicResource ThemeButtonFillBrush}" StrokeThickness="1" StrokeLineJoin="Round" Data="M10.5,8 C11.5,7 11.5,9 10.5,8" Visibility="{Binding ElementName=ffmeMediaElement, Path=Volume, Converter={StaticResource GreaterThanToVisibilityConverter}, ConverterParameter=0.05}"/>
                                         </Canvas>
                                     </Viewbox>
                                     <local:DraggableSlider x:Name="VolumeSlider" Style="{StaticResource DraggableSliderDefaultStyle}" Width="100" Minimum="0.0" Maximum="1.0" Value="{Binding ElementName=ffmeMediaElement, Path=Volume}"/>
