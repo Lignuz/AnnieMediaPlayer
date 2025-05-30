@@ -18,7 +18,7 @@ namespace AnnieMediaPlayer
     /// </summary>
     public partial class MainWindow : BaseWindow
     {
-        public static MainViewModel vm => (App.Current.MainWindow.DataContext as MainViewModel)!;
+        public static MainViewModel vm => (MainViewModel)App.Current.FindResource("vm");
 
         public MainWindow()
         {
