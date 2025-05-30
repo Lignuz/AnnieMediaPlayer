@@ -62,6 +62,14 @@ namespace AnnieMediaPlayer
             if (p.Value == TimeSpan.MinValue)
                 return "N/A";
 
+            if (parameter is string param)
+            {
+                // 초 단위까지만 표시
+                if (param == "sec")
+                {
+                    return $"{(int)p.Value.TotalHours:00}:{p.Value.Minutes:00}:{p.Value.Seconds:00}";
+                }
+            }
             return $"{(int)p.Value.TotalHours:00}:{p.Value.Minutes:00}:{p.Value.Seconds:00}.{p.Value.Milliseconds:000}";
         }
 
@@ -270,6 +278,26 @@ namespace AnnieMediaPlayer
         /// <inheritdoc />
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
             value != null && (bool)value ? CaptionsChannel.CC1 : CaptionsChannel.CCP;
+    }
+
+    // BooleanToVisibilityConverter 의 반대 동작을 합니다.
+    public class BooleanToVisibilityInvertedConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool bValue)
+                return bValue ? Visibility.Collapsed : Visibility.Visible;
+            else
+                return Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is Visibility visibility)
+                return visibility != Visibility.Visible;
+            else
+                return false;
+        }
     }
 }
 #pragma warning restore CA1812 // Remove classes that are apparently never instantiated

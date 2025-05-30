@@ -21,16 +21,17 @@
             <ObjectDataProvider x:Key="OptionVm" ObjectType="{x:Type option:OptionViewModel}" MethodName="get_Instance" />
 
             <!-- 컨버터 -->
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
             <local:TimeSpanToSecondsConverter x:Key="TimeSpanToSecondsConverter" />
             <local:TimeSpanFormatter x:Key="TimeSpanFormatter" />
             <local:PercentageFormatter x:Key="PercentageFormatter" />
             <local:ByteFormatter x:Key="ByteFormatter" />
             <local:BitFormatter x:Key="BitFormatter" />
-            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
             <local:PlaylistDurationFormatter x:Key="PlaylistDurationFormatter" />
             <local:UtcDateToLocalTimeString x:Key="UtcDateToLocalTimeString" />
             <local:InverseBooleanConverter x:Key="InverseBooleanConverter" />
             <local:ClosedCaptionsChannelConverter x:Key="ClosedCaptionsChannelConverter" />
+            <local:BooleanToVisibilityInvertedConverter x:Key="BooleanToVisibilityInvertedConverter" />
             
         </ResourceDictionary>
     </Application.Resources>
