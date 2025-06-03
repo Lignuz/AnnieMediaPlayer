@@ -10,6 +10,7 @@
     <sys:String x:Key="Text.Stop">Stop</sys:String>
     <sys:String x:Key="Text.Sec">Sec</sys:String>
     <sys:String x:Key="Text.Speed">Speed</sys:String>
+    <sys:String x:Key="Text.x.Speed">x speed</sys:String>
     <sys:String x:Key="Text.1x.Speed">1x speed</sys:String>
     <sys:String x:Key="Text.Frame">Frame</sys:String>
     <sys:String x:Key="Text.Error">Error</sys:String>
@@ -66,5 +67,17 @@
     <sys:String x:Key="Text.Shortcut.Tab.Shortcut">Tab</sys:String>
     <sys:String x:Key="Text.Shortcut.Tab.Action">Toggle Playback Info Window</sys:String>
     <sys:String x:Key="Text.Shortcut.Tab.Description">Opens or closes the window that shows the current playback properties information.</sys:String>
-
+    <sys:String x:Key="Text.Shortcut.Enter.Shortcut">Enter</sys:String>
+    <sys:String x:Key="Text.Shortcut.Enter.Action">Toggle Fullscreen</sys:String>
+    <sys:String x:Key="Text.Shortcut.Enter.Description">Switches between fullscreen and normal view.</sys:String>
+    <sys:String x:Key="Text.Shortcut.Z.Shortcut">Z</sys:String>
+    <sys:String x:Key="Text.Shortcut.Z.Action">Normal Playback Speed</sys:String>
+    <sys:String x:Key="Text.Shortcut.Z.Description">Restores the playback speed to normal (1.0x).</sys:String>
+    <sys:String x:Key="Text.Shortcut.X.Shortcut">X</sys:String>
+    <sys:String x:Key="Text.Shortcut.X.Action">Slow Down Playback</sys:String>
+    <sys:String x:Key="Text.Shortcut.X.Description">Gradually decreases the playback speed.</sys:String>
+    <sys:String x:Key="Text.Shortcut.C.Shortcut">C</sys:String>
+    <sys:String x:Key="Text.Shortcut.C.Action">Speed Up Playback</sys:String>
+    <sys:String x:Key="Text.Shortcut.C.Description">Gradually increases the playback speed.</sys:String>
+    
 </ResourceDictionary>

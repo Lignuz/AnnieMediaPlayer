@@ -54,6 +54,7 @@ namespace AnnieMediaPlayer
         public static event EventHandler<MediaStateChangedEventArgs>? OnMediaStateChanged;
         public static event EventHandler<RenderingVideoEventArgs>? OnVideoFrameRendered;
         public static event EventHandler? OnFrameStepStateChanged;
+        public static event EventHandler? OnSpeedIndexChanged;
 
         // 초기화 메서드 
         public static void Initialize(MediaElement mediaElement)
@@ -386,7 +387,18 @@ namespace AnnieMediaPlayer
         private static TimeSpan? _pendingSeekValue = null; // 대기 중인 Seek 값
 
         public static TimeSpan[] PlaybackSpeeds => _playbackSpeeds;
-        public static int SpeedIndex => _speedIndex;
+        public static int SpeedIndex
+        {
+            get => _speedIndex;
+            set
+            {
+                if (value != _speedIndex)
+                {
+                    _speedIndex = value;
+                    OnSpeedIndexChanged?.Invoke(null, EventArgs.Empty);
+                }
+            }
+        }
         public static bool IsNormalSpeed => SpeedIndex == _normalSpeedIndex; // 1배속인지 확인하는 속성
         public static bool IsFrameStepMode => _isFrameStepMode;
         public static bool IsFrameStepPaused => _isFrameStepPaused;
@@ -648,18 +660,18 @@ namespace AnnieMediaPlayer
 
         public static void IncreaseSpeed()
         {
-            if (_speedIndex < _playbackSpeeds.Length - 1)
+            if (SpeedIndex < _playbackSpeeds.Length - 1)
             {
-                _speedIndex++;
+                SpeedIndex++;
                 ApplyCurrentSpeed();
             }
         }
 
         public static void DecreaseSpeed()
         {
-            if (_speedIndex > 0)
+            if (SpeedIndex > 0)
             {
-                _speedIndex--;
+                SpeedIndex--;
                 ApplyCurrentSpeed();
             }
         }
@@ -676,10 +688,10 @@ namespace AnnieMediaPlayer
             else
                 wasActuallyPlaying = IsPlaying; // 일반 모드에서는 IsPlaying
 
-            if (_speedIndex < _normalSpeedIndex)
+            if (SpeedIndex < _normalSpeedIndex)
             {
                 await Pause();
-                StartFrameStepMode(_playbackSpeeds[_speedIndex]);
+                StartFrameStepMode(_playbackSpeeds[SpeedIndex]);
                 if (!wasActuallyPlaying)
                     PauseFrameStep();
                 else

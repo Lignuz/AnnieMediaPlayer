@@ -1,4 +1,5 @@
 ﻿using AnnieMediaPlayer.Options;
+using System.Windows;
 using Unosquare.FFME;
 
 namespace AnnieMediaPlayer
@@ -20,8 +21,10 @@ namespace AnnieMediaPlayer
             PlayPauseButtonText = "Play";
             PlayStateText = "Play";
 
-            LanguageManager.LanguageChanged += LanguageManager_LanguageChanged;
+            IsNormalSpeed = true;
+
             PropertyChanged += MainViewModel_PropertyChanged;
+            LanguageManager.LanguageChanged += LanguageManager_LanguageChanged;
         }
 
         private void MainViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -76,5 +79,6 @@ namespace AnnieMediaPlayer
         public bool IsPlaying { get => Get(); set => Set(value); }
         public string PlayPauseButtonText { get => Get(); private set => Set(value); }
         public string PlayStateText { get => Get(); private set => Set(value); }
+        public bool IsNormalSpeed { get => Get(); set => Set(value); }
     }
 }

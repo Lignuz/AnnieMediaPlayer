@@ -10,6 +10,7 @@
     <sys:String x:Key="Text.Stop">정지</sys:String>
     <sys:String x:Key="Text.Sec">초</sys:String>
     <sys:String x:Key="Text.Speed">속도</sys:String>
+    <sys:String x:Key="Text.x.Speed">배속</sys:String>
     <sys:String x:Key="Text.1x.Speed">1배속</sys:String>
     <sys:String x:Key="Text.Frame">프레임</sys:String>
     <sys:String x:Key="Text.Error">오류</sys:String>
@@ -66,5 +67,17 @@
     <sys:String x:Key="Text.Shortcut.Tab.Shortcut">Tab</sys:String>
     <sys:String x:Key="Text.Shortcut.Tab.Action">재생 정보 창 토글</sys:String>
     <sys:String x:Key="Text.Shortcut.Tab.Description">현재 재생 속성 정보를 보여주는 창을 열거나 닫습니다.</sys:String>
+    <sys:String x:Key="Text.Shortcut.Enter.Shortcut">Enter</sys:String>
+    <sys:String x:Key="Text.Shortcut.Enter.Action">전체 화면 토글</sys:String>
+    <sys:String x:Key="Text.Shortcut.Enter.Description">전체 화면과 일반 화면 상태를 전환합니다.</sys:String>
+    <sys:String x:Key="Text.Shortcut.Z.Shortcut">Z</sys:String>
+    <sys:String x:Key="Text.Shortcut.Z.Action">정상 속도 재생</sys:String>
+    <sys:String x:Key="Text.Shortcut.Z.Description">재생 속도를 기본 값(1.0배속)으로 되돌립니다.</sys:String>
+    <sys:String x:Key="Text.Shortcut.X.Shortcut">X</sys:String>
+    <sys:String x:Key="Text.Shortcut.X.Action">재생 속도 느리게</sys:String>
+    <sys:String x:Key="Text.Shortcut.X.Description">재생 속도를 점점 느리게 줄입니다.</sys:String>
+    <sys:String x:Key="Text.Shortcut.C.Shortcut">C</sys:String>
+    <sys:String x:Key="Text.Shortcut.C.Action">재생 속도 빠르게</sys:String>
+    <sys:String x:Key="Text.Shortcut.C.Description">재생 속도를 점점 빠르게 증가시킵니다.</sys:String>
 
 </ResourceDictionary>

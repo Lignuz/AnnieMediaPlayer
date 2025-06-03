@@ -172,14 +172,20 @@
                                         <Run Text="{DynamicResource Text.Speed}"/>
                                         <Run Text=":"/>
                                     </TextBlock>
-                                    <Button Content="-" Width="30" Click="SpeedDown_Click"/>
-                                    <TextBlock Name="SpeedLabel" Width="90" TextAlignment="Center" VerticalAlignment="Center" Padding="2,0" Margin="5,0" FontWeight="Medium">
-                                        <Run Text="1"/>
-                                        <Run Text="{DynamicResource Text.Sec}"/>
-                                        <Run Text="/"/>
-                                        <Run Text="{DynamicResource Text.Frame}"/>
-                                    </TextBlock>
-                                    <Button Content="+" Width="30" Click="SpeedUp_Click"/>
+                                    <Button Content="&lt;" Width="25" Click="SpeedDown_Click"/>
+                                    <Grid Width="100" >
+                                        <TextBlock Name="SpeedLabel" TextAlignment="Center" VerticalAlignment="Center" Padding="2,0" Margin="5,0" FontWeight="Medium">
+                                            <Run Text="1"/>
+                                            <Run Text="{DynamicResource Text.Sec}"/>
+                                            <Run Text="/"/>
+                                            <Run Text="{DynamicResource Text.Frame}"/>
+                                        </TextBlock>
+                                        <Grid Visibility="{Binding IsNormalSpeed, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <Button Content="-" HorizontalAlignment="Left" Width="10" Click="SpeedRatioDown_Click" Visibility="{Binding IsOpened, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                            <Button Content="+" HorizontalAlignment="Right" Width="10" Click="SpeedRatioUp_Click" Visibility="{Binding IsOpened, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                        </Grid>
+                                    </Grid>
+                                    <Button Content="&gt;" Width="25" Click="SpeedUp_Click"/>
                                 </StackPanel>
                             </DockPanel>
                         </StackPanel>

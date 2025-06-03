@@ -87,6 +87,27 @@ namespace AnnieMediaPlayer
                 }
                 e.Handled = true;
             }
+            else if (e.Key == Key.Z)
+            {
+                // 기본 속도
+                VideoPlayerController.SetSpeedRatio(1.0);
+                window.UpdateSpeedInfo();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.X)
+            {
+                // 느리게
+                VideoPlayerController.SpeedDown();
+                window.UpdateSpeedInfo();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.C)
+            {
+                // 빠르게
+                VideoPlayerController.SpeedUp();
+                window.UpdateSpeedInfo();
+                e.Handled = true;
+            }
         }
     }
 }

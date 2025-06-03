@@ -34,6 +34,7 @@ namespace AnnieMediaPlayer
             VideoPlayerController.OnMediaStateChanged += VideoPlayerController_OnMediaStateChanged;
             VideoPlayerController.OnVideoFrameRendered += VideoPlayerController_OnVideoFrameRendered;
             VideoPlayerController.OnFrameStepStateChanged += VideoPlayerController_OnFrameStepStateChanged;
+            VideoPlayerController.OnSpeedIndexChanged += VideoPlayerController_OnSpeedIndexChanged;
             UpdateSetSpeedLabel();
 
             BackgroundImage.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/background01.png"));
@@ -217,7 +218,13 @@ namespace AnnieMediaPlayer
             vm.IsPlaying = VideoPlayerController.IsFrameStepMode ? !VideoPlayerController.IsFrameStepPaused : VideoPlayerController.IsPlaying;
         }
 
-        void UpdateSpeedInfo()
+        private void VideoPlayerController_OnSpeedIndexChanged(object? sender, EventArgs e)
+        {
+            vm.IsNormalSpeed = VideoPlayerController.IsNormalSpeed;
+            UpdateSetSpeedLabel();
+        }
+
+        public void UpdateSpeedInfo()
         {
             UpdateSetSpeedLabel();
             UpdateCalcSpeedLabel();
@@ -236,14 +243,20 @@ namespace AnnieMediaPlayer
                 {
                     if (VideoPlayerController.IsOpened)
                     {
+                        double speedRatio = VideoPlayerController.GetSpeedRatio();
+                        string speedRatioStr = speedRatio.ToString("0.0");
+
                         double fps = VideoPlayerController.VideoFps;
                         string fpsStr = fps.ToString("0.00");
 
-                        Run speedRun = LanguageManager.GetLocalizedRun("Text.1x.Speed");
+                        Run speedRatioRun = new Run(speedRatioStr);
+                        Run speedRun = LanguageManager.GetLocalizedRun("Text.x.Speed");
                         Run linefeedRun = new Run("\n");
                         Run openParen = new Run(" (");
                         Run fpsRun = new Run(fpsStr + "fps");
                         Run closeParen = new Run(")");
+
+                        textBlock.Inlines.Add(speedRatioRun);
                         textBlock.Inlines.Add(speedRun);
                         textBlock.Inlines.Add(linefeedRun);
                         textBlock.Inlines.Add(openParen);
@@ -313,6 +326,18 @@ namespace AnnieMediaPlayer
         private void SpeedUp_Click(object sender, RoutedEventArgs e)
         {
             VideoPlayerController.IncreaseSpeed();
+            UpdateSetSpeedLabel();
+        }
+
+        private void SpeedRatioDown_Click(object sender, RoutedEventArgs e)
+        {
+            VideoPlayerController.SpeedDown();
+            UpdateSetSpeedLabel();
+        }
+
+        private void SpeedRatioUp_Click(object sender, RoutedEventArgs e)
+        {
+            VideoPlayerController.SpeedUp();
             UpdateSetSpeedLabel();
         }
 

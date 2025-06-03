@@ -58,7 +58,11 @@ namespace AnnieMediaPlayer.Windows.Settings.Pages
                 MakeShortcutInfo("CtrlSpace"),
                 MakeShortcutInfo("LeftArrow"),
                 MakeShortcutInfo("RightArrow"),
-                MakeShortcutInfo("Tab")
+                MakeShortcutInfo("Tab"),
+                MakeShortcutInfo("Enter"),
+                MakeShortcutInfo("Z"),
+                MakeShortcutInfo("X"),
+                MakeShortcutInfo("C"),
             };
             ShortcutKeysDataGrid.ItemsSource = shortcutKeys;
         }
