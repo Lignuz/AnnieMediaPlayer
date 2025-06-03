@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using AnnieMediaPlayer.Options;
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Data;
@@ -109,6 +110,55 @@ namespace AnnieMediaPlayer
             if (value is true)
                 return "Play";
             return "Pause";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class RotateAngleValueConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            double angle = 0.0;
+            if (value is RotateAngle)
+            {
+                switch ((RotateAngle)value)
+                {
+                    case RotateAngle.Rotate_0:
+                        angle = 0.0;
+                        break;
+                    case RotateAngle.Rotate_90:
+                        angle = 90.0;
+                        break;
+                    case RotateAngle.Rotate_180:
+                        angle = 180.0;
+                        break;
+                    case RotateAngle.Rotate_270:
+                        angle = 270.0;
+                        break;
+                }
+            }
+            return angle;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    // flip 이면 -1 로 반환합니다.
+    public class FlipScaleValueConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            double scale = 1.0;
+            if (value is true)
+                scale = -1.0;
+            return scale;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

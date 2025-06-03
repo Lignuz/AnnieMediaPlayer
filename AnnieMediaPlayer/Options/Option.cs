@@ -20,6 +20,13 @@ namespace AnnieMediaPlayer.Options
         Dark = 1,
     };
 
+    public enum RotateAngle
+    {
+        Rotate_0 = 0,
+        Rotate_90 = 90,
+        Rotate_180 = 180,
+        Rotate_270 = 270,
+    }
 
     public class Option : ViewModelBase
     {
@@ -41,6 +48,10 @@ namespace AnnieMediaPlayer.Options
 
             UseHWAccelerator = false;
             UseOpenPlay = true;
+
+            UseFlipHorizontal = false;
+            UseFlipVertical = false;
+            RotateAngle = RotateAngle.Rotate_0;
         }
 
         // 옵션 멤버 프로퍼티
@@ -51,6 +62,13 @@ namespace AnnieMediaPlayer.Options
 
         public bool UseHWAccelerator { get => Get(); set => Set(value); }
         public bool UseOpenPlay { get => Get(); set => Set(value); }
+
+        [JsonIgnore]
+        public bool UseFlipHorizontal { get => Get(); set => Set(value); }
+        [JsonIgnore]
+        public bool UseFlipVertical { get => Get(); set => Set(value); }
+        [JsonIgnore]
+        public RotateAngle RotateAngle { get => Get(); set => Set(value); }
 
 
         // 옵션 저장

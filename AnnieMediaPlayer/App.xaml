@@ -33,7 +33,10 @@
             <local:ClosedCaptionsChannelConverter x:Key="ClosedCaptionsChannelConverter" />
             <local:BooleanToVisibilityInvertedConverter x:Key="BooleanToVisibilityInvertedConverter" />
             <local:GreaterThanToVisibilityConverter x:Key="GreaterThanToVisibilityConverter" />
-            
+            <local:EnumToBoolConverter x:Key="EnumToBoolConverter" />
+            <local:RotateAngleValueConverter x:Key="RotateAngleValueConverter" />
+            <local:FlipScaleValueConverter x:Key="FlipScaleValueConverter" />
+
         </ResourceDictionary>
     </Application.Resources>
 </Application>

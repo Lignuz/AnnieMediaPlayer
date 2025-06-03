@@ -15,6 +15,25 @@
             <CheckBox Content="{DynamicResource Text.UseHWAccelerator}" IsChecked="{Binding CurrentOption.UseHWAccelerator}" Margin="0,20,0,5"/>
             <!-- 열기 후 바로 재생 시작 -->
             <CheckBox Content="{DynamicResource Text.UseOpenPlay}" IsChecked="{Binding CurrentOption.UseOpenPlay}" Margin="0,15,0,5"/>
+
+            <!-- 반전 설정 -->
+            <GroupBox Header="{DynamicResource Text.FlipSettings}" Margin="0,15,0,5" Padding="0,5">
+                <StackPanel Orientation="Horizontal">
+                    <CheckBox Content="{DynamicResource Text.Flip.Horizontal}" Margin="10,5" IsChecked="{Binding CurrentOption.UseFlipHorizontal}"/>
+                    <CheckBox Content="{DynamicResource Text.Flip.Vertical}" Margin="10,5"  IsChecked="{Binding CurrentOption.UseFlipVertical}"/>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- 회전 설정 -->
+            <GroupBox Header="{DynamicResource Text.RotateSettings}" Margin="0,15,0,5" Padding="0,5">
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton Content="0°" Margin="10,5" IsChecked="{Binding CurrentOption.RotateAngle, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Rotate_0}"/>
+                    <RadioButton Content="90°" Margin="10,5" IsChecked="{Binding CurrentOption.RotateAngle, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Rotate_90}"/>
+                    <RadioButton Content="180°" Margin="10,5" IsChecked="{Binding CurrentOption.RotateAngle, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Rotate_180}"/>
+                    <RadioButton Content="270°" Margin="10,5" IsChecked="{Binding CurrentOption.RotateAngle, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Rotate_270}"/>
+                </StackPanel>
+            </GroupBox>
+
         </StackPanel>
     </Grid>
 </UserControl>

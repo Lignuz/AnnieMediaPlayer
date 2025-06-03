@@ -348,6 +348,23 @@ namespace AnnieMediaPlayer
         }
     }
 
+    public class EnumToBoolConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value == null || parameter == null) return false;
+            return value.ToString() == parameter.ToString();
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if ((bool)value)
+                return Enum.Parse(targetType, parameter.ToString()!);
+            return Binding.DoNothing;
+        }
+    }
+
+
 }
 #pragma warning restore CA1812 // Remove classes that are apparently never instantiated
 #pragma warning restore SA1649 // File name must match first type name

@@ -89,7 +89,16 @@
                 <!-- 🎞 영상 출력 영역 -->
                 <Grid Grid.Row="1" x:Name="grid_center">
                     <Border Name="VideoImageContainer">
-                        <ffme:MediaElement Name="ffmeMediaElement" Background="Black" LoadedBehavior="{Binding CurrentOption.UseOpenPlay, Converter={StaticResource UseOpenPlayStringConverter}}" UnloadedBehavior="Close" IsDesignPreviewEnabled="True" />
+                        <ffme:MediaElement Name="ffmeMediaElement" Background="Black" LoadedBehavior="{Binding CurrentOption.UseOpenPlay, Converter={StaticResource UseOpenPlayStringConverter}}" UnloadedBehavior="Close" IsDesignPreviewEnabled="True">
+                            <ffme:MediaElement.LayoutTransform>
+                                <TransformGroup>
+                                    <RotateTransform Angle="{Binding CurrentOption.RotateAngle, Converter={StaticResource RotateAngleValueConverter}}"/>
+                                    <ScaleTransform ScaleX="{Binding CurrentOption.UseFlipHorizontal, Converter={StaticResource FlipScaleValueConverter}}" 
+                                                    ScaleY="{Binding CurrentOption.UseFlipVertical, Converter={StaticResource FlipScaleValueConverter}}"/>
+                                    <!-- 좌우반전 -->
+                                </TransformGroup>
+                            </ffme:MediaElement.LayoutTransform>
+                        </ffme:MediaElement>
                     </Border>
                     <Image Name="BackgroundImage" Stretch="UniformToFill" Visibility="{Binding IsOpened, Converter={StaticResource BooleanToVisibilityInvertedConverter}}"/>
                     <panels:PropertiesPanelControl x:Name="PropertiesPanel" HorizontalAlignment="Right" Visibility="{Binding IsPropertiesPanelOpen, Converter={StaticResource BooleanToVisibilityConverter}}"/>
