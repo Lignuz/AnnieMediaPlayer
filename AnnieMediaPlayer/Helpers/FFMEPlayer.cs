@@ -131,6 +131,15 @@ namespace AnnieMediaPlayer
             }
         }
 
+        public double GetSpeedRatio()
+        {
+            if (_mediaElement != null)
+            {
+                return _mediaElement.SpeedRatio;
+            }
+            return 1.0;
+        }
+
         // 볼륨을 설정합니다.
         public void SetVolume(double volume)
         {

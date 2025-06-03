@@ -181,6 +181,30 @@ namespace AnnieMediaPlayer
             _ffmePlayer.SetSpeedRatio(speed);
         }
 
+        public static void SpeedUp()
+        {
+            if (_ffmePlayer == null) return;
+
+            double speed = _ffmePlayer.GetSpeedRatio();
+            speed += 0.1;
+            if (speed > 4.0) speed = 4.0; // 최대 속도 제한
+            _ffmePlayer.SetSpeedRatio(speed);
+        }
+
+        public static void SpeedDown()
+        {
+            double speed = _ffmePlayer.GetSpeedRatio();
+            speed -= 0.1;
+            if (speed < 0.1) speed = 0.1; // 최소 속도 제한
+            _ffmePlayer.SetSpeedRatio(speed);
+        }
+
+        public static double GetSpeedRatio()
+        {
+            if (_ffmePlayer == null) return 1.0;
+            return _ffmePlayer.GetSpeedRatio();
+        }
+
         // 볼륨 설정
         public static void SetVolume(double volume)
         {
