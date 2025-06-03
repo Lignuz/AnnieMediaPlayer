@@ -592,5 +592,37 @@ namespace AnnieMediaPlayer
                 OverlayCanvas.Children.Clear();
             }
         }
+
+        // 메시지 보여주기 
+        private CancellationTokenSource? _overlayCts;
+        public async void ShowOverlayMessage(string message, int durationMs = 1500)
+        {
+            _overlayCts?.Cancel(); // 기존 표시 중지
+            _overlayCts = new CancellationTokenSource();
+            var token = _overlayCts.Token;
+
+            OverlayMessage.Text = message;
+            OverlayMessage.Visibility = Visibility.Visible;
+
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200));
+            OverlayMessage.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+
+            try
+            {
+                await Task.Delay(durationMs, token);
+            }
+            catch (TaskCanceledException)
+            {
+                return; // 취소된 경우는 아무 처리 안 함
+            }
+
+            var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(300));
+            fadeOut.Completed += (s, e) =>
+            {
+                if (!token.IsCancellationRequested)
+                    OverlayMessage.Visibility = Visibility.Collapsed;
+            };
+            OverlayMessage.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+        }
     }
 }
