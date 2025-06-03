@@ -52,13 +52,21 @@ namespace AnnieMediaPlayer
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             const int WM_NCCALCSIZE = 0x0083;
+            const int WM_NCACTIVATE = 0x0086;
 
             if (msg == WM_NCCALCSIZE)
             {
                 handled = true;
                 return IntPtr.Zero;
             }
-            
+
+            if (msg == WM_NCACTIVATE)
+            {
+                // 비활성화/활성화 시에도 NC 그리기를 막음
+                handled = true;
+                return new IntPtr(1); // 기본 처리를 막고, WM_PAINT 강제 유도
+            }
+
             return IntPtr.Zero;
         }
 
