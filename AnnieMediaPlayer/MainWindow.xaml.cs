@@ -40,6 +40,27 @@ namespace AnnieMediaPlayer
             ThemeManager.ThemeChanged += ThemeManager_ThemeChanged;
         }
 
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+
+            var hwndSource = PresentationSource.FromVisual(this) as HwndSource;
+            hwndSource?.AddHook(WndProc);
+        }
+
+        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            const int WM_NCCALCSIZE = 0x0083;
+
+            if (msg == WM_NCCALCSIZE)
+            {
+                handled = true;
+                return IntPtr.Zero;
+            }
+            
+            return IntPtr.Zero;
+        }
+
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             var fadeIn = new DoubleAnimation

@@ -8,11 +8,22 @@ namespace AnnieMediaPlayer
 {
     public class BaseWindow : Window
     {
+        public static readonly DependencyProperty IsTransparencyEnabledProperty =
+            DependencyProperty.Register("IsTransparencyEnabled", typeof(bool), typeof(BaseWindow),
+                new PropertyMetadata(false));
+
         public static readonly DependencyProperty IsWindowActiveProperty =
             DependencyProperty.Register("IsWindowActive", typeof(bool), typeof(BaseWindow), new PropertyMetadata(true));
 
         public static readonly DependencyProperty IsSnappedProperty =
             DependencyProperty.Register(nameof(IsSnapped), typeof(bool), typeof(BaseWindow), new PropertyMetadata(false));
+
+        public bool IsTransparencyEnabled
+        {
+            get { return (bool)GetValue(IsTransparencyEnabledProperty); }
+            set { SetValue(IsTransparencyEnabledProperty, value); }
+        }
+
         public bool IsWindowActive
         {
             get => (bool)GetValue(IsWindowActiveProperty);
@@ -32,6 +43,7 @@ namespace AnnieMediaPlayer
             Background = Brushes.Transparent;
             Style = Application.Current.Resources["BaseWindowStyle"] as Style;
 
+            this.Loaded += (_, _) => IsTransparencyEnabled = AllowsTransparency;
             this.Activated += (_, _) => IsWindowActive = true;
             this.Deactivated += (_, _) => IsWindowActive = false;
         }

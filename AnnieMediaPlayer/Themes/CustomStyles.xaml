@@ -72,6 +72,11 @@
                             <Setter TargetName="RootBorder" Property="Margin" Value="0" />
                             <Setter TargetName="RootBorder" Property="CornerRadius" Value="0" />
                         </Trigger>
+                        <Trigger Property="IsTransparencyEnabled" Value="False">
+                            <Setter TargetName="RootBorder" Property="CornerRadius" Value="0" />
+                            <Setter TargetName="RootBorder" Property="Margin" Value="0" />
+                            <Setter TargetName="RootBorder" Property="Effect" Value="{x:Null}" />
+                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

@@ -22,6 +22,7 @@
         DragDrop.Drop="BaseWindow_Drop"
         Closing="Window_Closing"
         DataContext="{StaticResource vm}"
+        AllowsTransparency="False"
         x:Name="win">
     <local:BaseWindow.Resources>
         <local:FileNameConverter x:Key="FileNameConverter"/>
