@@ -8,7 +8,34 @@ namespace AnnieMediaPlayer
     {
         public static void HandleKeyDown(MainWindow window, KeyEventArgs e)
         {
-            if (e.Key == Key.Tab)
+            if (e.Key == Key.Enter)
+            {
+                // 최대화-일반 모드 토글
+                if (window.WindowState == WindowState.Maximized)
+                    window.WindowState = WindowState.Normal;
+                else
+                    window.WindowState = WindowState.Maximized;
+                e.Handled = true;
+            }
+            else if (e.Key == Key.OemTilde)
+            {
+                (window.Width, window.Height) = (window.MinWidth, window.MinHeight);
+                window.WindowState = WindowState.Normal;
+                e.Handled = true;
+            }
+            else if (e.Key == Key.D1)
+            {
+                (window.Width, window.Height) = (640, 480);
+                window.WindowState = WindowState.Normal;
+                e.Handled = true;
+            }
+            else if (e.Key == Key.D2)
+            {
+                (window.Width, window.Height) = (1280, 960);
+                window.WindowState = WindowState.Normal;
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Tab)
             {
                 // 속성 패널 토글링
                 MainViewModel vm = MainWindow.vm;
