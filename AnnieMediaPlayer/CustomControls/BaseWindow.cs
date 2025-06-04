@@ -39,6 +39,7 @@ namespace AnnieMediaPlayer
         public BaseWindow()
         {
             WindowStyle = WindowStyle.None;
+            ShowInTaskbar = false;
             AllowsTransparency = true;
             Background = Brushes.Transparent;
             Style = Application.Current.Resources["BaseWindowStyle"] as Style;

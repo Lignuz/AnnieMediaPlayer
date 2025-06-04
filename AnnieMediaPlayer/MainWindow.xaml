@@ -22,6 +22,7 @@
         DragDrop.Drop="BaseWindow_Drop"
         Closing="Window_Closing"
         DataContext="{StaticResource vm}"
+        ShowInTaskbar="True"
         AllowsTransparency="False"
         x:Name="win">
     <local:BaseWindow.Resources>
