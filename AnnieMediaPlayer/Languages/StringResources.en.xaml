@@ -79,5 +79,15 @@
     <sys:String x:Key="Text.Shortcut.C.Shortcut">C</sys:String>
     <sys:String x:Key="Text.Shortcut.C.Action">Speed Up Playback</sys:String>
     <sys:String x:Key="Text.Shortcut.C.Description">Gradually increases the playback speed.</sys:String>
-    
+
+    <sys:String x:Key="Text.Info.Update">Udpate</sys:String>
+    <sys:String x:Key="Text.Info.ProjectPage">Project Page</sys:String>
+    <sys:String x:Key="Text.Info.Copyright">Copyright Info</sys:String>
+    <sys:String x:Key="Text.Info.Copyright.Description" xml:space="preserve">Copyright 2025 Annie Choi,&#10;All Rights Reserved.</sys:String>
+    <sys:String x:Key="Text.Info.Version.Update.Check.Ready">Preparing for update...</sys:String>
+    <sys:String x:Key="Text.Info.Version.Update.Check.CheckUpdate">Checking for updates...</sys:String>
+    <sys:String x:Key="Text.Info.Version.Update.Check.Available">A new version is available.</sys:String>
+    <sys:String x:Key="Text.Info.Version.Update.Check.NotAvailable">You are using the latest version.</sys:String>
+    <sys:String x:Key="Text.Info.Version.Update.Check.Error">Failed to check for updates.</sys:String>
+
 </ResourceDictionary>

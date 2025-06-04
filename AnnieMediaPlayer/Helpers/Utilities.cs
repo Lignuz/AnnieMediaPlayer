@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Diagnostics;
+using System.Windows;
 
 namespace AnnieMediaPlayer
 {
@@ -66,6 +67,24 @@ namespace AnnieMediaPlayer
         public static string FormatTimeSpanWithoutHours(TimeSpan timeSpan)
         {
             return timeSpan.ToString("mm\\:ss");
+        }
+
+        // 브라우저로 웹페이지를 호출합니다. 
+        public static void OpenWebPage(string url)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                // 예외 처리
+                Console.WriteLine($"Failed to open web page: {ex.Message}");
+            }
         }
     }
 }

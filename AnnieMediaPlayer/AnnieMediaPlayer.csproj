@@ -14,6 +14,7 @@
 		<RepositoryUrl>https://github.com/Lignuz/AnnieMediaPlayer.git</RepositoryUrl>
 		<Copyright>Copyright 2025 Annie Choi, All Rights Reserved.</Copyright>
 		<PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -1,4 +1,5 @@
 ﻿using AnnieMediaPlayer.Options;
+using AnnieMediaPlayer.Windows.Info;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -165,5 +166,32 @@ namespace AnnieMediaPlayer
         {
             throw new NotImplementedException();
         }
+    }
+
+    // enum 을 정해진 다국어 문자열로 변환할 때 사용합니다.
+    public class EnumToStringConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is Enum)
+            {
+                if (value is UpdateCheckState state)
+                {
+                    if (state == UpdateCheckState.None)
+                        return string.Empty;
+
+                    string LangString(string key)
+                    {
+                        string strKey = $"Text.Info.Version.Update.Check.{key}";
+                        return LanguageManager.GetResourceString(strKey);
+                    };
+                    return LangString(state.ToString());
+                }
+            }
+            return string.Empty;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => throw new NotImplementedException();
     }
 }

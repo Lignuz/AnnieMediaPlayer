@@ -34,8 +34,12 @@
             <local:BooleanToVisibilityInvertedConverter x:Key="BooleanToVisibilityInvertedConverter" />
             <local:GreaterThanToVisibilityConverter x:Key="GreaterThanToVisibilityConverter" />
             <local:EnumToBoolConverter x:Key="EnumToBoolConverter" />
+            <local:EnumToVisiblityConverter x:Key="EnumToVisiblityConverter"/>
+            <local:EnumToVisiblityInvertedConverter x:Key="EnumToVisiblityInvertedConverter"/>
+            
             <local:RotateAngleValueConverter x:Key="RotateAngleValueConverter" />
             <local:FlipScaleValueConverter x:Key="FlipScaleValueConverter" />
+            <local:EnumToStringConverter x:Key="EnumToStringConverter"/>
 
         </ResourceDictionary>
     </Application.Resources>

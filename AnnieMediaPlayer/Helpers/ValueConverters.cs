@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Controls;
 
 #pragma warning disable SA1649 // File name must match first type name
 #pragma warning disable CA1812 // Remove classes that are apparently never instantiated
@@ -283,7 +284,7 @@ namespace AnnieMediaPlayer
     // BooleanToVisibilityConverter 의 반대 동작을 합니다.
     public class BooleanToVisibilityInvertedConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object Convert(object value, Type targetType, object? parameter, CultureInfo culture)
         {
             if (value is bool bValue)
                 return bValue ? Visibility.Collapsed : Visibility.Visible;
@@ -291,7 +292,7 @@ namespace AnnieMediaPlayer
                 return Visibility.Collapsed;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(object value, Type targetType, object? parameter, CultureInfo culture)
         {
             if (value is Visibility visibility)
                 return visibility != Visibility.Visible;
@@ -364,7 +365,35 @@ namespace AnnieMediaPlayer
         }
     }
 
+    public class EnumToVisiblityConverter : IValueConverter
+    {
+        private readonly EnumToBoolConverter _enumToBool = new EnumToBoolConverter();
+        private readonly BooleanToVisibilityConverter _boolToVisibility = new BooleanToVisibilityConverter();
 
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            var isMatch = _enumToBool.Convert(value, typeof(bool), parameter, culture);
+            return _boolToVisibility.Convert(isMatch, typeof(Visibility), null, culture);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => throw new NotImplementedException();
+    }
+
+    public class EnumToVisiblityInvertedConverter : IValueConverter
+    {
+        private readonly EnumToBoolConverter _enumToBool = new EnumToBoolConverter();
+        private readonly BooleanToVisibilityInvertedConverter _boolToVisibilityInverted = new BooleanToVisibilityInvertedConverter();
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            var isMatch = _enumToBool.Convert(value, typeof(bool), parameter, culture);
+            return _boolToVisibilityInverted.Convert(isMatch, typeof(Visibility), null, culture);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => throw new NotImplementedException();
+    }
 }
 #pragma warning restore CA1812 // Remove classes that are apparently never instantiated
 #pragma warning restore SA1649 // File name must match first type name
