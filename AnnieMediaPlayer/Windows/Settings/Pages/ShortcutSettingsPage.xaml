@@ -79,7 +79,7 @@
                     <Style TargetType="{x:Type TextBlock}" x:Key="DataGridCellTextStyle">
                         <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGridRow}}, Path=Foreground}"/>
                         <Setter Property="TextWrapping" Value="WrapWithOverflow"/>
-                        <Setter Property="TextTrimming" Value="None"/>
+                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                         <Setter Property="VerticalAlignment" Value="Center"/>
                         <Setter Property="Padding" Value="8,5,8,5"/>
                     </Style>

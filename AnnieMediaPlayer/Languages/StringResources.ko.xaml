@@ -79,6 +79,18 @@
     <sys:String x:Key="Text.Shortcut.C.Shortcut">C</sys:String>
     <sys:String x:Key="Text.Shortcut.C.Action">재생 속도 빠르게</sys:String>
     <sys:String x:Key="Text.Shortcut.C.Description">재생 속도를 점점 빠르게 증가시킵니다.</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlR.Shortcut">Ctrl + R</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlR.Action">시계 방향 회전</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlR.Description">화면을 시계 방향으로 90도 회전합니다.</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlShiftR.Shortcut">Ctrl + Shift + R</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlShiftR.Action">반시계 방향 회전</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlShiftR.Description">화면을 반시계 방향으로 90도 회전합니다.</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlV.Shortcut">Ctrl + V</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlV.Action">상하 반전 토글</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlV.Description">화면을 상하로 반전하거나 원래 상태로 되돌립니다.</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlH.Shortcut">Ctrl + H</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlH.Action">좌우 반전 토글</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlH.Description">화면을 좌우로 반전하거나 원래 상태로 되돌립니다.</sys:String>
 
     <sys:String x:Key="Text.Info.Update">업데이트</sys:String>
     <sys:String x:Key="Text.Info.ProjectPage">프로젝트 페이지</sys:String>

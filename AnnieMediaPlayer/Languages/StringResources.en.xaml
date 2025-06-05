@@ -79,6 +79,18 @@
     <sys:String x:Key="Text.Shortcut.C.Shortcut">C</sys:String>
     <sys:String x:Key="Text.Shortcut.C.Action">Speed Up Playback</sys:String>
     <sys:String x:Key="Text.Shortcut.C.Description">Gradually increases the playback speed.</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlR.Shortcut">Ctrl + R</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlR.Action">Rotate Clockwise</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlR.Description">Rotates the screen 90 degrees clockwise.</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlShiftR.Shortcut">Ctrl + Shift + R</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlShiftR.Action">Rotate Counterclockwise</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlShiftR.Description">Rotates the screen 90 degrees counterclockwise.</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlV.Shortcut">Ctrl + V</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlV.Action">Toggle Vertical Flip</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlV.Description">Flips the screen vertically or restores it to normal.</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlH.Shortcut">Ctrl + H</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlH.Action">Toggle Horizontal Flip</sys:String>
+    <sys:String x:Key="Text.Shortcut.CtrlH.Description">Flips the screen horizontally or restores it to normal.</sys:String>
 
     <sys:String x:Key="Text.Info.Update">Udpate</sys:String>
     <sys:String x:Key="Text.Info.ProjectPage">Project Page</sys:String>

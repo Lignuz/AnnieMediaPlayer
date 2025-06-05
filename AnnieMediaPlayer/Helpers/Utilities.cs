@@ -86,5 +86,34 @@ namespace AnnieMediaPlayer
                 Console.WriteLine($"Failed to open web page: {ex.Message}");
             }
         }
+
+        // 다음 값 가져오기
+        public static T GetNextEnumValue<T>(T value, bool wrap = true) where T : Enum
+        {
+            var values = (T[])Enum.GetValues(typeof(T));
+            int index = Array.IndexOf(values, value);
+            if (index < 0) return value; // not found
+            int nextIndex = index + 1;
+
+            if (nextIndex >= values.Length)
+                return wrap ? values[0] : values[^1];
+
+            return values[nextIndex];
+        }
+
+        // 이전 값 가져오기
+        public static T GetPreviousEnumValue<T>(T value, bool wrap = true) where T : Enum
+        {
+            var values = (T[])Enum.GetValues(typeof(T));
+            int index = Array.IndexOf(values, value);
+            if (index < 0) return value; // not found
+            int prevIndex = index - 1;
+
+            if (prevIndex < 0)
+                return wrap ? values[^1] : values[0];
+
+            return values[prevIndex];
+        }
+
     }
 }

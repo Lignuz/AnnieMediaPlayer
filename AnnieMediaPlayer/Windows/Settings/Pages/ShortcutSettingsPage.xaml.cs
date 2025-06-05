@@ -63,6 +63,10 @@ namespace AnnieMediaPlayer.Windows.Settings.Pages
                 MakeShortcutInfo("Z"),
                 MakeShortcutInfo("X"),
                 MakeShortcutInfo("C"),
+                MakeShortcutInfo("CtrlR"),
+                MakeShortcutInfo("CtrlShiftR"),
+                MakeShortcutInfo("CtrlV"),
+                MakeShortcutInfo("CtrlH"),
             };
             ShortcutKeysDataGrid.ItemsSource = shortcutKeys;
         }

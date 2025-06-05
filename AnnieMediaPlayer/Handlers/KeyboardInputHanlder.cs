@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Input;
+using AnnieMediaPlayer.Options;
 using AnnieMediaPlayer.Windows.Settings;
 
 namespace AnnieMediaPlayer
@@ -107,6 +108,36 @@ namespace AnnieMediaPlayer
                 VideoPlayerController.SpeedUp();
                 window.UpdateSpeedInfo();
                 e.Handled = true;
+            }
+            else if (e.Key == Key.R)
+            {
+                // Ctrl + Shift + R : 반시계 방향으로 회전
+                if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+                {
+                    OptionViewModel.Instance.CurrentOption.RotateAngle = Utilities.GetPreviousEnumValue<RotateAngle>(OptionViewModel.Instance.CurrentOption.RotateAngle);
+                }
+                // Ctrl + R : 시계 방향으로 회전
+                else if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+                {
+                    OptionViewModel.Instance.CurrentOption.RotateAngle = Utilities.GetNextEnumValue<RotateAngle>(OptionViewModel.Instance.CurrentOption.RotateAngle);
+                }
+                e.Handled = true;
+            }
+            else if (e.Key == Key.H)
+            {
+                // Ctrl + H : 좌우 반전
+                if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+                {
+                    OptionViewModel.Instance.CurrentOption.UseFlipHorizontal = !OptionViewModel.Instance.CurrentOption.UseFlipHorizontal;
+                }
+            }
+            else if (e.Key == Key.V)
+            {
+                // Ctrl + V : 상하 반전
+                if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+                {
+                    OptionViewModel.Instance.CurrentOption.UseFlipVertical = !OptionViewModel.Instance.CurrentOption.UseFlipVertical;
+                }
             }
         }
     }
