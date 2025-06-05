@@ -24,7 +24,7 @@
             <ComboBox x:Name="combo_languages" ItemsSource="{Binding CurrentOption.AvailableLanguages}" SelectedItem="{Binding CurrentOption.SelectedLanguage}">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding Converter={StaticResource EnumToLocalizedStringConverter}}"/>
+                        <TextBlock Text="{Binding Converter={StaticResource EnumToLocalizedStringConverter}}" Foreground="{StaticResource LightTitleTextBrush}"/>
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
@@ -37,7 +37,7 @@
             <ComboBox x:Name="combo_themes" ItemsSource="{Binding CurrentOption.AvailableThemes}" SelectedItem="{Binding CurrentOption.SelectedTheme}">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding Converter={StaticResource EnumToLocalizedStringConverter}}"/>
+                        <TextBlock Text="{Binding Converter={StaticResource EnumToLocalizedStringConverter}}" Foreground="{StaticResource LightTitleTextBrush}"/>
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>

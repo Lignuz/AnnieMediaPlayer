@@ -1,6 +1,9 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+    <!-- Static Brushes -->
+    <SolidColorBrush x:Key="LightTitleTextBrush" Color="{DynamicResource LightTitleTextColor}"/>
+    
     <!-- Dynamic Brushes -->
     <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource LightBackgroundColor}"/>
     <SolidColorBrush x:Key="BorderBrush" Color="{DynamicResource LightBorderColor}"/>
