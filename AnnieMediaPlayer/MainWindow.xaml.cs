@@ -624,6 +624,11 @@ namespace AnnieMediaPlayer
                 // 숨길 때에 내용을 지워줍니다.
                 OverlayCanvas.Children.Clear();
             }
+            else
+            {
+                // 보여질 때에도 초기화 합니다. 
+                OverlayCanvas.Children.Clear();
+            }
         }
 
         // 메시지 보여주기 

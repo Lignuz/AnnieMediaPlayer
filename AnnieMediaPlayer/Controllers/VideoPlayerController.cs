@@ -690,6 +690,9 @@ namespace AnnieMediaPlayer
             else
                 wasActuallyPlaying = IsPlaying; // 일반 모드에서는 IsPlaying
 
+            // 닫힘 상태에서는 반응하지 않음
+            if (IsOpened == false) return;
+
             if (SpeedIndex < _normalSpeedIndex)
             {
                 await Pause();
