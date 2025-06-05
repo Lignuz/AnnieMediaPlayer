@@ -306,8 +306,9 @@ namespace AnnieMediaPlayer
                 _lastRenderDateTime = null;
                 _actualFps = 0.0;
 
-                ffmpegFrameGrabber?.Dispose();
-                ffmpegFrameGrabber = null;
+                // 참조가능성이 있어서 일단 유지하고 있도록 합니다.
+//                 ffmpegFrameGrabber?.Dispose();
+//                 ffmpegFrameGrabber = null;
             }
             OnMediaStateChanged?.Invoke(sender, e);
         }
