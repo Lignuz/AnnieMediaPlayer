@@ -548,8 +548,10 @@ namespace AnnieMediaPlayer
                 if (IsOpened)
                 {
                     var seekTime = TimeSpan.FromSeconds(window.PlaybackSlider.Value);
+
+                    var _IsSliderDraggingOnPlaying = IsSliderDraggingOnPlaying;
                     await PerformSeek(seekTime);
-                    if (IsSliderDraggingOnPlaying && IsPlaying == false)
+                    if (_IsSliderDraggingOnPlaying && IsPlaying == false)
                     {
                         await Play();
                     }
