@@ -42,7 +42,6 @@ namespace AnnieMediaPlayer.Options
                 {
                     _currentOption.PropertyChanged += CurrentOption_PropertyChanged;
                 }
-                OnAllOptionsChanged();
                 OnPropertyChanged();
             }
         }
@@ -69,11 +68,6 @@ namespace AnnieMediaPlayer.Options
         {
             // 옵션 불러오기
             CurrentOption = Option.Load();
-        }
-
-        private void OnAllOptionsChanged()
-        {
-            ApplyAllOptions(CurrentOption);
         }
 
         private void CurrentOption_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -173,15 +167,6 @@ namespace AnnieMediaPlayer.Options
             if (UseSeekFramePreviewChanged != null)
             {
                 UseSeekFramePreviewChanged(this, EventArgs.Empty);
-            }
-        }
-        
-
-        // 전체 옵션 적용 메서드
-        private void ApplyAllOptions(Option? currentOptions)
-        {
-            if (currentOptions != null)
-            {   
             }
         }
 

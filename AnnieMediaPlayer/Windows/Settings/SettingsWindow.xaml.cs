@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using AnnieMediaPlayer.Options;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace AnnieMediaPlayer.Windows.Settings
@@ -33,6 +34,11 @@ namespace AnnieMediaPlayer.Windows.Settings
                 _ => new Pages.GeneralSettingsPage()
             };
             ContentArea.Content = page;
+        }
+
+        private void Initialze_Click(object sender, RoutedEventArgs e)
+        {
+            OptionViewModel.Instance.CurrentOption.InitializeOption();
         }
     }
 }

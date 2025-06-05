@@ -23,6 +23,7 @@
     <sys:String x:Key="Text.General">General</sys:String>
     <sys:String x:Key="Text.Shortcut">Shortcut</sys:String>
     <sys:String x:Key="Text.Advanced">Advanced</sys:String>
+    <sys:String x:Key="Text.Initialize">Initialize</sys:String>
 
     <sys:String x:Key="Text.Languages">Languages</sys:String>
     <sys:String x:Key="Text.Languages.Korean">Korean</sys:String>

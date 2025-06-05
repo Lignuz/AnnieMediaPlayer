@@ -23,6 +23,7 @@
     <sys:String x:Key="Text.General">일반설정</sys:String>
     <sys:String x:Key="Text.Shortcut">단축키</sys:String>
     <sys:String x:Key="Text.Advanced">고급설정</sys:String>
+    <sys:String x:Key="Text.Initialize">초기화</sys:String>
 
     <sys:String x:Key="Text.Languages">언어</sys:String>
     <sys:String x:Key="Text.Languages.Korean">한국어</sys:String>

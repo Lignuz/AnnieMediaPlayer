@@ -40,6 +40,11 @@ namespace AnnieMediaPlayer.Options
 
         public Option()
         {
+            InitializeOption();
+        }
+
+        public void InitializeOption()
+        {
             // 옵션 초기값 지정
             SelectedTheme = Themes.Light;
             SelectedLanguage = Languages.ko;

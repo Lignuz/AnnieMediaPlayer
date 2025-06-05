@@ -23,12 +23,16 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Navigation List -->
-            <ListBox x:Name="SettingsNav" Grid.Column="0" Background="Transparent" BorderThickness="0" SelectionChanged="SettingsNav_SelectionChanged">
-                <ListBoxItem Tag="General" Content="{DynamicResource Text.General}" Margin="0,0,0,5"/>
-                <ListBoxItem Tag="Advanced" Content="{DynamicResource Text.Advanced}" Margin="0,0,0,5"/>
-                <ListBoxItem Tag="Shortcut" Content="{DynamicResource Text.Shortcut}" Margin="0,0,0,5"/>
-            </ListBox>
+            <DockPanel Grid.Column="0" LastChildFill="False" Margin="5,7,5,6">
+                <!-- Navigation List -->
+                <ListBox x:Name="SettingsNav" DockPanel.Dock="Top" Background="Transparent" BorderThickness="0" SelectionChanged="SettingsNav_SelectionChanged">
+                    <ListBoxItem Tag="General" Content="{DynamicResource Text.General}" Margin="0,0,0,5"/>
+                    <ListBoxItem Tag="Advanced" Content="{DynamicResource Text.Advanced}" Margin="0,0,0,5"/>
+                    <ListBoxItem Tag="Shortcut" Content="{DynamicResource Text.Shortcut}" Margin="0,0,0,5"/>
+                </ListBox>
+
+                <Button DockPanel.Dock="Bottom" Content="{DynamicResource Text.Initialize}" Click="Initialze_Click"/>
+            </DockPanel>
 
             <!-- Content Presenter for Pages -->
             <ContentControl x:Name="ContentArea" Grid.Column="1" Margin="10"/>
