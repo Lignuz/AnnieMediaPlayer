@@ -86,9 +86,24 @@ namespace AnnieMediaPlayer
             OptionViewModel.Instance.OptionChanged(OptionViewModel.Instance.DefaultOption, OptionViewModel.Instance.CurrentOption);
         }
 
+        private bool _isClosing;
         private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            await VideoPlayerController.Stop();
+            if (_isClosing)
+                return;
+
+            e.Cancel = true;
+            _isClosing = true;
+
+            try
+            {
+                await VideoPlayerController.Stop();
+                await VideoPlayerController.DisposeAsync();
+            }
+            finally
+            {
+                Close();
+            }
         }
 
         // 마우스 휠

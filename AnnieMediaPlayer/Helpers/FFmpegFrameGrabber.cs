@@ -21,6 +21,8 @@ namespace AnnieMediaPlayer
         private byte* _buffer = null; // RGB 변환 버퍼
         private AVFrame* _scaledRgbFrame = null; // 리사이징된 프레임
         private byte* _scaledBuffer = null; // 리사이징된 버퍼
+        private readonly object _sync = new();
+        private bool _isDisposed;
 
         public int Width => _width;
         public int Height => _height;
@@ -173,6 +175,20 @@ namespace AnnieMediaPlayer
 
         public unsafe BitmapSource? GetFrameAt(TimeSpan targetTime, Size previewSize, out TimeSpan currentTime, bool useKeyFrame = true)
         {
+            lock (_sync)
+            {
+                if (_isDisposed || _formatContext == null || _videoCodecContext == null)
+                {
+                    currentTime = TimeSpan.Zero;
+                    return null;
+                }
+
+                return GetFrameAtCore(targetTime, previewSize, out currentTime, useKeyFrame);
+            }
+        }
+
+        private unsafe BitmapSource? GetFrameAtCore(TimeSpan targetTime, Size previewSize, out TimeSpan currentTime, bool useKeyFrame)
+        {
             currentTime = TimeSpan.Zero;
 
             AllocateScaledFrame((int)previewSize.Width, (int)previewSize.Height);
@@ -226,7 +242,14 @@ namespace AnnieMediaPlayer
 
         public void Dispose()
         {
-            Dispose(true);
+            lock (_sync)
+            {
+                if (_isDisposed)
+                    return;
+
+                Dispose(true);
+                _isDisposed = true;
+            }
             GC.SuppressFinalize(this);
         }
 
@@ -266,7 +289,14 @@ namespace AnnieMediaPlayer
 
         ~FFmpegFrameGrabber()
         {
-            Dispose(false);
+            lock (_sync)
+            {
+                if (_isDisposed)
+                    return;
+
+                Dispose(false);
+                _isDisposed = true;
+            }
         }
 
         public static unsafe BitmapSource ConvertFrameToBitmapSource(AVFrame* pFrameRGB, int width, int height)
