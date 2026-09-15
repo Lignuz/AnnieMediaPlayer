@@ -86,6 +86,8 @@ namespace AnnieMediaPlayer
             _ffmePlayer.OnPositionChanged += FfmePlayer_OnPositionChanged;
             _ffmePlayer.OnMediaStateChanged += FfmePlayer_OnMediaStateChanged;
             _ffmePlayer.OnVideoFrameRendered += FfmePlayer_OnVideoFrameRendered;
+            _ffmePlayer.OnMessageLogged += FfmePlayer_OnMessageLogged;
+            _ffmePlayer.OnAudioDeviceStopped += FfmePlayer_OnAudioDeviceStopped;
             OptionViewModel.Instance.UseSeekFramePreviewChanged += OptionViewModel_UseSeekFramePreviewChanged;
         }
 
@@ -440,9 +442,38 @@ namespace AnnieMediaPlayer
 
         private static void FfmePlayer_OnMediaFailed(object? sender, MediaFailedEventArgs e)
         {
-            string errorMessage = e.ErrorException.Message;
             PlayerDiagnostics.Write($"Media failed: {e.ErrorException}");
             OnMediaFailed?.Invoke(sender, e);
+        }
+
+        private static void FfmePlayer_OnMessageLogged(object? sender, MediaLogMessageEventArgs e)
+        {
+            if (e.MessageType == MediaLogMessageType.Warning || e.MessageType == MediaLogMessageType.Error)
+            {
+                var message = $"FFME {e.MessageType} [{e.AspectName}]: {e.Message}";
+                _ = Task.Run(() => PlayerDiagnostics.Write(message));
+            }
+        }
+
+        private static async void FfmePlayer_OnAudioDeviceStopped(object? sender, EventArgs e)
+        {
+            if (Interlocked.Exchange(ref _audioDeviceRecoveryStarted, 1) != 0)
+                return;
+
+            try
+            {
+                PlayerDiagnostics.Write("Audio device stopped; recreating audio renderer.");
+                var changed = await ExecuteMediaCommandAsync(() => _ffmePlayer.ChangeMedia());
+                PlayerDiagnostics.Write($"Audio renderer recreation completed: success={changed}");
+            }
+            catch (Exception ex)
+            {
+                PlayerDiagnostics.Write($"Audio renderer recreation failed: {ex}");
+            }
+            finally
+            {
+                Volatile.Write(ref _audioDeviceRecoveryStarted, 0);
+            }
         }
 
         private static void FfmePlayer_OnMediaClosed(object? sender, EventArgs e)
@@ -474,8 +505,11 @@ namespace AnnieMediaPlayer
             if (e.MediaState == MediaPlaybackState.Close || e.MediaState == MediaPlaybackState.Stop)
             {
                 _pendingSeekValue = null;
-                _lastRenderDateTime = null;
-                _actualFps = 0.0;
+            }
+
+            if (e.MediaState != MediaPlaybackState.Play)
+            {
+                ResetFpsMeasurement();
 
                 // 참조가능성이 있어서 일단 유지하고 있도록 합니다.
                 // 새 미디어를 열 때까지 현재 grabber는 유지합니다.
@@ -485,18 +519,38 @@ namespace AnnieMediaPlayer
 
         private static void FfmePlayer_OnVideoFrameRendered(object? sender, RenderingVideoEventArgs e)
         {
-            DateTime renderedDateTime = DateTime.UtcNow;
-            if (_lastRenderDateTime.HasValue)
+            var now = Stopwatch.GetTimestamp();
+            lock (_fpsSync)
             {
-                var frameElapsed = renderedDateTime - _lastRenderDateTime;
-                if (frameElapsed.Value.TotalSeconds > 0)
+                if (_fpsWindowStartTimestamp == 0)
                 {
-                    _actualFps = 1.0 / frameElapsed.Value.TotalSeconds;
+                    _fpsWindowStartTimestamp = now;
+                    _fpsWindowFrameCount = 0;
+                }
+                else
+                {
+                    _fpsWindowFrameCount++;
+                    var elapsedSeconds = (double)(now - _fpsWindowStartTimestamp) / Stopwatch.Frequency;
+                    if (elapsedSeconds >= FpsMeasurementWindowSeconds)
+                    {
+                        _actualFps = _fpsWindowFrameCount / elapsedSeconds;
+                        _fpsWindowStartTimestamp = now;
+                        _fpsWindowFrameCount = 0;
+                    }
                 }
             }
-            _lastRenderDateTime = renderedDateTime;
 
             OnVideoFrameRendered?.Invoke(sender, e);
+        }
+
+        private static void ResetFpsMeasurement()
+        {
+            lock (_fpsSync)
+            {
+                _actualFps = 0.0;
+                _fpsWindowStartTimestamp = 0;
+                _fpsWindowFrameCount = 0;
+            }
         }
 
         // VideoPlayerController 해제 (애플리케이션 종료 시 호출)
@@ -555,6 +609,8 @@ namespace AnnieMediaPlayer
             _ffmePlayer.OnPositionChanged -= FfmePlayer_OnPositionChanged;
             _ffmePlayer.OnMediaStateChanged -= FfmePlayer_OnMediaStateChanged;
             _ffmePlayer.OnVideoFrameRendered -= FfmePlayer_OnVideoFrameRendered;
+            _ffmePlayer.OnMessageLogged -= FfmePlayer_OnMessageLogged;
+            _ffmePlayer.OnAudioDeviceStopped -= FfmePlayer_OnAudioDeviceStopped;
             OptionViewModel.Instance.UseSeekFramePreviewChanged -= OptionViewModel_UseSeekFramePreviewChanged;
         }
 
@@ -575,7 +631,10 @@ namespace AnnieMediaPlayer
         private static DispatcherTimer? _frameStepTimer = null;
 
         private static double _actualFps = 0.0;
-        private static DateTime? _lastRenderDateTime;
+        private const double FpsMeasurementWindowSeconds = 1.0;
+        private static readonly object _fpsSync = new();
+        private static long _fpsWindowStartTimestamp;
+        private static int _fpsWindowFrameCount;
 
         private static readonly object _seekRequestSync = new();
         private static readonly SemaphoreSlim _seekOperationGate = new(1, 1);
@@ -585,6 +644,7 @@ namespace AnnieMediaPlayer
         private static bool _mediaChanging;
         private static long _mediaVersion;
         private static Task? _mediaOpenTask;
+        private static int _audioDeviceRecoveryStarted;
 
         // 슬라이더 탐색에 대한 상태 변수 추가
         private static bool _isPreviewing = false;
@@ -610,7 +670,14 @@ namespace AnnieMediaPlayer
         public static bool IsNormalSpeed => SpeedIndex == _normalSpeedIndex; // 1배속인지 확인하는 속성
         public static bool IsFrameStepMode => _isFrameStepMode;
         public static bool IsFrameStepPaused => _isFrameStepPaused;
-        public static double ActualFps => _actualFps;
+        public static double ActualFps
+        {
+            get
+            {
+                lock (_fpsSync)
+                    return _actualFps;
+            }
+        }
         public static FFmpegFrameGrabber? ffmpegFrameGrabber { get; private set; } = null;
 
         public static void OnSliderMouseHover(MainWindow window, MouseEventArgs e)

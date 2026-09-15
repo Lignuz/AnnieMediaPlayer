@@ -34,6 +34,8 @@ namespace AnnieMediaPlayer
         public event EventHandler<PositionChangedEventArgs>? OnPositionChanged;
         public event EventHandler<MediaStateChangedEventArgs>? OnMediaStateChanged;
         public event EventHandler<RenderingVideoEventArgs>? OnVideoFrameRendered;
+        public event EventHandler<MediaLogMessageEventArgs>? OnMessageLogged;
+        public event EventHandler? OnAudioDeviceStopped;
 
         public long LastRenderedFrameNumber { get; private set; }
 
@@ -54,6 +56,8 @@ namespace AnnieMediaPlayer
             _mediaElement.PositionChanged += MediaElement_PositionChanged;
             _mediaElement.MediaStateChanged += MediaElement_MediaStateChanged;
             _mediaElement.RenderingVideo += MediaElement_RenderingVideo;
+            _mediaElement.MessageLogged += MediaElement_MessageLogged;
+            _mediaElement.AudioDeviceStopped += MediaElement_AudioDeviceStopped;
         }
 
         // 미디어 파일을 열기 합니다.
@@ -92,6 +96,16 @@ namespace AnnieMediaPlayer
             if (_mediaElement != null)
             {
                 return await _mediaElement.Stop();
+            }
+            return false;
+        }
+
+        // 기본 오디오 장치가 변경되었을 때 오디오 렌더러를 다시 생성합니다.
+        public async Task<bool> ChangeMedia()
+        {
+            if (_mediaElement != null)
+            {
+                return await _mediaElement.ChangeMedia();
             }
             return false;
         }
@@ -228,6 +242,16 @@ namespace AnnieMediaPlayer
             OnVideoFrameRendered?.Invoke(this, e);
         }
 
+        private void MediaElement_MessageLogged(object? sender, MediaLogMessageEventArgs e)
+        {
+            OnMessageLogged?.Invoke(this, e);
+        }
+
+        private void MediaElement_AudioDeviceStopped(object? sender, EventArgs e)
+        {
+            OnAudioDeviceStopped?.Invoke(this, e);
+        }
+
         private int _disposeStarted;
         public async Task DisposeAsync()
         {
@@ -248,6 +272,8 @@ namespace AnnieMediaPlayer
             _mediaElement.PositionChanged -= MediaElement_PositionChanged;
             _mediaElement.MediaStateChanged -= MediaElement_MediaStateChanged;
             _mediaElement.RenderingVideo -= MediaElement_RenderingVideo;
+            _mediaElement.MessageLogged -= MediaElement_MessageLogged;
+            _mediaElement.AudioDeviceStopped -= MediaElement_AudioDeviceStopped;
             await _mediaElement.Close();
             PlayerDiagnostics.Write("FFME dispose completed.");
 
