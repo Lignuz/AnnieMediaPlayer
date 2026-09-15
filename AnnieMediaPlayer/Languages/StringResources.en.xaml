@@ -37,6 +37,7 @@
     <sys:String x:Key="Text.SeekFramePreview">Seek Frame Preview</sys:String>
 
     <sys:String x:Key="Text.UseHWAccelerator">Use hardware acceleration</sys:String>
+    <sys:String x:Key="Text.UseLegacyAudioOut">Use compatibility audio output (instead of DirectSound)</sys:String>
     <sys:String x:Key="Text.UseOpenPlay">Start playing immediately after opening media</sys:String>
 
     <sys:String x:Key="Text.FlipSettings">Flip Settings</sys:String>

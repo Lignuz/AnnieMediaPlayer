@@ -6,6 +6,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using AnnieMediaPlayer.Options;
 using AnnieMediaPlayer.Windows.Settings;
 using FFmpeg.AutoGen;
@@ -87,6 +88,10 @@ namespace AnnieMediaPlayer
         }
 
         private bool _isClosing;
+        private long _latestFrameIndex;
+        private int _frameUiUpdatePending;
+        private DateTime _lastCalcSpeedLabelUpdate = DateTime.MinValue;
+
         private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             if (_isClosing)
@@ -129,6 +134,14 @@ namespace AnnieMediaPlayer
         // 파일 열기할 때 설정
         private void VideoPlayerController_OnMediaOpening(object? sender, MediaOpeningEventArgs e)
         {
+            // Keep audio rendering from waiting behind video frame presentation.
+            e.Options.UseParallelRendering = true;
+            ffmeMediaElement.RendererOptions.UseLegacyAudioOut =
+                OptionViewModel.Instance.CurrentOption.UseLegacyAudioOut;
+            PlayerDiagnostics.Write(
+                $"Media opening: audio={(ffmeMediaElement.RendererOptions.UseLegacyAudioOut ? "Legacy" : "DirectSound")}, " +
+                $"hardware={OptionViewModel.Instance.CurrentOption.UseHWAccelerator}");
+
             // 하드웨어 가속 옵션이 꺼져있으면 하드웨어 디바이스 목록을 설정하지 않습니다.
             if (OptionViewModel.Instance.CurrentOption.UseHWAccelerator == false)
                 return;
@@ -232,8 +245,48 @@ namespace AnnieMediaPlayer
         // 렌더 될때마다 
         private void VideoPlayerController_OnVideoFrameRendered(object? sender, RenderingVideoEventArgs e)
         {
-            vm.FrameIndex = e.PictureNumber - 1;
-            UpdateCalcSpeedLabel();
+            Interlocked.Exchange(ref _latestFrameIndex, e.PictureNumber - 1);
+
+            if (Dispatcher.CheckAccess())
+            {
+                UpdateVideoFrameUi();
+                return;
+            }
+
+            // 렌더링 스레드에서 들어오는 프레임 이벤트를 UI 작업 하나로 합칩니다.
+            if (Interlocked.Exchange(ref _frameUiUpdatePending, 1) != 0)
+                return;
+
+            try
+            {
+                Dispatcher.BeginInvoke(DispatcherPriority.DataBind, new Action(() =>
+                {
+                    try
+                    {
+                        UpdateVideoFrameUi();
+                    }
+                    finally
+                    {
+                        Volatile.Write(ref _frameUiUpdatePending, 0);
+                    }
+                }));
+            }
+            catch (InvalidOperationException)
+            {
+                Volatile.Write(ref _frameUiUpdatePending, 0);
+            }
+        }
+
+        private void UpdateVideoFrameUi()
+        {
+            vm.FrameIndex = Interlocked.Read(ref _latestFrameIndex);
+
+            // FPS 표시는 매 프레임마다 갱신할 필요가 없으므로 UI 작업을 제한합니다.
+            if ((DateTime.UtcNow - _lastCalcSpeedLabelUpdate).TotalMilliseconds >= 250)
+            {
+                _lastCalcSpeedLabelUpdate = DateTime.UtcNow;
+                UpdateCalcSpeedLabel();
+            }
         }
 
         private void VideoPlayerController_OnFrameStepStateChanged(object? sender, EventArgs e)

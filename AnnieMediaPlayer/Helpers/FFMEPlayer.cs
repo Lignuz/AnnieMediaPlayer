@@ -228,11 +228,13 @@ namespace AnnieMediaPlayer
             OnVideoFrameRendered?.Invoke(this, e);
         }
 
-        private bool _isDisposed = false;
+        private int _disposeStarted;
         public async Task DisposeAsync()
         {
-            if (_isDisposed || _mediaElement == null)
+            if (Interlocked.Exchange(ref _disposeStarted, 1) != 0 || _mediaElement == null)
                 return;
+
+            PlayerDiagnostics.Write("FFME dispose started.");
 
             _mediaElement.MediaInitializing -= MediaElement_MediaInitializing;
             _mediaElement.MediaOpening -= MediaElement_MediaOpening;
@@ -247,8 +249,8 @@ namespace AnnieMediaPlayer
             _mediaElement.MediaStateChanged -= MediaElement_MediaStateChanged;
             _mediaElement.RenderingVideo -= MediaElement_RenderingVideo;
             await _mediaElement.Close();
+            PlayerDiagnostics.Write("FFME dispose completed.");
 
-            _isDisposed = true;
         }
     }
 }

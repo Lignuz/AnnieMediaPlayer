@@ -29,135 +29,157 @@ namespace AnnieMediaPlayer
 
         public FFmpegFrameGrabber(string filePath)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
             _filePath = filePath;
             Initialize();
         }
 
         private void Initialize()
         {
-            var formatContext = ffmpeg.avformat_alloc_context();
-            _formatContext = formatContext;
-            if (ffmpeg.avformat_open_input(&formatContext, _filePath, null, null) < 0)
-                throw new ApplicationException("Error opening input file.");
-
-            if (ffmpeg.avformat_find_stream_info(formatContext, null) < 0)
+            try
             {
-                ffmpeg.avformat_close_input(&formatContext);
-                throw new ApplicationException("Error finding stream information.");
-            }
+                var formatContext = ffmpeg.avformat_alloc_context();
+                if (formatContext == null)
+                    throw new ApplicationException("Error allocating format context.");
 
-            for (int i = 0; i < _formatContext->nb_streams; i++)
-            {
-                if (_formatContext->streams[i]->codecpar->codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO)
+                if (ffmpeg.avformat_open_input(&formatContext, _filePath, null, null) < 0)
                 {
-                    _videoStreamIndex = i;
-                    break;
+                    if (formatContext != null)
+                        ffmpeg.avformat_close_input(&formatContext);
+                    throw new ApplicationException("Error opening input file.");
+                }
+
+                _formatContext = formatContext;
+                if (ffmpeg.avformat_find_stream_info(_formatContext, null) < 0)
+                    throw new ApplicationException("Error finding stream information.");
+
+                for (int i = 0; i < _formatContext->nb_streams; i++)
+                {
+                    if (_formatContext->streams[i]->codecpar->codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO)
+                    {
+                        _videoStreamIndex = i;
+                        break;
+                    }
+                }
+
+                if (_videoStreamIndex == -1)
+                    throw new ApplicationException("Could not find video stream.");
+
+                AVCodecParameters* codecPar = _formatContext->streams[_videoStreamIndex]->codecpar;
+                AVCodec* videoCodec = ffmpeg.avcodec_find_decoder(codecPar->codec_id);
+                if (videoCodec == null)
+                    throw new ApplicationException("Unsupported codec.");
+
+                var videoCodecContext = ffmpeg.avcodec_alloc_context3(videoCodec);
+                if (videoCodecContext == null)
+                    throw new ApplicationException("Error allocating codec context.");
+
+                _videoCodecContext = videoCodecContext;
+                if (ffmpeg.avcodec_parameters_to_context(_videoCodecContext, codecPar) < 0)
+                    throw new ApplicationException("Error copying codec parameters to context.");
+
+                if (ffmpeg.avcodec_open2(_videoCodecContext, videoCodec, null) < 0)
+                    throw new ApplicationException("Error opening codec context.");
+
+                _width = _videoCodecContext->width;
+                _height = _videoCodecContext->height;
+                if (_width <= 0 || _height <= 0)
+                    throw new ApplicationException("Invalid video dimensions.");
+
+                _swsContext = ffmpeg.sws_getContext(
+                    _width, _height, _videoCodecContext->pix_fmt,
+                    _width, _height, AVPixelFormat.AV_PIX_FMT_BGR24,
+                    ffmpeg.SWS_BILINEAR, null, null, null);
+
+                if (_swsContext == null)
+                    throw new ApplicationException("Error creating SwsContext.");
+
+                // RGB 프레임 버퍼 초기화
+                _rgbFrame = ffmpeg.av_frame_alloc();
+                if (_rgbFrame == null)
+                    throw new ApplicationException("Error allocating RGB frame.");
+
+                int bufferSize = ffmpeg.av_image_get_buffer_size(AVPixelFormat.AV_PIX_FMT_BGR24, _width, _height, 1);
+                if (bufferSize <= 0)
+                    throw new ApplicationException("Error calculating RGB buffer size.");
+
+                _buffer = (byte*)ffmpeg.av_malloc((ulong)bufferSize);
+                if (_buffer == null)
+                    throw new ApplicationException("Error allocating RGB buffer.");
+
+                byte_ptrArray4 rgbDataArray = new byte_ptrArray4();
+                int_array4 rgbLinesizeArray = new int_array4();
+
+                if (ffmpeg.av_image_fill_arrays(ref rgbDataArray, ref rgbLinesizeArray, _buffer, AVPixelFormat.AV_PIX_FMT_BGR24, _width, _height, 1) < 0)
+                    throw new ApplicationException("Error initializing RGB buffer.");
+
+                for (uint i = 0; i < 4; i++)
+                {
+                    _rgbFrame->data[i] = rgbDataArray[i];
+                    _rgbFrame->linesize[i] = rgbLinesizeArray[i];
                 }
             }
-
-            if (_videoStreamIndex == -1)
-            {
-                ffmpeg.avformat_close_input(&formatContext);
-                throw new ApplicationException("Could not find video stream.");
-            }
-
-            AVCodecParameters* codecPar = _formatContext->streams[_videoStreamIndex]->codecpar;
-            AVCodec* videoCodec = ffmpeg.avcodec_find_decoder(codecPar->codec_id);
-            if (videoCodec == null)
-            {
-                ffmpeg.avformat_close_input(&formatContext);
-                throw new ApplicationException("Unsupported codec.");
-            }
-
-            var videoCodecContext = ffmpeg.avcodec_alloc_context3(videoCodec);
-            _videoCodecContext = videoCodecContext;
-            if (ffmpeg.avcodec_parameters_to_context(_videoCodecContext, codecPar) < 0)
-            {
-                ffmpeg.avformat_close_input(&formatContext);
-                ffmpeg.avcodec_free_context(&videoCodecContext);
-                throw new ApplicationException("Error copying codec parameters to context.");
-            }
-
-            if (ffmpeg.avcodec_open2(_videoCodecContext, videoCodec, null) < 0)
-            {
-                ffmpeg.avformat_close_input(&formatContext);
-                ffmpeg.avcodec_free_context(&videoCodecContext);
-                throw new ApplicationException("Error opening codec context.");
-            }
-
-            _width = _videoCodecContext->width;
-            _height = _videoCodecContext->height;
-
-            _swsContext = ffmpeg.sws_getContext(
-                _width, _height, _videoCodecContext->pix_fmt,
-                _width, _height, AVPixelFormat.AV_PIX_FMT_BGR24,
-                ffmpeg.SWS_BILINEAR, null, null, null);
-
-            if (_swsContext == null)
-            {
-                ffmpeg.avcodec_free_context(&videoCodecContext);
-                ffmpeg.avformat_close_input(&formatContext);
-                throw new ApplicationException("Error creating SwsContext.");
-            }
-
-            // RGB 프레임 버퍼 초기화
-            _rgbFrame = ffmpeg.av_frame_alloc();
-            if (_rgbFrame == null)
+            catch
             {
                 Dispose();
-                throw new ApplicationException("Error allocating RGB frame.");
-            }
-            int bufferSize = ffmpeg.av_image_get_buffer_size(AVPixelFormat.AV_PIX_FMT_BGR24, _width, _height, 1);
-            _buffer = (byte*)ffmpeg.av_malloc((ulong)bufferSize);
-
-            byte_ptrArray4 rgbDataArray = new byte_ptrArray4();
-            int_array4 rgbLinesizeArray = new int_array4();
-
-            ffmpeg.av_image_fill_arrays(ref rgbDataArray, ref rgbLinesizeArray, _buffer, AVPixelFormat.AV_PIX_FMT_BGR24, _width, _height, 1);
-
-            for (uint i = 0; i < 4; i++)
-            {
-                _rgbFrame->data[i] = rgbDataArray[i];
-                _rgbFrame->linesize[i] = rgbLinesizeArray[i];
+                throw;
             }
         }
 
         private unsafe void AllocateScaledFrame(int width, int height)
         {
+            if (width <= 0 || height <= 0)
+                throw new ArgumentOutOfRangeException(nameof(width), "Preview dimensions must be greater than zero.");
+
             if (_scaledRgbFrame == null || _previewWidth != width || _previewHeight != height)
             {
-                FreeScaledFrame(); // 기존 리소스 해제
-
-                _previewWidth = width;
-                _previewHeight = height;
-                _scaledRgbFrame = ffmpeg.av_frame_alloc();
-                int scaledBufferSize = ffmpeg.av_image_get_buffer_size(AVPixelFormat.AV_PIX_FMT_BGR24, _previewWidth, _previewHeight, 1);
-                _scaledBuffer = (byte*)ffmpeg.av_malloc((ulong)scaledBufferSize);
-
-                byte_ptrArray4 scaledDataArray = new byte_ptrArray4();
-                int_array4 scaledLinesizeArray = new int_array4();
-
-                ffmpeg.av_image_fill_arrays(ref scaledDataArray, ref scaledLinesizeArray, _scaledBuffer,
-                    AVPixelFormat.AV_PIX_FMT_BGR24, _previewWidth, _previewHeight, 1);
-
-                for (uint i = 0; i < 4; i++)
+                try
                 {
-                    _scaledRgbFrame->data[i] = scaledDataArray[i];
-                    _scaledRgbFrame->linesize[i] = scaledLinesizeArray[i];
+                    FreeScaledFrame(); // 기존 리소스 해제
+
+                    _previewWidth = width;
+                    _previewHeight = height;
+                    _scaledRgbFrame = ffmpeg.av_frame_alloc();
+                    if (_scaledRgbFrame == null)
+                        throw new ApplicationException("Error allocating scaled frame.");
+
+                    int scaledBufferSize = ffmpeg.av_image_get_buffer_size(AVPixelFormat.AV_PIX_FMT_BGR24, _previewWidth, _previewHeight, 1);
+                    if (scaledBufferSize <= 0)
+                        throw new ApplicationException("Error calculating scaled buffer size.");
+
+                    _scaledBuffer = (byte*)ffmpeg.av_malloc((ulong)scaledBufferSize);
+                    if (_scaledBuffer == null)
+                        throw new ApplicationException("Error allocating scaled buffer.");
+
+                    byte_ptrArray4 scaledDataArray = new byte_ptrArray4();
+                    int_array4 scaledLinesizeArray = new int_array4();
+
+                    if (ffmpeg.av_image_fill_arrays(ref scaledDataArray, ref scaledLinesizeArray, _scaledBuffer,
+                        AVPixelFormat.AV_PIX_FMT_BGR24, _previewWidth, _previewHeight, 1) < 0)
+                        throw new ApplicationException("Error initializing scaled buffer.");
+
+                    for (uint i = 0; i < 4; i++)
+                    {
+                        _scaledRgbFrame->data[i] = scaledDataArray[i];
+                        _scaledRgbFrame->linesize[i] = scaledLinesizeArray[i];
+                    }
+
+                    _scaledRgbFrame->width = _previewWidth;
+                    _scaledRgbFrame->height = _previewHeight;
+                    _scaledRgbFrame->format = (int)AVPixelFormat.AV_PIX_FMT_BGR24;
+
+                    _scaledSwsContext = ffmpeg.sws_getContext(
+                        _width, _height, _videoCodecContext->pix_fmt,
+                        _previewWidth, _previewHeight, AVPixelFormat.AV_PIX_FMT_BGR24,
+                        ffmpeg.SWS_BILINEAR, null, null, null);
+
+                    if (_scaledSwsContext == null)
+                        throw new ApplicationException("Error creating scaled SwsContext.");
                 }
-
-                _scaledRgbFrame->width = _previewWidth;
-                _scaledRgbFrame->height = _previewHeight;
-                _scaledRgbFrame->format = (int)AVPixelFormat.AV_PIX_FMT_BGR24;
-
-                _scaledSwsContext = ffmpeg.sws_getContext(
-                    _width, _height, _videoCodecContext->pix_fmt,
-                    _previewWidth, _previewHeight, AVPixelFormat.AV_PIX_FMT_BGR24,
-                    ffmpeg.SWS_BILINEAR, null, null, null);
-
-                if (_scaledSwsContext == null)
+                catch
                 {
-                    // 오류 처리 필요
+                    FreeScaledFrame();
+                    throw;
                 }
             }
         }
@@ -200,6 +222,9 @@ namespace AnnieMediaPlayer
 
             try
             {
+                if (frame == null || packet == null)
+                    throw new ApplicationException("Error allocating frame buffers.");
+
                 double timeBase = ffmpeg.av_q2d(_formatContext->streams[_videoStreamIndex]->time_base);
                 long targetFramePts = (long)(targetTime.TotalSeconds / timeBase);
                 int seekFlags = useKeyFrame ? ffmpeg.AVSEEK_FLAG_BACKWARD : ffmpeg.AVSEEK_FLAG_BACKWARD | ffmpeg.AVSEEK_FLAG_ANY;

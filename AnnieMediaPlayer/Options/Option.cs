@@ -53,6 +53,7 @@ namespace AnnieMediaPlayer.Options
 
             UseHWAccelerator = false;
             UseOpenPlay = true;
+            UseLegacyAudioOut = false;
 
             UseFlipHorizontal = false;
             UseFlipVertical = false;
@@ -67,6 +68,7 @@ namespace AnnieMediaPlayer.Options
 
         public bool UseHWAccelerator { get => Get(); set => Set(value); }
         public bool UseOpenPlay { get => Get(); set => Set(value); }
+        public bool UseLegacyAudioOut { get => Get(); set => Set(value); }
 
         [JsonIgnore]
         public bool UseFlipHorizontal { get => Get(); set => Set(value); }

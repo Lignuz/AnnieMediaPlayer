@@ -33,7 +33,17 @@ namespace AnnieMediaPlayer
         public static bool IsSeeking { get => IsOpened ? _ffmePlayer._mediaElement.IsSeeking : false; }
         public static double VideoFps { get => IsOpened ? _ffmePlayer._mediaElement.VideoFrameRate : 0.0; }
         public static long CurrentFrameNumber { get => IsOpened ? _ffmePlayer.LastRenderedFrameNumber : 0; }
-        public static string CurrentFilePath { get => IsOpened ? _ffmePlayer._mediaElement.Source.AbsolutePath : string.Empty; }
+        public static string CurrentFilePath
+        {
+            get
+            {
+                if (!IsMediaValid || !IsOpened)
+                    return string.Empty;
+
+                var source = _ffmePlayer._mediaElement.Source;
+                return source == null ? string.Empty : source.IsFile ? source.LocalPath : source.OriginalString;
+            }
+        }
 
         public static bool IsSliderDragging { get; private set; } = false;
         public static bool IsSliderDraggingOnPlaying { get; private set; } = false;
@@ -76,6 +86,7 @@ namespace AnnieMediaPlayer
             _ffmePlayer.OnPositionChanged += FfmePlayer_OnPositionChanged;
             _ffmePlayer.OnMediaStateChanged += FfmePlayer_OnMediaStateChanged;
             _ffmePlayer.OnVideoFrameRendered += FfmePlayer_OnVideoFrameRendered;
+            OptionViewModel.Instance.UseSeekFramePreviewChanged += OptionViewModel_UseSeekFramePreviewChanged;
         }
 
         // 열기 
@@ -99,30 +110,32 @@ namespace AnnieMediaPlayer
         {
             if (_ffmePlayer == null) return Task.FromResult(false);
 
+            PlayerDiagnostics.Write($"Open requested: {filePath}");
+
             Task seekTask;
             Task previewTask;
-            bool resumePlayback;
+            bool playWhenOpened;
             lock (_seekRequestSync)
             {
                 // 기존 Seek가 끝나기 전에는 MediaElement에 Open을 동시에 요청하지 않습니다.
                 if (_seekProcessingStopped || _mediaChanging)
                     return Task.FromResult(false);
 
-                resumePlayback = IsPlaying;
                 _mediaChanging = true;
                 _mediaVersion++;
                 _pendingSeekValue = null;
                 _previewQueue.Clear();
                 seekTask = _seekProcessorCompletion?.Task ?? Task.CompletedTask;
                 previewTask = _previewProcessorTask ?? Task.CompletedTask;
+                playWhenOpened = OptionViewModel.Instance.CurrentOption.UseOpenPlay;
 
-                var openTask = OpenCoreAsync(filePath, seekTask, previewTask, resumePlayback);
+                var openTask = OpenCoreAsync(filePath, seekTask, previewTask, playWhenOpened);
                 _mediaOpenTask = openTask;
                 return openTask;
             }
         }
 
-        private static async Task<bool> OpenCoreAsync(string filePath, Task seekTask, Task previewTask, bool resumePlayback)
+        private static async Task<bool> OpenCoreAsync(string filePath, Task seekTask, Task previewTask, bool playWhenOpened)
         {
             try
             {
@@ -132,11 +145,32 @@ namespace AnnieMediaPlayer
                 await _seekOperationGate.WaitAsync();
                 try
                 {
-                    bool opened = await _ffmePlayer.Open(filePath);
-                    if (opened && resumePlayback)
-                        await _ffmePlayer.Play();
+                    // 프리뷰 작업이 끝난 뒤 기존 FFmpeg 컨텍스트를 먼저 해제합니다.
+                    // 새 미디어를 여는 동안 이전 컨텍스트와 네이티브 리소스가 겹치지 않게 합니다.
+                    var previousGrabber = ffmpegFrameGrabber;
+                    ffmpegFrameGrabber = null;
+                    previousGrabber?.Dispose();
+                    PlayerDiagnostics.Write("Previous preview decoder disposed; opening media.");
 
+                    var opened = await _ffmePlayer.Open(filePath);
+                    PlayerDiagnostics.Write($"FFME Open completed: success={opened}");
+                    if (opened == false)
+                        return opened;
+
+                    // FFME reports the newly opened media as Stop. Normalize it to
+                    // Pause when automatic playback is disabled so the play button
+                    // can resume the media from the first frame.
+                    if (playWhenOpened == false)
+                    {
+                        var paused = await _ffmePlayer.Pause();
+                        PlayerDiagnostics.Write($"FFME Pause completed: success={paused}");
+                        return opened;
+                    }
+
+                    var playing = await _ffmePlayer.Play();
+                    PlayerDiagnostics.Write($"FFME Play completed: success={playing}");
                     return opened;
+
                 }
                 finally
                 {
@@ -146,6 +180,7 @@ namespace AnnieMediaPlayer
             catch (Exception ex)
             {
                 Debug.WriteLine($"Open 오류: {ex.Message}");
+                PlayerDiagnostics.Write($"Open failed: {ex}");
                 return false;
             }
             finally
@@ -155,36 +190,46 @@ namespace AnnieMediaPlayer
                     _mediaChanging = false;
                     _mediaOpenTask = null;
                 }
+                PlayerDiagnostics.Write("Open finished.");
             }
         }
 
         // 재생
         public static async Task<bool> Play()
         {
+            if (CanIssuePlaybackCommand() == false)
+                return false;
+
             if (_isFrameStepMode)
             {
                 ResumeFrameStep();
                 return true;
             }
             if (_ffmePlayer == null) return false;
-            return await _ffmePlayer.Play();
+            return await ExecuteMediaCommandAsync(() => _ffmePlayer.Play());
         }
 
         // 일시 정지
         public static async Task<bool> Pause()
         {
+            if (CanIssuePlaybackCommand() == false)
+                return false;
+
             if (_isFrameStepMode)
             {
                 PauseFrameStep();
                 return true;
             }
             if (_ffmePlayer == null) return false;
-            return await _ffmePlayer.Pause();
+            return await ExecuteMediaCommandAsync(() => _ffmePlayer.Pause());
         }
 
         // 재생 / 일시 정지 토글
         public static async Task<bool> TogglePlayPause()
         {
+            if (CanIssuePlaybackCommand() == false)
+                return false;
+
             if (_isFrameStepMode)
             {
                 if (_isFrameStepPaused)
@@ -199,7 +244,8 @@ namespace AnnieMediaPlayer
             }
             if (PlaybackState == MediaPlaybackState.Play)
                 return await Pause();
-            else if (PlaybackState == MediaPlaybackState.Pause)
+            else if (PlaybackState == MediaPlaybackState.Pause ||
+                     PlaybackState == MediaPlaybackState.Stop)
                 return await Play();
             return false;
         }
@@ -207,8 +253,11 @@ namespace AnnieMediaPlayer
         // 정지
         public static async Task<bool> Stop()
         {
+            if (CanIssuePlaybackCommand() == false)
+                return false;
+
             if (_ffmePlayer == null) return false;
-            return await _ffmePlayer.Stop();
+            return await ExecuteMediaCommandAsync(() => _ffmePlayer.Stop());
         }
 
         // 탐색 (슬라이더에서 호출될 경우)
@@ -221,38 +270,68 @@ namespace AnnieMediaPlayer
                     return false;
             }
 
-            if (_ffmePlayer._mediaElement.IsSeekable)
+            await _seekOperationGate.WaitAsync();
+            try
             {
-                await _seekOperationGate.WaitAsync();
-                try
+                lock (_seekRequestSync)
                 {
-                    return await _ffmePlayer.Seek(position);
+                    if (_seekProcessingStopped || _mediaChanging)
+                        return false;
                 }
-                finally
-                {
-                    _seekOperationGate.Release();
-                }
+
+                if (_ffmePlayer == null || !_ffmePlayer._mediaElement.IsSeekable)
+                    return false;
+
+                return await _ffmePlayer.Seek(position);
             }
-            return false;
+            finally
+            {
+                _seekOperationGate.Release();
+            }
         }
 
         // 현재 프레임 앞-뒤로 이동
         public static async Task<bool> SeekStep(bool next = true)
         {
             if (_ffmePlayer == null) return false;
-            if (_ffmePlayer._mediaElement.IsSeekable)
+            lock (_seekRequestSync)
             {
-                await _seekOperationGate.WaitAsync();
-                try
-                {
-                    return await _ffmePlayer.SeekStep(next);
-                }
-                finally
-                {
-                    _seekOperationGate.Release();
-                }
+                if (_seekProcessingStopped || _mediaChanging)
+                    return false;
             }
-            return false;
+
+            return await ExecuteMediaCommandAsync(async () =>
+            {
+                if (_ffmePlayer == null || !_ffmePlayer._mediaElement.IsSeekable)
+                    return false;
+
+                return await _ffmePlayer.SeekStep(next);
+            });
+        }
+
+        private static bool CanIssuePlaybackCommand()
+        {
+            lock (_seekRequestSync)
+                return _seekProcessingStopped == false && _mediaChanging == false;
+        }
+
+        private static async Task<bool> ExecuteMediaCommandAsync(Func<Task<bool>> command)
+        {
+            if (CanIssuePlaybackCommand() == false)
+                return false;
+
+            await _seekOperationGate.WaitAsync();
+            try
+            {
+                if (CanIssuePlaybackCommand() == false)
+                    return false;
+
+                return await command();
+            }
+            finally
+            {
+                _seekOperationGate.Release();
+            }
         }
 
         // 재생 속도 설정
@@ -327,24 +406,26 @@ namespace AnnieMediaPlayer
 
         private static void FfmePlayer_OnMediaOpened(object? sender, MediaOpenedEventArgs e)
         {
-            var previousGrabber = ffmpegFrameGrabber;
-            try
-            {
-                string path = e.Info.MediaSource;
-                if (string.IsNullOrEmpty(path) == false)
-                {
-                    var newGrabber = new FFmpegFrameGrabber(path);
-                    ffmpegFrameGrabber = newGrabber;
-                    previousGrabber?.Dispose();
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Create FFmpegFrameGrabber Error: {ex.Message}");
-                ffmpegFrameGrabber = null;
-                previousGrabber?.Dispose();
-            }
+            // 프리뷰 디코더는 실제로 미리보기를 요청할 때 백그라운드에서 생성합니다.
+            // 디코더 교체는 OpenCoreAsync에서 직렬화하므로 늦게 도착한 이전
+            // MediaOpened 이벤트가 현재 디코더를 해제하지 않도록 합니다.
             OnMediaOpened?.Invoke(sender, e);
+        }
+
+        private static void OptionViewModel_UseSeekFramePreviewChanged(object? sender, EventArgs e)
+        {
+            if (OptionViewModel.Instance.CurrentOption.UseSeekFramePreview)
+                return;
+
+            _previewQueue.Clear();
+            FFmpegFrameGrabber? grabber;
+            lock (_seekRequestSync)
+            {
+                grabber = ffmpegFrameGrabber;
+                ffmpegFrameGrabber = null;
+            }
+
+            grabber?.Dispose();
         }
 
         private static void FfmePlayer_OnMediaReady(object? sender, EventArgs e)
@@ -360,21 +441,25 @@ namespace AnnieMediaPlayer
         private static void FfmePlayer_OnMediaFailed(object? sender, MediaFailedEventArgs e)
         {
             string errorMessage = e.ErrorException.Message;
+            PlayerDiagnostics.Write($"Media failed: {e.ErrorException}");
             OnMediaFailed?.Invoke(sender, e);
         }
 
         private static void FfmePlayer_OnMediaClosed(object? sender, EventArgs e)
         {
+            PlayerDiagnostics.Write("Media closed event received.");
             OnMediaClosed?.Invoke(sender, e);
         }
 
         private static void FfmePlayer_OnMediaChanging(object? sender, MediaOpeningEventArgs e)
         {
+            PlayerDiagnostics.Write($"Media changing event received: {e.Info.MediaSource}");
             OnMediaChanging?.Invoke(sender, e);
         }
 
         private static void FfmePlayer_OnMediaChanged(object? sender, MediaOpenedEventArgs e)
         {
+            PlayerDiagnostics.Write($"Media changed event received: {e.Info.MediaSource}");
             OnMediaChanged?.Invoke(sender, e);
         }
 
@@ -385,6 +470,7 @@ namespace AnnieMediaPlayer
 
         private static void FfmePlayer_OnMediaStateChanged(object? sender, MediaStateChangedEventArgs e)
         {
+            PlayerDiagnostics.Write($"Media state changed: {e.MediaState}");
             if (e.MediaState == MediaPlaybackState.Close || e.MediaState == MediaPlaybackState.Stop)
             {
                 _pendingSeekValue = null;
@@ -469,6 +555,7 @@ namespace AnnieMediaPlayer
             _ffmePlayer.OnPositionChanged -= FfmePlayer_OnPositionChanged;
             _ffmePlayer.OnMediaStateChanged -= FfmePlayer_OnMediaStateChanged;
             _ffmePlayer.OnVideoFrameRendered -= FfmePlayer_OnVideoFrameRendered;
+            OptionViewModel.Instance.UseSeekFramePreviewChanged -= OptionViewModel_UseSeekFramePreviewChanged;
         }
 
 
@@ -501,7 +588,8 @@ namespace AnnieMediaPlayer
 
         // 슬라이더 탐색에 대한 상태 변수 추가
         private static bool _isPreviewing = false;
-        private static ConcurrentQueue<MouseEventArgs> _previewQueue = new ConcurrentQueue<MouseEventArgs>();
+        private readonly record struct PreviewRequest(double PositionX, double TrackLength);
+        private static readonly ConcurrentQueue<PreviewRequest> _previewQueue = new();
         private static Task? _previewProcessorTask;
 
         private static TimeSpan? _pendingSeekValue = null; // 대기 중인 Seek 값
@@ -532,7 +620,15 @@ namespace AnnieMediaPlayer
 
             if (IsOpened && _mediaChanging == false)
             {
-                _previewQueue.Enqueue(e);
+                var slider = window.PlaybackSlider;
+                var mousePosition = e.GetPosition(slider);
+                var trackLength = slider.ActualWidth;
+                if (trackLength <= 0)
+                    return;
+
+                // 마우스 이동 이벤트가 프레임 생성보다 빠를 수 있으므로 최신 위치만 유지합니다.
+                _previewQueue.Clear();
+                _previewQueue.Enqueue(new PreviewRequest(mousePosition.X, trackLength));
 
                 if (!_isPreviewing)
                 {
@@ -544,6 +640,7 @@ namespace AnnieMediaPlayer
         public static void OnSliderMouseLeave(MainWindow window, MouseEventArgs e)
         {
             _previewQueue.Clear();
+            window.OverlayCanvas.Children.Clear();
         }
 
         private async static Task ProcessPreviewQueue(MainWindow window)
@@ -551,19 +648,23 @@ namespace AnnieMediaPlayer
             _isPreviewing = true;
             try
             {
-                while (_mediaChanging == false && _previewQueue.TryDequeue(out MouseEventArgs? e))
+                while (_mediaChanging == false && _previewQueue.TryDequeue(out PreviewRequest request))
                 {
                     if (_previewQueue.Count == 0)
                     {
                         var grabber = ffmpegFrameGrabber;
                         long mediaVersion = _mediaVersion;
+                        if (grabber == null && OptionViewModel.Instance.CurrentOption.UseSeekFramePreview)
+                        {
+                            var filePath = CurrentFilePath;
+                            if (string.IsNullOrWhiteSpace(filePath) == false)
+                                grabber = await CreateFrameGrabberAsync(filePath, mediaVersion);
+                        }
+
                         if (grabber != null)
                         {
-                            Slider slider = window.PlaybackSlider;
-                            Point mousePos = e.GetPosition(slider);
-
-                            double trackLength = slider.ActualWidth;
-                            double ratio = Math.Max(0, Math.Min(1, mousePos.X / trackLength));
+                            var slider = window.PlaybackSlider;
+                            double ratio = Math.Max(0, Math.Min(1, request.PositionX / request.TrackLength));
                             double seekTime = slider.Minimum + (ratio * (slider.Maximum - slider.Minimum));
                             TimeSpan targetTime = TimeSpan.FromSeconds(seekTime);
 
@@ -619,7 +720,7 @@ namespace AnnieMediaPlayer
 
                                     // 위치 계산
                                     var target = window.PlaybackSlider;
-                                    mousePos = e.GetPosition(target);
+                                    var mousePos = new Point(request.PositionX, target.ActualHeight / 2);
 
                                     double targetWidth = target.ActualWidth;
                                     double targetHeight = target.ActualHeight;
@@ -654,6 +755,40 @@ namespace AnnieMediaPlayer
             {
                 _previewProcessorTask = ProcessPreviewQueue(window);
             }
+        }
+
+        private static async Task<FFmpegFrameGrabber?> CreateFrameGrabberAsync(string filePath, long mediaVersion)
+        {
+            FFmpegFrameGrabber? newGrabber = null;
+            try
+            {
+                newGrabber = await Task.Run(() => new FFmpegFrameGrabber(filePath));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Create FFmpegFrameGrabber Error: {ex.Message}");
+                return null;
+            }
+
+            var accepted = false;
+            lock (_seekRequestSync)
+            {
+                if (_mediaChanging == false && mediaVersion == _mediaVersion &&
+                    OptionViewModel.Instance.CurrentOption.UseSeekFramePreview &&
+                    ffmpegFrameGrabber == null)
+                {
+                    ffmpegFrameGrabber = newGrabber;
+                    accepted = true;
+                }
+            }
+
+            if (accepted == false)
+            {
+                newGrabber.Dispose();
+                return null;
+            }
+
+            return newGrabber;
         }
 
         public static void OnSliderDragStart(MainWindow window)

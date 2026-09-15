@@ -92,8 +92,16 @@ namespace AnnieMediaPlayer.Options
                 case nameof(Option.UseSeekFramePreview):
                     HandleSeekFramePreviewChanged(CurrentOption.UseSeekFramePreview);
                     break;
+                case nameof(Option.UseHWAccelerator):
+                case nameof(Option.UseOpenPlay):
+                case nameof(Option.UseLegacyAudioOut):
+                case nameof(Option.UseFlipHorizontal):
+                case nameof(Option.UseFlipVertical):
+                case nameof(Option.RotateAngle):
+                    // These options are consumed directly by bindings or on the next media open.
+                    break;
                 default:
-                    Debug.WriteLine($"알 수 없는 프로퍼티 변경: {propertyName}");
+                    Debug.WriteLine($"알 수 없는 옵션 프로퍼티 변경: {propertyName}");
                     break;
             }
         }
