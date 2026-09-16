@@ -25,6 +25,7 @@
         DragDrop.DragEnter="BaseWindow_DragEnter"
         DragDrop.Drop="BaseWindow_Drop"
         Closing="Window_Closing"
+        Deactivated="Window_Deactivated"
         DataContext="{StaticResource vm}"
         ShowInTaskbar="True"
         AllowsTransparency="False"

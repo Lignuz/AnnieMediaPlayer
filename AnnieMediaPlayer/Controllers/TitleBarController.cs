@@ -1,5 +1,8 @@
 ﻿using System.Windows;
 using System.Windows.Input;
+using System.Windows.Controls.Primitives;
+using System.Windows.Media;
+using System.Windows.Media.Media3D;
 
 namespace AnnieMediaPlayer
 {
@@ -9,6 +12,7 @@ namespace AnnieMediaPlayer
         private static bool _isDragging;
         private static bool _dragStarted;
         private static MouseButton _dragButton;
+        private static UIElement? _capturedElement;
 
         public static void MouseLeftButtonDown(MainWindow window, MouseButtonEventArgs e)
         {
@@ -22,6 +26,9 @@ namespace AnnieMediaPlayer
 
         private static void MouseButtonDown(MainWindow window, MouseButtonEventArgs e, bool allowDoubleClick)
         {
+            if (FindParent<ButtonBase>(e.OriginalSource as DependencyObject) != null)
+                return;
+
             if (allowDoubleClick && e.ChangedButton == MouseButton.Left && e.ClickCount == 2)
             {
                 EndDrag();
@@ -35,7 +42,8 @@ namespace AnnieMediaPlayer
                 _dragButton = e.ChangedButton;
                 _isDragging = true;
                 _dragStarted = false;
-                Mouse.Capture(window);
+                _capturedElement = window;
+                Mouse.Capture(_capturedElement);
                 e.Handled = true;
             }
         }
@@ -92,13 +100,35 @@ namespace AnnieMediaPlayer
             EndDrag();
         }
 
+        public static void Cancel()
+        {
+            EndDrag();
+        }
+
         private static void EndDrag()
         {
             _isDragging = false;
             _dragStarted = false;
 
-            if (Mouse.Captured is UIElement captured)
-                captured.ReleaseMouseCapture();
+            if (_capturedElement != null && ReferenceEquals(Mouse.Captured, _capturedElement))
+                _capturedElement.ReleaseMouseCapture();
+
+            _capturedElement = null;
+        }
+
+        private static T? FindParent<T>(DependencyObject? element) where T : DependencyObject
+        {
+            while (element != null)
+            {
+                if (element is T match)
+                    return match;
+
+                element = element is Visual || element is Visual3D
+                    ? VisualTreeHelper.GetParent(element)
+                    : null;
+            }
+
+            return null;
         }
 
         private static void ToggleWindowState(Window window)

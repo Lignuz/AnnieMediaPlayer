@@ -1,9 +1,11 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -120,6 +122,9 @@ namespace AnnieMediaPlayer
         // 기본영역 드래그로 이동 지원
         private void win_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (IsButtonInput(e.OriginalSource as DependencyObject))
+                return;
+
             if (e.ButtonState == MouseButtonState.Pressed && e.ChangedButton == MouseButton.Left)
             {
                 TitleBarController.MouseLeftButtonDown(this, e);
@@ -128,6 +133,9 @@ namespace AnnieMediaPlayer
 
         private void win_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (IsButtonInput(e.OriginalSource as DependencyObject))
+                return;
+
             if (e.ButtonState == MouseButtonState.Pressed && e.ChangedButton == MouseButton.Right)
                 TitleBarController.MouseRightButtonDown(this, e);
         }
