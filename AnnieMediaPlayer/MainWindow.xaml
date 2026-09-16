@@ -16,6 +16,10 @@
         PreviewKeyDown="Window_PreviewKeyDown"
         MouseWheel="win_MouseWheel"
         MouseLeftButtonDown="win_MouseLeftButtonDown"
+        MouseRightButtonDown="win_MouseRightButtonDown"
+        PreviewMouseMove="win_PreviewMouseMove"
+        PreviewMouseLeftButtonUp="win_PreviewMouseLeftButtonUp"
+        PreviewMouseRightButtonUp="win_PreviewMouseRightButtonUp"
         Loaded="Window_Loaded"
         AllowDrop="True"
         DragDrop.DragEnter="BaseWindow_DragEnter"
@@ -56,7 +60,8 @@
                 <!-- 🎀 커스텀 타이틀바 -->
                 <Grid Grid.Row="0" x:Name="grid_top">
                     <DockPanel x:Name="panel_titlebar" Background="{DynamicResource BackgroundBrush}" 
-                               MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" MouseMove="TitleBar_MouseMove" MouseLeftButtonUp="TitleBar_MouseLeftButtonUp" 
+                               MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" MouseRightButtonDown="TitleBar_MouseRightButtonDown"
+                               MouseMove="TitleBar_MouseMove" MouseLeftButtonUp="TitleBar_MouseLeftButtonUp" MouseRightButtonUp="TitleBar_MouseRightButtonUp"
                                PreviewMouseMove="overlayCheck_PreviewMouseMove" MouseEnter="panel_MouseEnter" MouseLeave="panel_MouseLeave"
                                LastChildFill="True" Height="40">
                         <!-- 🎨 아이콘 + 제목 묶기 -->

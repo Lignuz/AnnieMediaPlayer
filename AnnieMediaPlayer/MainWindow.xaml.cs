@@ -122,9 +122,19 @@ namespace AnnieMediaPlayer
         {
             if (e.ButtonState == MouseButtonState.Pressed && e.ChangedButton == MouseButton.Left)
             {
-                DragMove();
+                TitleBarController.MouseLeftButtonDown(this, e);
             }
         }
+
+        private void win_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed && e.ChangedButton == MouseButton.Right)
+                TitleBarController.MouseRightButtonDown(this, e);
+        }
+
+        private void win_PreviewMouseMove(object sender, MouseEventArgs e) => TitleBarController.MouseMove(this, e);
+        private void win_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e) => TitleBarController.MouseLeftButtonUp();
+        private void win_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e) => TitleBarController.MouseRightButtonUp();
 
 
         /////////////////////////////////////////
@@ -481,8 +491,10 @@ namespace AnnieMediaPlayer
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e) => KeyboardInputHandler.HandleKeyDown(this, e);
 
         private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => TitleBarController.MouseLeftButtonDown(this, e);
+        private void TitleBar_MouseRightButtonDown(object sender, MouseButtonEventArgs e) => TitleBarController.MouseRightButtonDown(this, e);
         private void TitleBar_MouseMove(object sender, MouseEventArgs e) => TitleBarController.MouseMove(this, e);
         private void TitleBar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) => TitleBarController.MouseLeftButtonUp();
+        private void TitleBar_MouseRightButtonUp(object sender, MouseButtonEventArgs e) => TitleBarController.MouseRightButtonUp();
 
         private void MinimizeButton_Click(object sender, RoutedEventArgs e) => this.WindowState = WindowState.Minimized;
         private void MaxRestoreButton_Click(object sender, RoutedEventArgs e) => this.WindowState = this.WindowState == WindowState.Normal ? WindowState.Maximized : WindowState.Normal;

@@ -6,55 +6,99 @@ namespace AnnieMediaPlayer
     public static class TitleBarController
     {
         private static Point _mouseDownPoint;
-        private static bool _isDragging = false;
+        private static bool _isDragging;
+        private static bool _dragStarted;
+        private static MouseButton _dragButton;
 
         public static void MouseLeftButtonDown(MainWindow window, MouseButtonEventArgs e)
         {
-            if (e.ClickCount == 2)
+            MouseButtonDown(window, e, true);
+        }
+
+        public static void MouseRightButtonDown(MainWindow window, MouseButtonEventArgs e)
+        {
+            MouseButtonDown(window, e, false);
+        }
+
+        private static void MouseButtonDown(MainWindow window, MouseButtonEventArgs e, bool allowDoubleClick)
+        {
+            if (allowDoubleClick && e.ChangedButton == MouseButton.Left && e.ClickCount == 2)
             {
+                EndDrag();
                 ToggleWindowState(window);
+                e.Handled = true;
             }
-            else if (e.ButtonState == MouseButtonState.Pressed)
+            else if (e.ButtonState == MouseButtonState.Pressed &&
+                     (e.ChangedButton == MouseButton.Left || e.ChangedButton == MouseButton.Right))
             {
-                if (window.WindowState == WindowState.Maximized)
-                {
-                    _mouseDownPoint = e.GetPosition(window);
-                    _isDragging = true;
-                }
-                window.DragMove();
+                _mouseDownPoint = e.GetPosition(window);
+                _dragButton = e.ChangedButton;
+                _isDragging = true;
+                _dragStarted = false;
+                Mouse.Capture(window);
+                e.Handled = true;
             }
         }
 
         public static void MouseMove(MainWindow window, MouseEventArgs e)
         {
-            if (_isDragging && e.LeftButton == MouseButtonState.Pressed)
+            if (!_isDragging)
+                return;
+
+            var buttonState = _dragButton == MouseButton.Left ? e.LeftButton : e.RightButton;
+            if (buttonState != MouseButtonState.Pressed)
             {
-                Point currentPoint = e.GetPosition(window);
-                double deltaX = Math.Abs(currentPoint.X - _mouseDownPoint.X);
-                double deltaY = Math.Abs(currentPoint.Y - _mouseDownPoint.Y);
+                EndDrag();
+                return;
+            }
 
-                if (deltaX > SystemParameters.MinimumHorizontalDragDistance || deltaY > SystemParameters.MinimumVerticalDragDistance)
+            Point currentPoint = e.GetPosition(window);
+            double deltaX = Math.Abs(currentPoint.X - _mouseDownPoint.X);
+            double deltaY = Math.Abs(currentPoint.Y - _mouseDownPoint.Y);
+
+            if (!_dragStarted &&
+                deltaX <= SystemParameters.MinimumHorizontalDragDistance &&
+                deltaY <= SystemParameters.MinimumVerticalDragDistance)
+                return;
+
+            var screenPoint = window.PointToScreen(currentPoint);
+
+            if (!_dragStarted)
+            {
+                _dragStarted = true;
+
+                if (window.WindowState == WindowState.Maximized)
                 {
-                    _isDragging = false;
+                    var horizontalRatio = window.ActualWidth > 0 ? currentPoint.X / window.ActualWidth : 0.5;
+                    var verticalRatio = window.ActualHeight > 0 ? currentPoint.Y / window.ActualHeight : 0.5;
+                    var pointerOffset = new Point(window.Width * horizontalRatio, window.Height * verticalRatio);
 
-                    if (window.WindowState == WindowState.Maximized)
-                    {
-                        var mouseX = Mouse.GetPosition(window).X;
-                        var percent = mouseX / window.ActualWidth;
-
-                        window.WindowState = WindowState.Normal;
-                        window.Left = SystemParameters.WorkArea.Width * percent - (window.Width / 2);
-                        window.Top = 0;
-                    }
-
-                    window.DragMove();
+                    window.WindowState = WindowState.Normal;
+                    _mouseDownPoint = pointerOffset;
                 }
             }
+
+            window.Left = screenPoint.X - _mouseDownPoint.X;
+            window.Top = screenPoint.Y - _mouseDownPoint.Y;
         }
 
         public static void MouseLeftButtonUp()
         {
+            EndDrag();
+        }
+
+        public static void MouseRightButtonUp()
+        {
+            EndDrag();
+        }
+
+        private static void EndDrag()
+        {
             _isDragging = false;
+            _dragStarted = false;
+
+            if (Mouse.Captured is UIElement captured)
+                captured.ReleaseMouseCapture();
         }
 
         private static void ToggleWindowState(Window window)
