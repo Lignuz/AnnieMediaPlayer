@@ -43,6 +43,11 @@ namespace AnnieMediaPlayer
                 vm.IsPropertiesPanelOpen = !vm.IsPropertiesPanelOpen;
                 e.Handled = true;
             }
+            else if (e.Key == Key.F8)
+            {
+                window.TogglePlaylistWindow();
+                e.Handled = true;
+            }
             else if (e.Key == Key.F5)
             {
                 // 환경 설정 
@@ -73,7 +78,7 @@ namespace AnnieMediaPlayer
                     if (VideoPlayerController.IsOpened)
                         _ = VideoPlayerController.TogglePlayPause();
                     else
-                        _ = VideoPlayerController.Open();
+                        window.OpenVideoFromDialog();
                 }
                 e.Handled = true;
             }

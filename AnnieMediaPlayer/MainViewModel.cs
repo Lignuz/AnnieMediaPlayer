@@ -67,6 +67,7 @@ namespace AnnieMediaPlayer
 
         // 프로퍼티 패널 열림 여부
         public bool IsPropertiesPanelOpen { get => Get(); set => Set(value); }
+        public PlaylistViewModel Playlist { get; } = new();
 
         // 미디어 상태 관련 프로퍼티 모음
         public string FilePath { get => Get(); set => Set(value); }

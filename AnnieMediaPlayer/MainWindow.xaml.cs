@@ -1,4 +1,6 @@
 ﻿using System.Windows;
+using Microsoft.Win32;
+using System.IO;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
@@ -9,8 +11,11 @@ using System.Windows.Media.Media3D;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using System.Runtime.InteropServices;
 using AnnieMediaPlayer.Options;
 using AnnieMediaPlayer.Windows.Settings;
+using AnnieMediaPlayer.Windows;
+using AnnieMediaPlayer.Windows.Panels;
 using FFmpeg.AutoGen;
 using Unosquare.FFME.Common;
 
@@ -22,6 +27,12 @@ namespace AnnieMediaPlayer
     public partial class MainWindow : BaseWindow
     {
         public static MainViewModel vm => (MainViewModel)App.Current.FindResource("vm");
+        private PlaylistWindow? _playlistWindow;
+        private string? _openedPlaylistSource;
+        private bool _playlistDocked;
+        private bool _playlistDockedToRight;
+        private bool _playlistSyncHeight;
+        private bool _updatingPlaylistDock;
 
         public MainWindow()
         {
@@ -216,11 +227,16 @@ namespace AnnieMediaPlayer
             vm.Position = e.Info.StartTime;
             vm.FrameIndex = 0;
             vm.IsPlaying = false;
+            _openedPlaylistSource = e.Info.MediaSource;
+            var currentPlaylistItem = vm.Playlist.CurrentItem;
+            if (currentPlaylistItem != null &&
+                string.Equals(currentPlaylistItem.FilePath, _openedPlaylistSource, StringComparison.OrdinalIgnoreCase))
+                currentPlaylistItem.Duration = e.Info.Duration;
         }
 
         private void VideoPlayerController_OnMediaEnded(object? sender, EventArgs e)
         {
-
+            Dispatcher.BeginInvoke(new Action(() => _ = PlayNextPlaylistItemAsync()));
         }
 
         private void VideoPlayerController_OnMediaFailed(object? sender, MediaFailedEventArgs e)
@@ -424,7 +440,304 @@ namespace AnnieMediaPlayer
         }
         
 
-        private void OpenVideo_Click(object sender, RoutedEventArgs e) => _ = VideoPlayerController.Open();
+        private void OpenVideo_Click(object sender, RoutedEventArgs e) => OpenVideoFromDialog();
+
+        internal void OpenVideoFromDialog()
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = LanguageManager.GetResourceString("Text.OpenDialogTitle"),
+                Filter = LanguageManager.GetResourceString("Text.OpenDialogFilter")
+            };
+
+            if (dialog.ShowDialog() == true)
+                _ = OpenDirectFileAsync(dialog.FileName);
+        }
+
+        private async Task OpenDirectFileAsync(string filePath)
+        {
+            var opened = await VideoPlayerController.Open(filePath);
+            if (opened)
+            {
+                var currentPlaylistItem = vm.Playlist.AddFile(filePath);
+                if (currentPlaylistItem != null)
+                {
+                    vm.Playlist.SetCurrent(currentPlaylistItem);
+                    currentPlaylistItem.Duration = vm.Duration;
+                }
+            }
+        }
+
+        private async Task PlayPlaylistItemAsync(PlaylistItemViewModel item)
+        {
+            if (string.IsNullOrWhiteSpace(item.FilePath) || !File.Exists(item.FilePath))
+            {
+                vm.Playlist.Remove(item);
+                return;
+            }
+
+            var opened = await VideoPlayerController.Open(item.FilePath);
+            if (opened)
+            {
+                vm.Playlist.SetCurrent(item);
+                item.Duration = vm.Duration;
+            }
+            if (opened && !OptionViewModel.Instance.CurrentOption.UseOpenPlay)
+                await VideoPlayerController.Play();
+        }
+
+        private async Task PlayNextPlaylistItemAsync()
+        {
+            var currentItem = vm.Playlist.CurrentItem;
+            if (currentItem == null ||
+                !string.Equals(currentItem.FilePath, _openedPlaylistSource, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            var nextItem = vm.Playlist.GetNextItem();
+            if (nextItem != null)
+                await PlayPlaylistItemAsync(nextItem);
+        }
+
+        private void PlaylistButton_Click(object sender, RoutedEventArgs e) => TogglePlaylistWindow();
+
+        public void TogglePlaylistWindow()
+        {
+            if (_playlistWindow?.IsVisible == true)
+            {
+                _playlistWindow.Hide();
+                PlaylistButton.Tag = "False";
+                Activate();
+                return;
+            }
+
+            if (_playlistWindow != null)
+            {
+                _playlistWindow.Show();
+                if (_playlistDocked)
+                    UpdateDockedPlaylistPosition();
+                PlaylistButton.Tag = "True";
+                _playlistWindow.Activate();
+                return;
+            }
+
+            var playlistPosition = GetPlaylistInitialPosition(out var canDock);
+            _playlistWindow = new PlaylistWindow
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.Manual,
+                Left = playlistPosition.X,
+                Top = playlistPosition.Y
+            };
+            _playlistWindow.AddFilesRequested += PlaylistPanel_AddFilesRequested;
+            _playlistWindow.RemoveRequested += PlaylistPanel_RemoveRequested;
+            _playlistWindow.ClearRequested += PlaylistPanel_ClearRequested;
+            _playlistWindow.ItemDoubleClicked += PlaylistPanel_ItemDoubleClicked;
+            _playlistWindow.LocationChanged += PlaylistWindow_LocationChanged;
+            _playlistWindow.SizeChanged += PlaylistWindow_SizeChanged;
+            _playlistWindow.MoveCompleted += PlaylistWindow_MoveCompleted;
+            _playlistWindow.ToggleRequested += (_, _) => TogglePlaylistWindow();
+            _playlistWindow.Closed += (_, _) =>
+            {
+                _playlistDocked = false;
+                _playlistSyncHeight = false;
+                _playlistWindow = null;
+                PlaylistButton.Tag = "False";
+            };
+            _playlistWindow.Show();
+            _playlistDocked = canDock;
+            _playlistSyncHeight = false;
+            UpdateDockedPlaylistPosition();
+            PlaylistButton.Tag = "True";
+        }
+
+        private Point GetPlaylistInitialPosition(out bool canDock)
+        {
+            const double playlistWidth = 340;
+            const double playlistHeight = 520;
+            var workArea = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle).WorkingArea;
+            var workTopLeft = PointFromScreen(new Point(workArea.Left, workArea.Top));
+            var workBottomRight = PointFromScreen(new Point(workArea.Right, workArea.Bottom));
+            var workLeft = Left + workTopLeft.X;
+            var workRight = Left + workBottomRight.X;
+            var workTop = Top + workTopLeft.Y;
+            var workBottom = Top + workBottomRight.Y;
+
+            if (WindowState == WindowState.Maximized)
+            {
+                canDock = false;
+                return new Point(workRight - playlistWidth,
+                    Math.Clamp(Top, workTop, Math.Max(workTop, workBottom - playlistHeight)));
+            }
+
+            var rightSpace = workRight - (Left + ActualWidth);
+            var leftSpace = Left - workLeft;
+            _playlistDockedToRight = rightSpace >= playlistWidth || rightSpace >= leftSpace;
+            canDock = (_playlistDockedToRight ? rightSpace >= playlistWidth : leftSpace >= playlistWidth) &&
+                      Top >= workTop && Top + playlistHeight <= workBottom;
+
+            var preferredLeft = _playlistDockedToRight ? Left + ActualWidth : Left - playlistWidth;
+
+            return new Point(
+                Math.Clamp(preferredLeft, workLeft, Math.Max(workLeft, workRight - playlistWidth)),
+                Math.Clamp(Top, workTop, Math.Max(workTop, workBottom - playlistHeight)));
+        }
+
+        private void PlaylistWindow_LocationChanged(object? sender, EventArgs e)
+        {
+            if (_updatingPlaylistDock || _playlistWindow == null)
+                return;
+
+            if (_playlistDocked && !IsPlaylistAtDockPosition())
+                _playlistDocked = false;
+        }
+
+        private void PlaylistWindow_MoveCompleted(object? sender, EventArgs e)
+        {
+            if (!_playlistDocked)
+                TryDockPlaylistWindow();
+        }
+
+        private void TryDockPlaylistWindow()
+        {
+            if (_playlistWindow == null || WindowState != WindowState.Normal)
+                return;
+
+            const double dockDistance = 20;
+            var playlistTop = _playlistWindow.Top;
+            var playlistBottom = playlistTop + _playlistWindow.Height;
+            var verticallyOverlapping = playlistBottom > Top && playlistTop < Top + ActualHeight;
+
+            if (!verticallyOverlapping)
+                return;
+
+            var mainInsets = GetVisibleFrameInsets(this);
+            var playlistInsets = GetVisibleFrameInsets(_playlistWindow);
+            var mainRight = Left + ActualWidth - mainInsets.Right;
+            var mainLeft = Left + mainInsets.Left;
+            var playlistLeft = _playlistWindow.Left + playlistInsets.Left;
+            var playlistRight = _playlistWindow.Left + _playlistWindow.ActualWidth - playlistInsets.Right;
+
+            if (Math.Abs(playlistLeft - mainRight) <= dockDistance)
+            {
+                _playlistDocked = true;
+                _playlistDockedToRight = true;
+            }
+            else if (Math.Abs(playlistRight - mainLeft) <= dockDistance)
+            {
+                _playlistDocked = true;
+                _playlistDockedToRight = false;
+            }
+            else
+            {
+                return;
+            }
+
+            _playlistSyncHeight = Math.Abs(_playlistWindow.ActualHeight - ActualHeight) <= 3;
+
+            UpdateDockedPlaylistPosition();
+        }
+
+        private void PlaylistWindow_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (!_updatingPlaylistDock && _playlistDocked && _playlistWindow != null)
+                _playlistSyncHeight = Math.Abs(_playlistWindow.ActualHeight - ActualHeight) <= 3;
+        }
+
+        private bool IsPlaylistAtDockPosition()
+        {
+            if (_playlistWindow == null)
+                return false;
+
+            var position = GetPlaylistDockPosition();
+            return Math.Abs(_playlistWindow.Left - position.X) <= 3 &&
+                   Math.Abs(_playlistWindow.Top - position.Y) <= 3;
+        }
+
+        private void UpdateDockedPlaylistPosition()
+        {
+            if (!_playlistDocked || _playlistWindow == null || WindowState != WindowState.Normal)
+                return;
+
+            var position = GetPlaylistDockPosition();
+
+            try
+            {
+                _updatingPlaylistDock = true;
+                _playlistWindow.Left = position.X;
+                _playlistWindow.Top = position.Y;
+                if (_playlistSyncHeight)
+                    _playlistWindow.Height = ActualHeight;
+            }
+            finally
+            {
+                _updatingPlaylistDock = false;
+            }
+        }
+
+        private Point GetPlaylistDockPosition()
+        {
+            var mainInsets = GetVisibleFrameInsets(this);
+            var playlistInsets = GetVisibleFrameInsets(_playlistWindow!);
+            var left = _playlistDockedToRight
+                ? Left + ActualWidth - mainInsets.Right - playlistInsets.Left
+                : Left + mainInsets.Left - _playlistWindow!.ActualWidth + playlistInsets.Right;
+            return new Point(left, Top + mainInsets.Top - playlistInsets.Top);
+        }
+
+        private static Thickness GetVisibleFrameInsets(Window window)
+        {
+            var handle = new WindowInteropHelper(window).Handle;
+            if (handle == IntPtr.Zero || !GetWindowRect(handle, out var windowRect) ||
+                DwmGetWindowAttribute(handle, 9, out var visibleRect, Marshal.SizeOf<NativeRect>()) != 0)
+                return new Thickness(0);
+
+            var source = HwndSource.FromHwnd(handle);
+            if (source?.CompositionTarget == null)
+                return new Thickness(0);
+
+            var scale = source.CompositionTarget.TransformFromDevice;
+            return new Thickness(
+                (visibleRect.Left - windowRect.Left) * scale.M11,
+                (visibleRect.Top - windowRect.Top) * scale.M22,
+                (windowRect.Right - visibleRect.Right) * scale.M11,
+                (windowRect.Bottom - visibleRect.Bottom) * scale.M22);
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct NativeRect
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
+
+        [DllImport("user32.dll")]
+        private static extern bool GetWindowRect(IntPtr hWnd, out NativeRect rect);
+
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmGetWindowAttribute(IntPtr hWnd, int attribute, out NativeRect value, int size);
+
+        private void PlaylistPanel_AddFilesRequested(object? sender, EventArgs e)
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = LanguageManager.GetResourceString("Text.OpenDialogTitle"),
+                Filter = LanguageManager.GetResourceString("Text.OpenDialogFilter"),
+                Multiselect = true
+            };
+
+            if (dialog.ShowDialog() == true)
+                vm.Playlist.AddFiles(dialog.FileNames);
+        }
+
+        private void PlaylistPanel_RemoveRequested(object? sender, EventArgs e) =>
+            vm.Playlist.Remove((sender as PlaylistWindow)?.SelectedItem);
+
+        private void PlaylistPanel_ClearRequested(object? sender, EventArgs e) => vm.Playlist.Clear();
+
+        private void PlaylistPanel_ItemDoubleClicked(object? sender, PlaylistItemViewModel item) =>
+            _ = PlayPlaylistItemAsync(item);
         private void PlayPause_Click(object sender, RoutedEventArgs e) => _ = VideoPlayerController.TogglePlayPause();
         private void Stop_Click(object sender, RoutedEventArgs e) => _ = VideoPlayerController.Stop();
 
@@ -465,7 +778,15 @@ namespace AnnieMediaPlayer
         }
         private void PlaybackSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => VideoPlayerController.OnSliderValueChanged(this);
 
-        private void Window_StateChanged(object sender, EventArgs e) => UpdateMaxRestoreButton();
+        private void Window_StateChanged(object sender, EventArgs e)
+        {
+            UpdateMaxRestoreButton();
+
+            if (WindowState == WindowState.Maximized && _playlistDocked && _playlistWindow?.IsVisible == true)
+                _playlistDocked = false;
+
+            UpdateDockedPlaylistPosition();
+        }
 
         private void UpdateMaxRestoreButton()
         {
@@ -473,8 +794,17 @@ namespace AnnieMediaPlayer
                 this.WindowState == WindowState.Maximized ? "RestoreIconData" : "MaximizeIconData");
         }
 
-        private void Window_LocationChanged(object sender, EventArgs e) => MonitorSnapState();
-        private void Window_SizeChanged(object sender, SizeChangedEventArgs e) => MonitorSnapState();
+        private void Window_LocationChanged(object sender, EventArgs e)
+        {
+            MonitorSnapState();
+            UpdateDockedPlaylistPosition();
+        }
+
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            MonitorSnapState();
+            UpdateDockedPlaylistPosition();
+        }
 
         void MonitorSnapState()
         {
@@ -596,7 +926,7 @@ namespace AnnieMediaPlayer
                 {
                     // 비디오 파일 열기
                     string filePath = files[0];
-                    _ = VideoPlayerController.Open(filePath);
+                    _ = OpenDirectFileAsync(filePath);
                 }
             }
         }

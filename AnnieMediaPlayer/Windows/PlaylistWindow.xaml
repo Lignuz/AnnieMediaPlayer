@@ -1,0 +1,15 @@
+<Window x:Class="AnnieMediaPlayer.Windows.PlaylistWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:panels="clr-namespace:AnnieMediaPlayer.Windows.Panels"
+        Title="{DynamicResource Text.Playlist}"
+        Width="340"
+        Height="520"
+        MinWidth="340"
+        MaxWidth="340"
+        MinHeight="360"
+        ShowInTaskbar="False"
+        ResizeMode="CanResize"
+        DataContext="{StaticResource vm}">
+    <panels:PlaylistPanelControl />
+</Window>

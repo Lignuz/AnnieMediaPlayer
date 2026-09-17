@@ -72,6 +72,7 @@
                         </StackPanel>
                         <!-- 오른쪽에 있는 버튼들 -->
                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="0,0,5,0">
+                            <Button x:Name="PlaylistButton" Style="{StaticResource PlaylistButtonStyle}" Content="{StaticResource PlaylistIconData}" ToolTip="{DynamicResource Text.Playlist}" Click="PlaylistButton_Click" />
                             <Button Style="{StaticResource TitleBarButtonStyle}" Content="{StaticResource SettingIconData}" Width="24" Height="24" Margin="6,0,10,0" Click="SettingButton_Click"/>
                             <Button Name="ThemeToggleButton" Style="{StaticResource TitleBarButtonStyle}" Content="{StaticResource ThemeLightIconData}" local:ButtonHelper.IconMode="Fill" Click="ThemeToggleButton_Click" Margin="0,0,2,0" MinWidth="30" Width="30">
                                 <Button.RenderTransform>

@@ -14,6 +14,10 @@
     <sys:String x:Key="Text.1x.Speed">1x speed</sys:String>
     <sys:String x:Key="Text.Frame">Frame</sys:String>
     <sys:String x:Key="Text.Error">Error</sys:String>
+    <sys:String x:Key="Text.Playlist">Playlist</sys:String>
+    <sys:String x:Key="Text.Playlist.Add">Add</sys:String>
+    <sys:String x:Key="Text.Playlist.Remove">Remove</sys:String>
+    <sys:String x:Key="Text.Playlist.Clear">Clear All</sys:String>
 
     <sys:String x:Key="Text.OpenDialogTitle">Open Video File</sys:String>
     <sys:String x:Key="Text.OpenDialogFilter">Video Files (*.mp4;*.avi;*.mov;*.mkv;*.wmv)|*.mp4;*.avi;*.mov;*.mkv;*.wmv|All Files (*.*)|*.*</sys:String>
