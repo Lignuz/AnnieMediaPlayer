@@ -143,6 +143,22 @@ namespace AnnieMediaPlayer
         private void win_PreviewMouseMove(object sender, MouseEventArgs e) => TitleBarController.MouseMove(this, e);
         private void win_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e) => TitleBarController.MouseLeftButtonUp();
         private void win_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e) => TitleBarController.MouseRightButtonUp();
+        private void Window_Deactivated(object? sender, EventArgs e) => TitleBarController.Cancel();
+
+        private static bool IsButtonInput(DependencyObject? element)
+        {
+            while (element != null)
+            {
+                if (element is ButtonBase)
+                    return true;
+
+                element = element is Visual || element is Visual3D
+                    ? VisualTreeHelper.GetParent(element)
+                    : null;
+            }
+
+            return false;
+        }
 
 
         /////////////////////////////////////////
