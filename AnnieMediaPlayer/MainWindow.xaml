@@ -167,10 +167,27 @@
                             <!-- 버튼 + 속도 컨트롤 -->
                             <DockPanel LastChildFill="False">
                                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" HorizontalAlignment="Left">
-                                    <Button Name="OpenButton" Content="{DynamicResource Text.Open}" Click="OpenVideo_Click" Width="80" Margin="0,0,10,0"/>
-                                    <Button Name="PlayPauseButton" Content="{Binding Path=PlayPauseButtonText}" IsEnabled="{Binding IsOpened}" Click="PlayPause_Click" Width="80" Margin="0,0,10,0"/>
-                                    <Button Name="StopButton" Content="{DynamicResource Text.Stop}" IsEnabled="{Binding IsOpened}" Click="Stop_Click" Width="80" Margin="0,0,10,0"/>
-                                    <ToggleButton Name="InfoToggleButton" Content="i" Padding="10" IsChecked="{Binding Path=IsPropertiesPanelOpen}"/>
+                                    <Button Name="OpenButton" Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource OpenMediaIconData}" ToolTip="{DynamicResource Text.Open}" Click="OpenVideo_Click" Width="42" Height="32" Margin="0,0,10,0"/>
+                                    <Button Name="PlayPauseButton" IsEnabled="{Binding IsOpened}" Click="PlayPause_Click" Width="42" Height="32" Margin="0,0,10,0">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource MediaIconButtonStyle}">
+                                                <Setter Property="Content" Value="{StaticResource PlayMediaIconData}"/>
+                                                <Setter Property="ToolTip" Value="{DynamicResource Text.Play}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                                        <Setter Property="Content" Value="{StaticResource PauseMediaIconData}"/>
+                                                        <Setter Property="ToolTip" Value="{DynamicResource Text.Pause}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button Name="StopButton" Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource StopMediaIconData}" ToolTip="{DynamicResource Text.Stop}" IsEnabled="{Binding IsOpened}" Click="Stop_Click" Width="42" Height="32" Margin="0,0,10,0"/>
+                                    <ToggleButton Name="InfoToggleButton" Width="34" Height="32" Margin="0" Padding="4" IsChecked="{Binding Path=IsPropertiesPanelOpen}" ToolTip="{DynamicResource Text.Properties}">
+                                        <Canvas Width="20" Height="20">
+                                            <Path Data="{StaticResource MediaInfoIconData}" Stroke="{DynamicResource TitleTextBrush}" StrokeThickness="1" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Fill="Transparent"/>
+                                        </Canvas>
+                                    </ToggleButton>
                                 </StackPanel>
 
                                 <!-- 재생 속도 조절 -->
@@ -179,20 +196,29 @@
                                         <Run Text="{DynamicResource Text.Speed}"/>
                                         <Run Text=":"/>
                                     </TextBlock>
-                                    <Button Content="&lt;" Width="25" Click="SpeedDown_Click"/>
-                                    <Grid Width="100" >
-                                        <TextBlock Name="SpeedLabel" TextAlignment="Center" VerticalAlignment="Center" Padding="2,0" Margin="5,0" FontWeight="Medium">
+                                    <Grid Height="32">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="32"/>
+                                            <ColumnDefinition Width="24"/>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="24"/>
+                                            <ColumnDefinition Width="32"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button Grid.Column="0" Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource PreviousSpeedModeIconData}" ToolTip="{DynamicResource Text.SpeedMode.Previous}" Width="30" Height="30" Margin="1,0" Click="SpeedDown_Click"/>
+                                        <Grid Grid.Column="1" Visibility="{Binding IsNormalSpeed, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <Button Style="{StaticResource SmallMediaIconButtonStyle}" Content="{StaticResource SpeedMinusIconData}" ToolTip="{DynamicResource Text.SpeedRatio.Down}" Width="20" Height="26" Margin="2,0" Click="SpeedRatioDown_Click" Visibility="{Binding IsOpened, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                        </Grid>
+                                        <TextBlock Grid.Column="2" Name="SpeedLabel" TextAlignment="Center" VerticalAlignment="Center" Padding="2,0" Margin="2,0" FontWeight="Medium">
                                             <Run Text="1"/>
                                             <Run Text="{DynamicResource Text.Sec}"/>
                                             <Run Text="/"/>
                                             <Run Text="{DynamicResource Text.Frame}"/>
                                         </TextBlock>
-                                        <Grid Visibility="{Binding IsNormalSpeed, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                            <Button Content="-" HorizontalAlignment="Left" Width="10" Click="SpeedRatioDown_Click" Visibility="{Binding IsOpened, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                            <Button Content="+" HorizontalAlignment="Right" Width="10" Click="SpeedRatioUp_Click" Visibility="{Binding IsOpened, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                        <Grid Grid.Column="3" Visibility="{Binding IsNormalSpeed, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <Button Style="{StaticResource SmallMediaIconButtonStyle}" Content="{StaticResource SpeedPlusIconData}" ToolTip="{DynamicResource Text.SpeedRatio.Up}" Width="20" Height="26" Margin="2,0" Click="SpeedRatioUp_Click" Visibility="{Binding IsOpened, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                         </Grid>
+                                        <Button Grid.Column="4" Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource NextSpeedModeIconData}" ToolTip="{DynamicResource Text.SpeedMode.Next}" Width="30" Height="30" Margin="1,0" Click="SpeedUp_Click"/>
                                     </Grid>
-                                    <Button Content="&gt;" Width="25" Click="SpeedUp_Click"/>
                                 </StackPanel>
                             </DockPanel>
                         </StackPanel>

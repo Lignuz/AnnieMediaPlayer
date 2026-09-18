@@ -31,7 +31,14 @@
                     <ListBoxItem Tag="Shortcut" Content="{DynamicResource Text.Shortcut}" Margin="0,0,0,5"/>
                 </ListBox>
 
-                <Button DockPanel.Dock="Bottom" Content="{DynamicResource Text.Initialize}" Click="Initialze_Click"/>
+                <Button DockPanel.Dock="Bottom" ToolTip="{DynamicResource Text.Initialize}" Click="Initialze_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <Canvas Width="15" Height="15" Margin="0,0,4,0">
+                            <Path Data="{StaticResource ResetSettingsIconData}" Stroke="{DynamicResource TitleTextBrush}" StrokeThickness="1" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Fill="Transparent"/>
+                        </Canvas>
+                        <TextBlock Text="{DynamicResource Text.Initialize}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
             </DockPanel>
 
             <!-- Content Presenter for Pages -->

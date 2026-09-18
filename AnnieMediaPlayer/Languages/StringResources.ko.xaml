@@ -10,6 +10,11 @@
     <sys:String x:Key="Text.Stop">정지</sys:String>
     <sys:String x:Key="Text.Sec">초</sys:String>
     <sys:String x:Key="Text.Speed">속도</sys:String>
+    <sys:String x:Key="Text.SpeedMode.Previous">느린 재생 단계로 변경</sys:String>
+    <sys:String x:Key="Text.SpeedMode.Next">빠른 재생 단계로 변경</sys:String>
+    <sys:String x:Key="Text.SpeedRatio.Down">재생 배속 낮추기</sys:String>
+    <sys:String x:Key="Text.SpeedRatio.Up">재생 배속 높이기</sys:String>
+    <sys:String x:Key="Text.Properties">미디어 정보 표시</sys:String>
     <sys:String x:Key="Text.x.Speed">배속</sys:String>
     <sys:String x:Key="Text.1x.Speed">1배속</sys:String>
     <sys:String x:Key="Text.Frame">프레임</sys:String>
@@ -52,6 +57,9 @@
     <sys:String x:Key="Text.Shortcut.ColumnHeader.Shortcut">단축키</sys:String>
     <sys:String x:Key="Text.Shortcut.ColumnHeader.Action">동작</sys:String>
     <sys:String x:Key="Text.Shortcut.ColumnHeader.Description">설명</sys:String>
+    <sys:String x:Key="Text.Shortcut.F8.Shortcut">F8</sys:String>
+    <sys:String x:Key="Text.Shortcut.F8.Action">재생목록 표시/숨기기</sys:String>
+    <sys:String x:Key="Text.Shortcut.F8.Description">재생목록 창을 열거나 숨깁니다.</sys:String>
     <sys:String x:Key="Text.Shortcut.F5.Shortcut">F5</sys:String>
     <sys:String x:Key="Text.Shortcut.F5.Action">환경설정 열기</sys:String>
     <sys:String x:Key="Text.Shortcut.F5.Description">프로그램의 환경설정 창을 엽니다.</sys:String>

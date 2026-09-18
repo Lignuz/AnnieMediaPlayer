@@ -10,6 +10,11 @@
     <sys:String x:Key="Text.Stop">Stop</sys:String>
     <sys:String x:Key="Text.Sec">Sec</sys:String>
     <sys:String x:Key="Text.Speed">Speed</sys:String>
+    <sys:String x:Key="Text.SpeedMode.Previous">Switch to a slower playback step</sys:String>
+    <sys:String x:Key="Text.SpeedMode.Next">Switch to a faster playback step</sys:String>
+    <sys:String x:Key="Text.SpeedRatio.Down">Decrease playback speed</sys:String>
+    <sys:String x:Key="Text.SpeedRatio.Up">Increase playback speed</sys:String>
+    <sys:String x:Key="Text.Properties">Show media information</sys:String>
     <sys:String x:Key="Text.x.Speed">x speed</sys:String>
     <sys:String x:Key="Text.1x.Speed">1x speed</sys:String>
     <sys:String x:Key="Text.Frame">Frame</sys:String>
@@ -52,6 +57,9 @@
     <sys:String x:Key="Text.Shortcut.ColumnHeader.Shortcut">Shortcut</sys:String>
     <sys:String x:Key="Text.Shortcut.ColumnHeader.Action">Action</sys:String>
     <sys:String x:Key="Text.Shortcut.ColumnHeader.Description">Description</sys:String>
+    <sys:String x:Key="Text.Shortcut.F8.Shortcut">F8</sys:String>
+    <sys:String x:Key="Text.Shortcut.F8.Action">Show/Hide Playlist</sys:String>
+    <sys:String x:Key="Text.Shortcut.F8.Description">Opens or hides the playlist window.</sys:String>
     <sys:String x:Key="Text.Shortcut.F5.Shortcut">F5</sys:String>
     <sys:String x:Key="Text.Shortcut.F5.Action">Open Settings</sys:String>
     <sys:String x:Key="Text.Shortcut.F5.Description">Opens the program's settings window.</sys:String>

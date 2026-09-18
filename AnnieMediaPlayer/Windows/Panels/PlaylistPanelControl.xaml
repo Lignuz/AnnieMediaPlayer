@@ -11,9 +11,16 @@
             <StackPanel DockPanel.Dock="Top">
                 <TextBlock Text="{DynamicResource Text.Playlist}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10" />
                 <WrapPanel>
-                    <Button Content="{DynamicResource Text.Playlist.Add}" Click="AddButton_Click" />
-                    <Button Content="{DynamicResource Text.Playlist.Remove}" Click="RemoveButton_Click" IsEnabled="False" x:Name="RemoveButton" />
-                    <Button Content="{DynamicResource Text.Playlist.Clear}" Click="ClearButton_Click" />
+                    <Button Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource PlaylistAddIconData}" ToolTip="{DynamicResource Text.Playlist.Add}" Width="34" Height="34" Margin="3" Click="AddButton_Click" />
+                    <Button x:Name="RemoveButton" Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource PlaylistRemoveIconData}" ToolTip="{DynamicResource Text.Playlist.Remove}" Width="34" Height="34" Margin="3" Click="RemoveButton_Click" IsEnabled="False" />
+                    <Button Height="34" Margin="3" ToolTip="{DynamicResource Text.Playlist.Clear}" Click="ClearButton_Click">
+                        <StackPanel Orientation="Horizontal" Margin="10,4">
+                            <Canvas Width="20" Height="20" Margin="0,0,5,0">
+                                <Path Data="{StaticResource PlaylistClearIconData}" Stroke="{DynamicResource TitleTextBrush}" StrokeThickness="1" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Fill="Transparent"/>
+                            </Canvas>
+                            <TextBlock Text="{DynamicResource Text.Playlist.Clear}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </WrapPanel>
             </StackPanel>
 

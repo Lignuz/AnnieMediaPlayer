@@ -52,6 +52,7 @@ namespace AnnieMediaPlayer.Windows.Settings.Pages
 
             var shortcutKeys = new List<ShortcutKeyInfo>
             {
+                MakeShortcutInfo("F8"),
                 MakeShortcutInfo("F5"),
                 MakeShortcutInfo("F4"),
                 MakeShortcutInfo("Space"),

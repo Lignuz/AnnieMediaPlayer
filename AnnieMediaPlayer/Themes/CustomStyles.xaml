@@ -36,6 +36,20 @@
         M3,10 H5 V12 H3 Z M7,10 H21 V12 H7 Z
         M3,17 H5 V19 H3 Z M7,17 H21 V19 H7 Z
     </Geometry>
+    <Geometry x:Key="OpenMediaIconData">M2,5 H8 L10,7 H18 V9 M2,5 V16 H16 L18,9 H6 L2,16</Geometry>
+    <Geometry x:Key="PlayMediaIconData">M7,3 L17,10 L7,17 Z</Geometry>
+    <Geometry x:Key="PauseMediaIconData">M6,4 H9 V16 H6 Z M11,4 H14 V16 H11 Z</Geometry>
+    <Geometry x:Key="StopMediaIconData">M5,5 H15 V15 H5 Z</Geometry>
+    <Geometry x:Key="MediaInfoIconData">M10,2 A8,8 0 1 1 10,18 A8,8 0 1 1 10,2 M10,8 V14 M10,6 V6.2</Geometry>
+    <Geometry x:Key="PreviousSpeedModeIconData">M10,4 L4,10 L10,16 M16,4 L10,10 L16,16</Geometry>
+    <Geometry x:Key="NextSpeedModeIconData">M10,4 L16,10 L10,16 M4,4 L10,10 L4,16</Geometry>
+    <Geometry x:Key="SpeedMinusIconData">M3,8 H13</Geometry>
+    <Geometry x:Key="SpeedPlusIconData">M3,8 H13 M8,3 V13</Geometry>
+    <Geometry x:Key="PlaylistAddIconData">M3,2 H11 L15,6 V12 M11,2 V6 H15 M3,2 V18 H10 M12,15 H18 M15,12 V18</Geometry>
+    <Geometry x:Key="PlaylistRemoveIconData">M3,2 H11 L15,6 V12 M11,2 V6 H15 M3,2 V18 H10 M12,15 H18</Geometry>
+    <Geometry x:Key="PlaylistClearIconData">M3,5 H17 M7,5 V3 H13 V5 M5,6 L6,17 H14 L15,6 M8,8 V15 M12,8 V15</Geometry>
+    <Geometry x:Key="ResetSettingsIconData">M2,5 V2 M2,5 H5 M2,5 C5,1 11,2 12,6 C14,10 11,13 8,13 C5,13 3,11 2,9</Geometry>
+    <Geometry x:Key="ExternalLinkIconData">M8,2 H12 V6 M12,2 L6,8 M11,9 V12 H2 V3 H6</Geometry>
 
 
     <!-- 그림자 효과 정의 -->
@@ -138,6 +152,32 @@
         </Setter>
     </Style>
 
+    <Style x:Key="MediaIconButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="ContentTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <Canvas Width="20" Height="20">
+                        <Path Data="{Binding}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Fill="Transparent"/>
+                    </Canvas>
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SmallMediaIconButtonStyle" TargetType="Button" BasedOn="{StaticResource MediaIconButtonStyle}">
+        <Setter Property="ContentTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <Canvas Width="16" Height="16">
+                        <Path Data="{Binding}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                    </Canvas>
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- 시스템 버튼 스타일 -->
     <Style x:Key="TitleBarButtonStyle" TargetType="Button">
         <Setter Property="Focusable" Value="False"/>
@@ -222,18 +262,17 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <TextBlock Text="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="TextDecorations" Value="{x:Null}" />
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="TextDecorations" Value="Underline"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="LinkText" Text="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center"/>
+                        <Canvas Width="14" Height="14" Margin="5,0,0,0">
+                            <Path Data="{StaticResource ExternalLinkIconData}" Stroke="{TemplateBinding Foreground}" StrokeThickness="1" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Fill="Transparent"/>
+                        </Canvas>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="LinkText" Property="TextDecorations" Value="Underline"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
