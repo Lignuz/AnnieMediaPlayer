@@ -23,6 +23,8 @@
     <sys:String x:Key="Text.Playlist.Add">추가</sys:String>
     <sys:String x:Key="Text.Playlist.Remove">삭제</sys:String>
     <sys:String x:Key="Text.Playlist.Clear">전체 삭제</sys:String>
+    <sys:String x:Key="Text.Playlist.Previous">이전 항목 재생</sys:String>
+    <sys:String x:Key="Text.Playlist.Next">다음 항목 재생</sys:String>
 
     <sys:String x:Key="Text.OpenDialogTitle">비디오 파일 열기</sys:String>
     <sys:String x:Key="Text.OpenDialogFilter">비디오 파일 (*.mp4;*.avi;*.mov;*.mkv;*.wmv)|*.mp4;*.avi;*.mov;*.mkv;*.wmv|모든 파일 (*.*)|*.*</sys:String>
@@ -44,6 +46,7 @@
 
     <sys:String x:Key="Text.Layout.OverlayControlToggle">화면 위 오버레이 컨트롤 표시 및 자동 숨김</sys:String>
     <sys:String x:Key="Text.SeekFramePreview">탐색 프레임 미리보기</sys:String>
+    <sys:String x:Key="Text.UsePlaylistPersistence">프로그램 종료 후 재생목록 유지</sys:String>
 
     <sys:String x:Key="Text.UseHWAccelerator">하드웨어 가속 사용</sys:String>
     <sys:String x:Key="Text.UseLegacyAudioOut">호환 오디오 출력 사용(DirectSound 대체)</sys:String>

@@ -48,6 +48,8 @@
     <Geometry x:Key="PlaylistAddIconData">M3,2 H11 L15,6 V12 M11,2 V6 H15 M3,2 V18 H10 M12,15 H18 M15,12 V18</Geometry>
     <Geometry x:Key="PlaylistRemoveIconData">M3,2 H11 L15,6 V12 M11,2 V6 H15 M3,2 V18 H10 M12,15 H18</Geometry>
     <Geometry x:Key="PlaylistClearIconData">M3,5 H17 M7,5 V3 H13 V5 M5,6 L6,17 H14 L15,6 M8,8 V15 M12,8 V15</Geometry>
+    <Geometry x:Key="PreviousPlaylistIconData">M4,4 V16 M16,4 L7,10 L16,16 Z</Geometry>
+    <Geometry x:Key="NextPlaylistIconData">M16,4 V16 M4,4 L13,10 L4,16 Z</Geometry>
     <Geometry x:Key="ResetSettingsIconData">M2,5 V2 M2,5 H5 M2,5 C5,1 11,2 12,6 C14,10 11,13 8,13 C5,13 3,11 2,9</Geometry>
     <Geometry x:Key="ExternalLinkIconData">M8,2 H12 V6 M12,2 L6,8 M11,9 V12 H2 V3 H6</Geometry>
 

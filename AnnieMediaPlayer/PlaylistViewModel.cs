@@ -20,6 +20,15 @@ namespace AnnieMediaPlayer
         private PlaylistItemViewModel? _currentItem;
 
         public ObservableCollection<PlaylistItemViewModel> Items { get; } = new();
+        public bool HasItems => Items.Count > 0;
+        public bool CanPlayPrevious => CurrentItem != null && Items.IndexOf(CurrentItem) > 0;
+        public bool CanPlayNext => Items.Count > 0 &&
+            (CurrentItem == null || Items.IndexOf(CurrentItem) < Items.Count - 1);
+
+        public PlaylistViewModel()
+        {
+            Items.CollectionChanged += (_, _) => NotifyPlaylistStateChanged();
+        }
 
         public PlaylistItemViewModel? CurrentItem
         {
@@ -31,7 +40,15 @@ namespace AnnieMediaPlayer
 
                 _currentItem = value;
                 OnPropertyChanged();
+                NotifyPlaylistStateChanged();
             }
+        }
+
+        private void NotifyPlaylistStateChanged()
+        {
+            OnPropertyChanged(nameof(HasItems));
+            OnPropertyChanged(nameof(CanPlayPrevious));
+            OnPropertyChanged(nameof(CanPlayNext));
         }
 
         public void AddFiles(IEnumerable<string> filePaths)
@@ -77,6 +94,26 @@ namespace AnnieMediaPlayer
             CurrentItem = null;
         }
 
+        public bool MoveManyTo(IEnumerable<PlaylistItemViewModel> items, int targetIndex)
+        {
+            var selected = Items.Where(items.Contains).ToList();
+            if (selected.Count == 0)
+                return false;
+
+            var originalTargetIndex = Math.Clamp(targetIndex, 0, Items.Count);
+            var itemsBeforeTarget = selected.Count(item => Items.IndexOf(item) < originalTargetIndex);
+            var remaining = Items.Where(item => !selected.Contains(item)).ToList();
+            var adjustedTargetIndex = Math.Clamp(originalTargetIndex - itemsBeforeTarget, 0, remaining.Count);
+
+            foreach (var item in selected)
+                Items.Remove(item);
+
+            for (var index = 0; index < selected.Count; index++)
+                Items.Insert(adjustedTargetIndex + index, selected[index]);
+
+            return true;
+        }
+
         public void SetCurrent(PlaylistItemViewModel? item)
         {
             if (item != null && !Items.Contains(item))
@@ -97,6 +134,15 @@ namespace AnnieMediaPlayer
             return currentIndex >= 0 && currentIndex + 1 < Items.Count
                 ? Items[currentIndex + 1]
                 : null;
+        }
+
+        public PlaylistItemViewModel? GetPreviousItem()
+        {
+            if (CurrentItem == null)
+                return null;
+
+            var currentIndex = Items.IndexOf(CurrentItem);
+            return currentIndex > 0 ? Items[currentIndex - 1] : null;
         }
     }
 }

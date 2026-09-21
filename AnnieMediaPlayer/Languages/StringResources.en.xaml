@@ -23,6 +23,8 @@
     <sys:String x:Key="Text.Playlist.Add">Add</sys:String>
     <sys:String x:Key="Text.Playlist.Remove">Remove</sys:String>
     <sys:String x:Key="Text.Playlist.Clear">Clear All</sys:String>
+    <sys:String x:Key="Text.Playlist.Previous">Play previous item</sys:String>
+    <sys:String x:Key="Text.Playlist.Next">Play next item</sys:String>
 
     <sys:String x:Key="Text.OpenDialogTitle">Open Video File</sys:String>
     <sys:String x:Key="Text.OpenDialogFilter">Video Files (*.mp4;*.avi;*.mov;*.mkv;*.wmv)|*.mp4;*.avi;*.mov;*.mkv;*.wmv|All Files (*.*)|*.*</sys:String>
@@ -44,6 +46,7 @@
 
     <sys:String x:Key="Text.Layout.OverlayControlToggle">Show overlay controls on video and auto-hide</sys:String>
     <sys:String x:Key="Text.SeekFramePreview">Seek Frame Preview</sys:String>
+    <sys:String x:Key="Text.UsePlaylistPersistence">Keep playlist between sessions</sys:String>
 
     <sys:String x:Key="Text.UseHWAccelerator">Use hardware acceleration</sys:String>
     <sys:String x:Key="Text.UseLegacyAudioOut">Use compatibility audio output (instead of DirectSound)</sys:String>

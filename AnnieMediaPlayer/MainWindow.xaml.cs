@@ -33,10 +33,19 @@ namespace AnnieMediaPlayer
         private bool _playlistDockedToRight;
         private bool _playlistSyncHeight;
         private bool _updatingPlaylistDock;
+        private bool _playlistNavigationInProgress;
 
         public MainWindow()
         {
             InitializeComponent();
+
+            if (OptionViewModel.Instance.CurrentOption.UsePlaylistPersistence)
+                vm.Playlist.AddFiles(PlaylistStorage.Load());
+            vm.Playlist.Items.CollectionChanged += (_, _) =>
+            {
+                if (OptionViewModel.Instance.CurrentOption.UsePlaylistPersistence)
+                    PlaylistStorage.Save(vm.Playlist.Items.Select(item => item.FilePath));
+            };
 
             FFMELoader.Initialize();
             VideoPlayerController.Initialize(ffmeMediaElement);
@@ -493,9 +502,37 @@ namespace AnnieMediaPlayer
                 !string.Equals(currentItem.FilePath, _openedPlaylistSource, StringComparison.OrdinalIgnoreCase))
                 return;
 
-            var nextItem = vm.Playlist.GetNextItem();
-            if (nextItem != null)
-                await PlayPlaylistItemAsync(nextItem);
+            await PlayAdjacentPlaylistItemAsync(true);
+        }
+
+        private async Task PlayAdjacentPlaylistItemAsync(bool forward)
+        {
+            if (_playlistNavigationInProgress)
+                return;
+
+            _playlistNavigationInProgress = true;
+            try
+            {
+                while (true)
+                {
+                    var item = forward ? vm.Playlist.GetNextItem() : vm.Playlist.GetPreviousItem();
+                    if (item == null)
+                        return;
+
+                    if (!File.Exists(item.FilePath))
+                    {
+                        vm.Playlist.Remove(item);
+                        continue;
+                    }
+
+                    await PlayPlaylistItemAsync(item);
+                    return;
+                }
+            }
+            finally
+            {
+                _playlistNavigationInProgress = false;
+            }
         }
 
         private void PlaylistButton_Click(object sender, RoutedEventArgs e) => TogglePlaylistWindow();
@@ -531,6 +568,7 @@ namespace AnnieMediaPlayer
             _playlistWindow.AddFilesRequested += PlaylistPanel_AddFilesRequested;
             _playlistWindow.RemoveRequested += PlaylistPanel_RemoveRequested;
             _playlistWindow.ClearRequested += PlaylistPanel_ClearRequested;
+            _playlistWindow.ItemMoveRequested += PlaylistPanel_ItemMoveRequested;
             _playlistWindow.ItemDoubleClicked += PlaylistPanel_ItemDoubleClicked;
             _playlistWindow.LocationChanged += PlaylistWindow_LocationChanged;
             _playlistWindow.SizeChanged += PlaylistWindow_SizeChanged;
@@ -731,13 +769,23 @@ namespace AnnieMediaPlayer
                 vm.Playlist.AddFiles(dialog.FileNames);
         }
 
-        private void PlaylistPanel_RemoveRequested(object? sender, EventArgs e) =>
-            vm.Playlist.Remove((sender as PlaylistWindow)?.SelectedItem);
+        private void PlaylistPanel_RemoveRequested(object? sender, IReadOnlyList<PlaylistItemViewModel> items)
+        {
+            foreach (var item in items.ToList())
+                vm.Playlist.Remove(item);
+        }
 
         private void PlaylistPanel_ClearRequested(object? sender, EventArgs e) => vm.Playlist.Clear();
 
+        private void PlaylistPanel_ItemMoveRequested(object? sender, (IReadOnlyList<PlaylistItemViewModel> Items, int TargetIndex) move) =>
+            vm.Playlist.MoveManyTo(move.Items, move.TargetIndex);
+
         private void PlaylistPanel_ItemDoubleClicked(object? sender, PlaylistItemViewModel item) =>
             _ = PlayPlaylistItemAsync(item);
+        private void PreviousPlaylist_Click(object sender, RoutedEventArgs e) =>
+            _ = PlayAdjacentPlaylistItemAsync(false);
+        private void NextPlaylist_Click(object sender, RoutedEventArgs e) =>
+            _ = PlayAdjacentPlaylistItemAsync(true);
         private void PlayPause_Click(object sender, RoutedEventArgs e) => _ = VideoPlayerController.TogglePlayPause();
         private void Stop_Click(object sender, RoutedEventArgs e) => _ = VideoPlayerController.Stop();
 

@@ -95,6 +95,7 @@ namespace AnnieMediaPlayer.Options
                 case nameof(Option.UseHWAccelerator):
                 case nameof(Option.UseOpenPlay):
                 case nameof(Option.UseLegacyAudioOut):
+                case nameof(Option.UsePlaylistPersistence):
                 case nameof(Option.UseFlipHorizontal):
                 case nameof(Option.UseFlipVertical):
                 case nameof(Option.RotateAngle):

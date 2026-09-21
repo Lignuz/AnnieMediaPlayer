@@ -47,6 +47,9 @@
             
             <!-- 탐색 프레임 미리보기  -->
             <CheckBox Content="{DynamicResource Text.SeekFramePreview}" IsChecked="{Binding CurrentOption.UseSeekFramePreview}" Margin="0,15,0,5"/>
+
+            <!-- 재생목록 유지 -->
+            <CheckBox Content="{DynamicResource Text.UsePlaylistPersistence}" IsChecked="{Binding CurrentOption.UsePlaylistPersistence}" Margin="0,15,0,5"/>
         </StackPanel>
     </Grid>
 </UserControl>

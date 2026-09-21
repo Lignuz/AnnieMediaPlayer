@@ -8,13 +8,12 @@ namespace AnnieMediaPlayer.Windows
     public partial class PlaylistWindow : Window
     {
         public event EventHandler? AddFilesRequested;
-        public event EventHandler? RemoveRequested;
+        public event EventHandler<IReadOnlyList<PlaylistItemViewModel>>? RemoveRequested;
         public event EventHandler? ClearRequested;
+        public event EventHandler<(IReadOnlyList<PlaylistItemViewModel> Items, int TargetIndex)>? ItemMoveRequested;
         public event EventHandler<PlaylistItemViewModel>? ItemDoubleClicked;
         public event EventHandler? MoveCompleted;
         public event EventHandler? ToggleRequested;
-        public PlaylistItemViewModel? SelectedItem => ((PlaylistPanelControl)Content).SelectedItem;
-
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
@@ -55,6 +54,7 @@ namespace AnnieMediaPlayer.Windows
             panel.AddFilesRequested += (_, e) => AddFilesRequested?.Invoke(this, e);
             panel.RemoveRequested += (_, e) => RemoveRequested?.Invoke(this, e);
             panel.ClearRequested += (_, e) => ClearRequested?.Invoke(this, e);
+            panel.ItemMoveRequested += (_, move) => ItemMoveRequested?.Invoke(this, move);
             panel.ItemDoubleClicked += (_, item) => ItemDoubleClicked?.Invoke(this, item);
             StateChanged += (_, _) =>
             {
