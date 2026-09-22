@@ -12,6 +12,7 @@ namespace AnnieMediaPlayer
             IsPropertiesPanelOpen = false;
             FilePath = string.Empty;
             IsOpened = false;
+            IsAudioOnly = false;
             Duration = TimeSpan.Zero;
             Position = TimeSpan.Zero;
             FrameIndex = 0;
@@ -72,6 +73,7 @@ namespace AnnieMediaPlayer
         // 미디어 상태 관련 프로퍼티 모음
         public string FilePath { get => Get(); set => Set(value); }
         public bool IsOpened { get => Get(); set => Set(value); }
+        public bool IsAudioOnly { get => Get(); set => Set(value); }
         public TimeSpan Duration { get => Get(); set => Set(value); }
         public TimeSpan Position { get => Get(); set => Set(value); }
         public long FrameIndex { get => Get(); set => Set(value); }

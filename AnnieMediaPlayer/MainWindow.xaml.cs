@@ -12,6 +12,8 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using System.Runtime.InteropServices;
+using System.Collections.Specialized;
+using System.Threading;
 using AnnieMediaPlayer.Options;
 using AnnieMediaPlayer.Windows.Settings;
 using AnnieMediaPlayer.Windows;
@@ -34,20 +36,21 @@ namespace AnnieMediaPlayer
         private bool _playlistSyncHeight;
         private bool _updatingPlaylistDock;
         private bool _playlistNavigationInProgress;
+        private readonly AlbumArtService _albumArtService = new();
+        private readonly Dictionary<PlaylistItemViewModel, CancellationTokenSource> _albumArtLoads = new();
 
         public MainWindow()
         {
             InitializeComponent();
 
+            FFMELoader.Initialize();
             if (OptionViewModel.Instance.CurrentOption.UsePlaylistPersistence)
                 vm.Playlist.AddFiles(PlaylistStorage.Load());
-            vm.Playlist.Items.CollectionChanged += (_, _) =>
-            {
-                if (OptionViewModel.Instance.CurrentOption.UsePlaylistPersistence)
-                    PlaylistStorage.Save(vm.Playlist.Items.Select(item => item.FilePath));
-            };
 
-            FFMELoader.Initialize();
+            vm.Playlist.Items.CollectionChanged += PlaylistItems_CollectionChanged;
+            foreach (var item in vm.Playlist.Items)
+                QueueAlbumArtLoad(item);
+
             VideoPlayerController.Initialize(ffmeMediaElement);
             VideoPlayerController.OnMediaOpening += VideoPlayerController_OnMediaOpening;
             VideoPlayerController.OnMediaOpened += VideoPlayerController_OnMediaOpened;
@@ -124,11 +127,13 @@ namespace AnnieMediaPlayer
 
             try
             {
+                CancelAllAlbumArtLoads();
                 await VideoPlayerController.Stop();
                 await VideoPlayerController.DisposeAsync();
             }
             finally
             {
+                _albumArtService.Dispose();
                 Close();
             }
         }
@@ -232,6 +237,10 @@ namespace AnnieMediaPlayer
         {
             vm.IsOpened = true;
             vm.FilePath = e.Info.MediaSource;
+            var hasVideoStream = e.Info.Streams.Values.Any(stream =>
+                stream.CodecType == AVMediaType.AVMEDIA_TYPE_VIDEO &&
+                (stream.Disposition & ffmpeg.AV_DISPOSITION_ATTACHED_PIC) == 0);
+            vm.IsAudioOnly = !hasVideoStream;
             vm.Duration = e.Info.Duration;
             vm.Position = e.Info.StartTime;
             vm.FrameIndex = 0;
@@ -269,6 +278,7 @@ namespace AnnieMediaPlayer
                 e.MediaState == MediaPlaybackState.Stop)
             {
                 vm.IsOpened = false;
+                vm.IsAudioOnly = false;
                 vm.FilePath = string.Empty;
                 vm.Duration = TimeSpan.Zero;
                 vm.Position = TimeSpan.Zero;
@@ -758,6 +768,83 @@ namespace AnnieMediaPlayer
 
         [DllImport("dwmapi.dll")]
         private static extern int DwmGetWindowAttribute(IntPtr hWnd, int attribute, out NativeRect value, int size);
+
+        private void PlaylistItems_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (OptionViewModel.Instance.CurrentOption.UsePlaylistPersistence)
+                PlaylistStorage.Save(vm.Playlist.Items.Select(item => item.FilePath));
+
+            if (e.Action == NotifyCollectionChangedAction.Reset)
+            {
+                CancelAllAlbumArtLoads();
+                return;
+            }
+
+            if (e.OldItems is not null)
+            {
+                foreach (var item in e.OldItems.OfType<PlaylistItemViewModel>())
+                    CancelAlbumArtLoad(item);
+            }
+
+            if (e.NewItems is not null)
+            {
+                foreach (var item in e.NewItems.OfType<PlaylistItemViewModel>())
+                    QueueAlbumArtLoad(item);
+            }
+        }
+
+        private void QueueAlbumArtLoad(PlaylistItemViewModel item)
+        {
+            if (_albumArtLoads.ContainsKey(item) || item.AlbumArt is not null)
+                return;
+
+            var cancellation = new CancellationTokenSource();
+            _albumArtLoads[item] = cancellation;
+            _ = LoadAlbumArtAsync(item, cancellation);
+        }
+
+        private async Task LoadAlbumArtAsync(PlaylistItemViewModel item, CancellationTokenSource cancellation)
+        {
+            try
+            {
+                var result = await _albumArtService.LoadAsync(item.FilePath, 512, cancellation.Token);
+                if (!cancellation.IsCancellationRequested && vm.Playlist.Items.Contains(item))
+                {
+                    item.AlbumArt = result.Image;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // 항목이 제거되거나 새로고침된 경우의 정상적인 취소입니다.
+            }
+            catch (Exception ex)
+            {
+                PlayerDiagnostics.Write($"Playlist album art update failed: {item.FilePath} - {ex}");
+            }
+            finally
+            {
+                if (_albumArtLoads.TryGetValue(item, out var current) && ReferenceEquals(current, cancellation))
+                {
+                    _albumArtLoads.Remove(item);
+                }
+
+                cancellation.Dispose();
+            }
+        }
+
+        private void CancelAlbumArtLoad(PlaylistItemViewModel item)
+        {
+            if (_albumArtLoads.Remove(item, out var cancellation))
+                cancellation.Cancel();
+        }
+
+        private void CancelAllAlbumArtLoads()
+        {
+            foreach (var entry in _albumArtLoads)
+                entry.Value.Cancel();
+
+            _albumArtLoads.Clear();
+        }
 
         private void PlaylistPanel_AddFilesRequested(object? sender, EventArgs e)
         {

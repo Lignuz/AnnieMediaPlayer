@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Windows.Media.Imaging;
 
 namespace AnnieMediaPlayer
 {
@@ -13,6 +14,21 @@ namespace AnnieMediaPlayer
         public string FilePath { get; }
         public string FileName => Path.GetFileName(FilePath);
         public TimeSpan Duration { get => Get(); set => Set(value); }
+
+        private BitmapSource? _albumArt;
+
+        public BitmapSource? AlbumArt
+        {
+            get => _albumArt;
+            set
+            {
+                if (ReferenceEquals(_albumArt, value))
+                    return;
+
+                _albumArt = value;
+                OnPropertyChanged();
+            }
+        }
     }
 
     public sealed class PlaylistViewModel : ViewModelBase
