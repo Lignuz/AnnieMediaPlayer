@@ -9,6 +9,8 @@ namespace AnnieMediaPlayer.CustomControls
     /// </summary>
     public partial class TitleBar : UserControl
     {
+        public event EventHandler? CloseRequested;
+
         public static readonly DependencyProperty TitleTextProperty =
             DependencyProperty.Register("TitleText", typeof(string), typeof(TitleBar), new PropertyMetadata(string.Empty));
 
@@ -28,7 +30,12 @@ namespace AnnieMediaPlayer.CustomControls
             Window.GetWindow(this)?.DragMove();
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e) =>
-            Window.GetWindow(this)?.Close();
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (CloseRequested != null)
+                CloseRequested(this, e);
+            else
+                Window.GetWindow(this)?.Close();
+        }
     }
 }

@@ -9,7 +9,6 @@
             BorderThickness="1">
         <DockPanel>
             <StackPanel DockPanel.Dock="Top">
-                <TextBlock Text="{DynamicResource Text.Playlist}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10" />
                 <WrapPanel>
                     <Button Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource PlaylistAddIconData}" ToolTip="{DynamicResource Text.Playlist.Add}" Width="34" Height="34" Margin="3" Click="AddButton_Click" />
                     <Button x:Name="RemoveButton" Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource PlaylistRemoveIconData}" ToolTip="{DynamicResource Text.Playlist.Remove}" Width="34" Height="34" Margin="3" Click="RemoveButton_Click" IsEnabled="False" />
@@ -29,6 +28,10 @@
                          ItemsSource="{Binding Playlist.Items}"
                          SelectedItem="{Binding Playlist.CurrentItem, Mode=OneWay}"
                          SelectionMode="Extended"
+                         Background="{DynamicResource DataGridBackgroundBrush}"
+                         BorderBrush="{DynamicResource DataGridBorderBrush}"
+                         Foreground="{DynamicResource DataGridForegroundBrush}"
+                         BorderThickness="1"
                          HorizontalContentAlignment="Stretch"
                          AllowDrop="True"
                          SelectionChanged="PlaylistList_SelectionChanged"
@@ -39,6 +42,44 @@
                          Drop="PlaylistList_Drop"
                          MouseDoubleClick="PlaylistList_MouseDoubleClick"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Background" Value="{DynamicResource DataGridRowBackgroundBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource DataGridForegroundBrush}" />
+                            <Setter Property="BorderBrush" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="1" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="ItemBorder"
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                SnapsToDevicePixels="True">
+                                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                              Content="{TemplateBinding Content}"
+                                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                              ContentStringFormat="{TemplateBinding ContentStringFormat}" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource DataGridMouseOverBackgroundBrush}" />
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource DataGridSelectionBackgroundBrush}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource DataGridSelectionForegroundBrush}" />
+                                            </Trigger>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter Property="Foreground" Value="{DynamicResource ButtonDisabledForegroundBrush}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate DataType="{x:Type local:PlaylistItemViewModel}">
                             <Grid Margin="2,5">
@@ -46,8 +87,15 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding FilePath}" />
-                                <TextBlock Grid.Column="1" Margin="8,0,0,0" Text="{Binding Duration, Converter={StaticResource PlaylistDurationFormatter}}" Opacity="0.7" />
+                                <TextBlock Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"
+                                           Text="{Binding FileName}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding FilePath}" />
+                                <TextBlock Grid.Column="1"
+                                           Margin="8,0,0,0"
+                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"
+                                           Text="{Binding Duration, Converter={StaticResource PlaylistDurationFormatter}}"
+                                           Opacity="0.7" />
                             </Grid>
                         </DataTemplate>
                     </ListBox.ItemTemplate>

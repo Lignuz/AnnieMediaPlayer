@@ -5,7 +5,7 @@ using AnnieMediaPlayer.Windows.Panels;
 
 namespace AnnieMediaPlayer.Windows
 {
-    public partial class PlaylistWindow : Window
+    public partial class PlaylistWindow : AnnieMediaPlayer.BaseWindow
     {
         public event EventHandler? AddFilesRequested;
         public event EventHandler<IReadOnlyList<PlaylistItemViewModel>>? RemoveRequested;
@@ -41,6 +41,8 @@ namespace AnnieMediaPlayer.Windows
         {
             InitializeComponent();
 
+            PlaylistTitleBar.CloseRequested += (_, e) => ToggleRequested?.Invoke(this, e);
+
             PreviewKeyDown += (_, e) =>
             {
                 if (e.Key != Key.F8)
@@ -50,7 +52,7 @@ namespace AnnieMediaPlayer.Windows
                 e.Handled = true;
             };
 
-            var panel = (PlaylistPanelControl)Content;
+            var panel = PlaylistPanel;
             panel.AddFilesRequested += (_, e) => AddFilesRequested?.Invoke(this, e);
             panel.RemoveRequested += (_, e) => RemoveRequested?.Invoke(this, e);
             panel.ClearRequested += (_, e) => ClearRequested?.Invoke(this, e);
