@@ -152,7 +152,17 @@
                                     <TextBlock Name="CurrentTimeText" Text="{Binding Path=Position, Converter={StaticResource TimeSpanFormatter}, ConverterParameter=sec}" FontWeight="Bold" />
                                     <TextBlock Text=" / " />
                                     <TextBlock Name="TotalTimeText" Text="{Binding Path=Duration, Converter={StaticResource TimeSpanFormatter}, ConverterParameter=sec}" Margin="0,0,10,0"/>
-                                    <StackPanel Orientation="Horizontal" Visibility="{Binding Path=IsOpened, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="{Binding IsOpened, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAudioOnly}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
                                         <TextBlock>
                                             <Run Text="{DynamicResource Text.Frame}"/>
                                             <Run Text=":"/>
@@ -194,9 +204,9 @@
                                     </Button>
                                     <Button Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource NextPlaylistIconData}" ToolTip="{DynamicResource Text.Playlist.Next}" IsEnabled="{Binding Playlist.CanPlayNext}" Click="NextPlaylist_Click" Width="32" Height="32" Margin="0,0,4,0"/>
                                     <Button Name="StopButton" Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource StopMediaIconData}" ToolTip="{DynamicResource Text.Stop}" IsEnabled="{Binding IsOpened}" Click="Stop_Click" Width="42" Height="32" Margin="0,0,10,0"/>
-                                    <ToggleButton Name="InfoToggleButton" Width="34" Height="32" Margin="0" Padding="4" IsChecked="{Binding Path=IsPropertiesPanelOpen}" ToolTip="{DynamicResource Text.Properties}">
+                                    <ToggleButton Name="InfoToggleButton" Style="{StaticResource MediaInfoToggleButtonStyle}" Width="34" Height="32" Margin="0" Padding="4" IsChecked="{Binding Path=IsPropertiesPanelOpen}" ToolTip="{DynamicResource Text.Properties}">
                                         <Canvas Width="20" Height="20">
-                                            <Path Data="{StaticResource MediaInfoIconData}" Stroke="{DynamicResource TitleTextBrush}" StrokeThickness="1" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Fill="Transparent"/>
+                                            <Path Data="{StaticResource MediaInfoIconData}" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}" StrokeThickness="1" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Fill="Transparent"/>
                                         </Canvas>
                                     </ToggleButton>
                                 </StackPanel>
@@ -215,7 +225,7 @@
                                             <ColumnDefinition Width="24"/>
                                             <ColumnDefinition Width="32"/>
                                         </Grid.ColumnDefinitions>
-                                        <Button Grid.Column="0" Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource PreviousSpeedModeIconData}" ToolTip="{DynamicResource Text.SpeedMode.Previous}" Width="30" Height="30" Margin="1,0" Click="SpeedDown_Click"/>
+                                        <Button Grid.Column="0" Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource PreviousSpeedModeIconData}" ToolTip="{DynamicResource Text.SpeedMode.Previous}" Width="30" Height="30" Margin="1,0" Click="SpeedDown_Click" IsEnabled="{Binding IsAudioOnly, Converter={StaticResource InverseBooleanConverter}}"/>
                                         <Grid Grid.Column="1" Visibility="{Binding IsNormalSpeed, Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <Button Style="{StaticResource SmallMediaIconButtonStyle}" Content="{StaticResource SpeedMinusIconData}" ToolTip="{DynamicResource Text.SpeedRatio.Down}" Width="20" Height="26" Margin="2,0" Click="SpeedRatioDown_Click" Visibility="{Binding IsOpened, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                         </Grid>
@@ -228,7 +238,7 @@
                                         <Grid Grid.Column="3" Visibility="{Binding IsNormalSpeed, Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <Button Style="{StaticResource SmallMediaIconButtonStyle}" Content="{StaticResource SpeedPlusIconData}" ToolTip="{DynamicResource Text.SpeedRatio.Up}" Width="20" Height="26" Margin="2,0" Click="SpeedRatioUp_Click" Visibility="{Binding IsOpened, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                         </Grid>
-                                        <Button Grid.Column="4" Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource NextSpeedModeIconData}" ToolTip="{DynamicResource Text.SpeedMode.Next}" Width="30" Height="30" Margin="1,0" Click="SpeedUp_Click"/>
+                                        <Button Grid.Column="4" Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource NextSpeedModeIconData}" ToolTip="{DynamicResource Text.SpeedMode.Next}" Width="30" Height="30" Margin="1,0" Click="SpeedUp_Click" IsEnabled="{Binding IsAudioOnly, Converter={StaticResource InverseBooleanConverter}}"/>
                                     </Grid>
                                 </StackPanel>
                             </DockPanel>

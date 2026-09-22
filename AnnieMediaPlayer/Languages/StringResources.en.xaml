@@ -26,8 +26,8 @@
     <sys:String x:Key="Text.Playlist.Previous">Play previous item</sys:String>
     <sys:String x:Key="Text.Playlist.Next">Play next item</sys:String>
 
-    <sys:String x:Key="Text.OpenDialogTitle">Open Video File</sys:String>
-    <sys:String x:Key="Text.OpenDialogFilter">Video Files (*.mp4;*.avi;*.mov;*.mkv;*.wmv)|*.mp4;*.avi;*.mov;*.mkv;*.wmv|All Files (*.*)|*.*</sys:String>
+    <sys:String x:Key="Text.OpenDialogTitle">Open Media File</sys:String>
+    <sys:String x:Key="Text.OpenDialogFilter">Media Files|*.mp4;*.avi;*.mov;*.mkv;*.wmv;*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg;*.opus;*.wma;*.aiff;*.aif|Video Files (*.mp4;*.avi;*.mov;*.mkv;*.wmv)|*.mp4;*.avi;*.mov;*.mkv;*.wmv|Audio Files (*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg;*.opus;*.wma;*.aiff;*.aif)|*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg;*.opus;*.wma;*.aiff;*.aif|All Files (*.*)|*.*</sys:String>
     <sys:String x:Key="Text.OpenVideoFailed">Failed to open video</sys:String>
 
     <sys:String x:Key="Text.Settings">Settings</sys:String>

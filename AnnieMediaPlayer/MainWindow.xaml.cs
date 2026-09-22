@@ -237,10 +237,8 @@ namespace AnnieMediaPlayer
         {
             vm.IsOpened = true;
             vm.FilePath = e.Info.MediaSource;
-            var hasVideoStream = e.Info.Streams.Values.Any(stream =>
-                stream.CodecType == AVMediaType.AVMEDIA_TYPE_VIDEO &&
-                (stream.Disposition & ffmpeg.AV_DISPOSITION_ATTACHED_PIC) == 0);
-            vm.IsAudioOnly = !hasVideoStream;
+            vm.IsAudioOnly = !VideoPlayerController.HasVideo;
+            UpdateSpeedInfo();
             vm.Duration = e.Info.Duration;
             vm.Position = e.Info.StartTime;
             vm.FrameIndex = 0;
@@ -273,7 +271,6 @@ namespace AnnieMediaPlayer
         // 미디어 상태 변경시 이벤트 
         private void VideoPlayerController_OnMediaStateChanged(object? sender, MediaStateChangedEventArgs e)
         {
-            string playPauseText = string.Empty;
             if (e.MediaState == MediaPlaybackState.Close || 
                 e.MediaState == MediaPlaybackState.Stop)
             {
@@ -293,6 +290,10 @@ namespace AnnieMediaPlayer
             else
             {
                 vm.IsOpened = true;
+                vm.IsAudioOnly = !VideoPlayerController.HasVideo;
+                vm.FilePath = VideoPlayerController.CurrentFilePath;
+                vm.Duration = VideoPlayerController.TotalDuration;
+                vm.Position = VideoPlayerController.CurrentPosition;
 
                 if (VideoPlayerController.IsSliderDragging == false)
                 {
@@ -382,8 +383,14 @@ namespace AnnieMediaPlayer
                 var speed = VideoPlayerController.PlaybackSpeeds[VideoPlayerController.SpeedIndex];
                 TextBlock textBlock = SpeedLabel;
                 textBlock.Inlines.Clear();
+                if (vm.IsAudioOnly)
+                {
+                    textBlock.Inlines.Add(new Run(VideoPlayerController.GetSpeedRatio().ToString("0.0")));
+                    textBlock.Inlines.Add(LanguageManager.GetLocalizedRun("Text.x.Speed"));
+                    return;
+                }
 
-                // 원본 속도 (1배속) 표시
+                // 일반 배속 표시
                 if (VideoPlayerController.IsNormalSpeed)
                 {
                     if (VideoPlayerController.IsOpened)
@@ -451,6 +458,11 @@ namespace AnnieMediaPlayer
                 double actualFps = VideoPlayerController.ActualFps;
                 if (VideoPlayerController.IsOpened)
                 {
+                    if (vm.IsAudioOnly)
+                    {
+                        ActualFpsText.Text = string.Empty;
+                        return;
+                    }
                     actualStr = actualFps > 0 ? actualFps.ToString("0.00") : "-";
                     actualStr = $"{actualStr}fps";
                 }

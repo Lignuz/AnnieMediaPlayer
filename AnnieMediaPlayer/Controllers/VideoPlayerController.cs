@@ -11,6 +11,7 @@ using MediaElement = Unosquare.FFME.MediaElement;
 using System.Diagnostics;
 using System.Windows.Threading;
 using System.Windows.Data;
+using FFmpeg.AutoGen;
 
 namespace AnnieMediaPlayer
 {
@@ -154,10 +155,23 @@ namespace AnnieMediaPlayer
                     previousGrabber?.Dispose();
                     PlayerDiagnostics.Write("Previous preview decoder disposed; opening media.");
 
+                    // 이전 영상의 프레임 이동 타이머가 새 미디어를 탐색하지 않도록 합니다.
+                    StopFrameStepMode(false);
                     var opened = await _ffmePlayer.Open(filePath);
                     PlayerDiagnostics.Write($"FFME Open completed: success={opened}");
                     if (opened == false)
                         return opened;
+
+                    if (HasVideo && !IsNormalSpeed)
+                    {
+                        // 첫 프레임에서 선택한 간격만큼 기다린 뒤 다음 프레임으로 이동합니다.
+                        var paused = await _ffmePlayer.Pause();
+                        if (!paused)
+                            return false;
+
+                        StartFrameStepMode(_playbackSpeeds[SpeedIndex], !playWhenOpened);
+                        return true;
+                    }
 
                     // FFME reports the newly opened media as Stop. Normalize it to
                     // Pause when automatic playback is disabled so the play button
@@ -208,7 +222,18 @@ namespace AnnieMediaPlayer
                 return true;
             }
             if (_ffmePlayer == null) return false;
-            return await ExecuteMediaCommandAsync(() => _ffmePlayer.Play());
+            return await ExecuteMediaCommandAsync(async () =>
+            {
+                if (HasVideo && !IsNormalSpeed)
+                {
+                    if (!await _ffmePlayer.Pause())
+                        return false;
+                    StartFrameStepMode(_playbackSpeeds[SpeedIndex]);
+                    return true;
+                }
+
+                return await _ffmePlayer.Play();
+            });
         }
 
         // 일시 정지
@@ -259,6 +284,7 @@ namespace AnnieMediaPlayer
                 return false;
 
             if (_ffmePlayer == null) return false;
+            StopFrameStepMode(false);
             return await ExecuteMediaCommandAsync(() => _ffmePlayer.Stop());
         }
 
@@ -295,7 +321,7 @@ namespace AnnieMediaPlayer
         // 현재 프레임 앞-뒤로 이동
         public static async Task<bool> SeekStep(bool next = true)
         {
-            if (_ffmePlayer == null) return false;
+            if (_ffmePlayer == null || !HasVideo) return false;
             lock (_seekRequestSync)
             {
                 if (_seekProcessingStopped || _mediaChanging)
@@ -307,7 +333,7 @@ namespace AnnieMediaPlayer
                 if (_ffmePlayer == null || !_ffmePlayer._mediaElement.IsSeekable)
                     return false;
 
-                return await _ffmePlayer.SeekStep(next);
+                return HasVideo && await _ffmePlayer.SeekStep(next);
             });
         }
 
@@ -408,6 +434,14 @@ namespace AnnieMediaPlayer
 
         private static void FfmePlayer_OnMediaOpened(object? sender, MediaOpenedEventArgs e)
         {
+            HasVideo = e.Info.Streams.Values.Any(stream =>
+                stream.CodecType == AVMediaType.AVMEDIA_TYPE_VIDEO &&
+                (stream.Disposition & ffmpeg.AV_DISPOSITION_ATTACHED_PIC) == 0);
+            if (!HasVideo)
+            {
+                StopFrameStepMode(false);
+                SpeedIndex = _normalSpeedIndex;
+            }
             // 프리뷰 디코더는 실제로 미리보기를 요청할 때 백그라운드에서 생성합니다.
             // 디코더 교체는 OpenCoreAsync에서 직렬화하므로 늦게 도착한 이전
             // MediaOpened 이벤트가 현재 디코더를 해제하지 않도록 합니다.
@@ -504,6 +538,7 @@ namespace AnnieMediaPlayer
             PlayerDiagnostics.Write($"Media state changed: {e.MediaState}");
             if (e.MediaState == MediaPlaybackState.Close || e.MediaState == MediaPlaybackState.Stop)
             {
+                StopFrameStepMode(false);
                 _pendingSeekValue = null;
             }
 
@@ -668,6 +703,7 @@ namespace AnnieMediaPlayer
             }
         }
         public static bool IsNormalSpeed => SpeedIndex == _normalSpeedIndex; // 1배속인지 확인하는 속성
+        public static bool HasVideo { get; private set; }
         public static bool IsFrameStepMode => _isFrameStepMode;
         public static bool IsFrameStepPaused => _isFrameStepPaused;
         public static double ActualFps
@@ -682,7 +718,7 @@ namespace AnnieMediaPlayer
 
         public static void OnSliderMouseHover(MainWindow window, MouseEventArgs e)
         {
-            if (OptionViewModel.Instance.CurrentOption.UseSeekFramePreview == false)
+            if (!HasVideo || OptionViewModel.Instance.CurrentOption.UseSeekFramePreview == false)
                 return;
 
             if (IsOpened && _mediaChanging == false)
@@ -977,11 +1013,12 @@ namespace AnnieMediaPlayer
                 await Play();
         }
 
-        public static void StartFrameStepMode(TimeSpan interval)
+        public static void StartFrameStepMode(TimeSpan interval, bool startPaused = false)
         {
+            if (!HasVideo) return;
             StopFrameStepMode(false);
             _isFrameStepMode = true;
-            _isFrameStepPaused = false;
+            _isFrameStepPaused = startPaused;
             _frameStepTimer = new DispatcherTimer();
             _frameStepTimer.Interval = interval;
             _frameStepTimer.Tick += async (s, e) =>
@@ -989,7 +1026,8 @@ namespace AnnieMediaPlayer
                 if (!_isFrameStepPaused)
                     await SeekStep(true);
             };
-            _frameStepTimer.Start();
+            if (!startPaused)
+                _frameStepTimer.Start();
             OnFrameStepStateChanged?.Invoke(null, EventArgs.Empty);
         }
 
@@ -1036,6 +1074,7 @@ namespace AnnieMediaPlayer
 
         public static void IncreaseSpeed()
         {
+            if (IsOpened && !HasVideo) return;
             if (SpeedIndex < _playbackSpeeds.Length - 1)
             {
                 SpeedIndex++;
@@ -1045,6 +1084,7 @@ namespace AnnieMediaPlayer
 
         public static void DecreaseSpeed()
         {
+            if (IsOpened && !HasVideo) return;
             if (SpeedIndex > 0)
             {
                 SpeedIndex--;
@@ -1064,8 +1104,8 @@ namespace AnnieMediaPlayer
             else
                 wasActuallyPlaying = IsPlaying; // 일반 모드에서는 IsPlaying
 
-            // 닫힘 상태에서는 반응하지 않음
-            if (IsOpened == false) return;
+            // 미디어가 열려 있지 않거나 오디오이면 선택값만 유지합니다.
+            if (IsOpened == false || !HasVideo) return;
 
             if (SpeedIndex < _normalSpeedIndex)
             {
