@@ -50,6 +50,9 @@
 
             <!-- 재생목록 유지 -->
             <CheckBox Content="{DynamicResource Text.UsePlaylistPersistence}" IsChecked="{Binding CurrentOption.UsePlaylistPersistence}" Margin="0,15,0,5"/>
+
+            <!-- 재생목록 연속 재생 -->
+            <CheckBox Content="{DynamicResource Text.UseContinuousPlayback}" IsChecked="{Binding CurrentOption.UseContinuousPlayback}" Margin="0,15,0,5"/>
         </StackPanel>
     </Grid>
 </UserControl>

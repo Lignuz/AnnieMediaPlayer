@@ -497,6 +497,9 @@ namespace AnnieMediaPlayer
 
         private async Task PlayNextPlaylistItemAsync()
         {
+            if (!OptionViewModel.Instance.CurrentOption.UseContinuousPlayback)
+                return;
+
             var currentItem = vm.Playlist.CurrentItem;
             if (currentItem == null ||
                 !string.Equals(currentItem.FilePath, _openedPlaylistSource, StringComparison.OrdinalIgnoreCase))
