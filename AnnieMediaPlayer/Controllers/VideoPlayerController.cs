@@ -381,6 +381,8 @@ namespace AnnieMediaPlayer
 
         public static void SpeedDown()
         {
+            if (_ffmePlayer == null) return;
+
             double speed = _ffmePlayer.GetSpeedRatio();
             speed -= 0.1;
             if (speed < 0.1) speed = 0.1; // 최소 속도 제한
