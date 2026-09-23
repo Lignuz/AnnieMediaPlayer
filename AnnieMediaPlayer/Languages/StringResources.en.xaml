@@ -110,7 +110,7 @@
     <sys:String x:Key="Text.Shortcut.CtrlH.Action">Toggle Horizontal Flip</sys:String>
     <sys:String x:Key="Text.Shortcut.CtrlH.Description">Flips the screen horizontally or restores it to normal.</sys:String>
 
-    <sys:String x:Key="Text.Info.Update">Udpate</sys:String>
+    <sys:String x:Key="Text.Info.Update">Update</sys:String>
     <sys:String x:Key="Text.Info.ProjectPage">Project Page</sys:String>
     <sys:String x:Key="Text.Info.Copyright">Copyright Info</sys:String>
     <sys:String x:Key="Text.Info.Copyright.Description" xml:space="preserve">Copyright 2025 Annie Choi&#10;Licensed under GPL v3.</sys:String>

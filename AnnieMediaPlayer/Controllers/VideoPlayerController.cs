@@ -1136,23 +1136,30 @@ namespace AnnieMediaPlayer
             // 미디어가 열려 있지 않거나 오디오이면 선택값만 유지합니다.
             if (IsOpened == false || !HasVideo) return;
 
-            if (SpeedIndex < _normalSpeedIndex)
+            try
             {
-                await Pause();
-                StartFrameStepMode(_playbackSpeeds[SpeedIndex]);
-                if (!wasActuallyPlaying)
-                    PauseFrameStep();
-                else
-                    ResumeFrameStep();
-            }
-            else
-            {
-                StopFrameStepMode();
-                SetSpeedRatio(1.0);
-                if (wasActuallyPlaying)
-                    await Play();
-                else
+                if (SpeedIndex < _normalSpeedIndex)
+                {
                     await Pause();
+                    StartFrameStepMode(_playbackSpeeds[SpeedIndex]);
+                    if (!wasActuallyPlaying)
+                        PauseFrameStep();
+                    else
+                        ResumeFrameStep();
+                }
+                else
+                {
+                    StopFrameStepMode();
+                    SetSpeedRatio(1.0);
+                    if (wasActuallyPlaying)
+                        await Play();
+                    else
+                        await Pause();
+                }
+            }
+            catch (Exception ex)
+            {
+                PlayerDiagnostics.Write($"Apply playback speed failed: {ex}");
             }
         }
     }
