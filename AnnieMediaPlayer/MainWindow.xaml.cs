@@ -38,6 +38,8 @@ namespace AnnieMediaPlayer
         private bool _playlistNavigationInProgress;
         private readonly AlbumArtService _albumArtService = new();
         private readonly Dictionary<PlaylistItemViewModel, CancellationTokenSource> _albumArtLoads = new();
+        private readonly AlbumArtService _currentAlbumArtService = new();
+        private CancellationTokenSource? _currentAlbumArtLoad;
         private readonly DispatcherTimer _playlistSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
 
         public MainWindow()
@@ -136,6 +138,7 @@ namespace AnnieMediaPlayer
                     SavePlaylistNow();
 
                 CancelAllAlbumArtLoads();
+                _currentAlbumArtLoad?.Cancel();
                 ffmeMediaElement.RenderingAudio -= FfmeMediaElement_RenderingAudio;
                 await VideoPlayerController.Stop();
                 await VideoPlayerController.DisposeAsync();
@@ -147,6 +150,7 @@ namespace AnnieMediaPlayer
                     SavePlaylistNow();
 
                 _albumArtService.Dispose();
+                _currentAlbumArtService.Dispose();
                 Close();
             }
         }
@@ -270,6 +274,12 @@ namespace AnnieMediaPlayer
                 vm.AudioArtist = FindMetadataValue(e.Info.Metadata, audioMetadata,
                     "artist", "performer", "album_artist", "album-artist", "albumartist") ?? string.Empty;
                 vm.AudioAlbum = FindMetadataValue(e.Info.Metadata, audioMetadata, "album") ?? string.Empty;
+                _ = LoadCurrentAlbumArtAsync(e.Info.MediaSource);
+            }
+            else
+            {
+                _currentAlbumArtLoad?.Cancel();
+                vm.CurrentAlbumArt = null;
             }
             UpdateSpeedInfo();
             vm.Duration = e.Info.Duration;
@@ -915,6 +925,47 @@ namespace AnnieMediaPlayer
                 {
                     _albumArtLoads.Remove(item);
                 }
+
+                cancellation.Dispose();
+            }
+        }
+
+        // 시각화 화면은 커버를 크게 그리므로 현재 곡의 앨범 이미지는 재생목록 썸네일(512px)보다 큰 1024px 로 따로 읽습니다.
+        // 재생목록 로딩 대기열과 섞이지 않도록 별도 서비스를 사용합니다.
+        private async Task LoadCurrentAlbumArtAsync(string filePath)
+        {
+            _currentAlbumArtLoad?.Cancel();
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                vm.CurrentAlbumArt = null;
+                return;
+            }
+
+            var cancellation = new CancellationTokenSource();
+            _currentAlbumArtLoad = cancellation;
+
+            // 고해상도 이미지를 읽는 동안에는 재생목록에서 이미 읽어 둔 이미지를 먼저 보여줍니다.
+            vm.CurrentAlbumArt = vm.Playlist.Items.FirstOrDefault(item =>
+                string.Equals(item.FilePath, filePath, StringComparison.OrdinalIgnoreCase))?.AlbumArt;
+
+            try
+            {
+                var result = await _currentAlbumArtService.LoadAsync(filePath, 1024, cancellation.Token);
+                if (!cancellation.IsCancellationRequested && result.Image is not null)
+                    vm.CurrentAlbumArt = result.Image;
+            }
+            catch (OperationCanceledException)
+            {
+                // 다른 곡을 열었거나 창을 닫는 경우의 정상적인 취소입니다.
+            }
+            catch (Exception ex)
+            {
+                PlayerDiagnostics.Write($"Current album art load failed: {filePath} - {ex}");
+            }
+            finally
+            {
+                if (ReferenceEquals(_currentAlbumArtLoad, cancellation))
+                    _currentAlbumArtLoad = null;
 
                 cancellation.Dispose();
             }

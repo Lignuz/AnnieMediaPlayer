@@ -121,7 +121,7 @@
                     <controls:AudioVisualizerControl
                             x:Name="AudioVisualizer"
                             IsActive="{Binding IsAudioOnly}"
-                            AlbumArt="{Binding Playlist.CurrentItem.AlbumArt}"
+                            AlbumArt="{Binding CurrentAlbumArt}"
                             Title="{Binding AudioTitle}"
                             Artist="{Binding AudioArtist}"
                             Album="{Binding AudioAlbum}"

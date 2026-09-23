@@ -1,5 +1,6 @@
 ﻿using AnnieMediaPlayer.Options;
 using System.Windows;
+using System.Windows.Media.Imaging;
 using Unosquare.FFME;
 
 namespace AnnieMediaPlayer
@@ -80,6 +81,21 @@ namespace AnnieMediaPlayer
         public string AudioTitle { get => Get(); set => Set(value); }
         public string AudioArtist { get => Get(); set => Set(value); }
         public string AudioAlbum { get => Get(); set => Set(value); }
+
+        // 현재 재생 중인 곡의 앨범 이미지 (시각화 화면용 고해상도). 없을 수 있으므로 필드로 보관합니다.
+        private BitmapSource? _currentAlbumArt;
+        public BitmapSource? CurrentAlbumArt
+        {
+            get => _currentAlbumArt;
+            set
+            {
+                if (ReferenceEquals(_currentAlbumArt, value))
+                    return;
+
+                _currentAlbumArt = value;
+                OnPropertyChanged();
+            }
+        }
         public TimeSpan Duration { get => Get(); set => Set(value); }
         public TimeSpan Position { get => Get(); set => Set(value); }
         public long FrameIndex { get => Get(); set => Set(value); }
