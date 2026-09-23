@@ -569,19 +569,7 @@ namespace AnnieMediaPlayer
                     break;
             }
 
-            if (initials.Count < 2)
-            {
-                foreach (var character in title)
-                {
-                    if (!char.IsLetterOrDigit(character) || initials.Contains(character))
-                        continue;
-
-                    initials.Add(char.ToUpperInvariant(character));
-                    if (initials.Count == 2)
-                        break;
-                }
-            }
-
+            // 단어마다 첫 글자(문자·숫자)만 사용하므로 한 단어 제목은 한 글자가 됩니다.
             return initials.Count == 0 ? "♪" : new string(initials.ToArray());
         }
 
