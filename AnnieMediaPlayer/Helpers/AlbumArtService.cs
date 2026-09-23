@@ -38,7 +38,7 @@ namespace AnnieMediaPlayer
         Generated
     }
 
-    public sealed record AlbumArtResult(BitmapSource? Image, AlbumArtSource Source, string Detail);
+    public sealed record AlbumArtResult(BitmapSource? Image, AlbumArtSource Source, string Detail, TimeSpan? Duration = null);
 
     /// <summary>
     /// 로컬 미디어에서 앨범 이미지를 찾습니다.
@@ -91,15 +91,15 @@ namespace AnnieMediaPlayer
         private static AlbumArtResult LoadCore(string filePath, int maxSide, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var embedded = TryEmbeddedArt(filePath, out var duration, cancellationToken);
 
             try
             {
-                var embedded = TryEmbeddedArt(filePath, cancellationToken);
                 if (embedded is not null)
                 {
                     var image = DecodeImage(embedded, maxSide);
                     if (image is not null)
-                        return new AlbumArtResult(image, AlbumArtSource.Embedded, "파일에 내장된 앨범 이미지");
+                        return new AlbumArtResult(image, AlbumArtSource.Embedded, "파일에 내장된 앨범 이미지", duration);
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
@@ -110,7 +110,7 @@ namespace AnnieMediaPlayer
                     {
                         var image = DecodeImage(File.ReadAllBytes(candidate), maxSide);
                         if (image is not null)
-                            return new AlbumArtResult(image, AlbumArtSource.Folder, $"폴더 이미지: {Path.GetFileName(candidate)}");
+                            return new AlbumArtResult(image, AlbumArtSource.Folder, $"폴더 이미지: {Path.GetFileName(candidate)}", duration);
                     }
                     catch (IOException)
                     {
@@ -133,12 +133,12 @@ namespace AnnieMediaPlayer
                 cancellationToken.ThrowIfCancellationRequested();
                 var shellImage = TryShellThumbnail(filePath, maxSide, cancellationToken);
                 if (shellImage is not null)
-                    return new AlbumArtResult(shellImage, AlbumArtSource.ShellThumbnail, "Windows 셸 썸네일");
+                    return new AlbumArtResult(shellImage, AlbumArtSource.ShellThumbnail, "Windows 셸 썸네일", duration);
 
                 cancellationToken.ThrowIfCancellationRequested();
                 var generated = CreateGeneratedCover(filePath, maxSide);
                 return new AlbumArtResult(generated, generated is null ? AlbumArtSource.None : AlbumArtSource.Generated,
-                    generated is null ? "앨범 이미지를 찾지 못함" : "앨범 이미지 없음 · 생성형 커버");
+                    generated is null ? "앨범 이미지를 찾지 못함" : "앨범 이미지 없음 · 생성형 커버", duration);
             }
             catch (OperationCanceledException)
             {
@@ -149,7 +149,7 @@ namespace AnnieMediaPlayer
                 PlayerDiagnostics.Write($"Album art load failed: {filePath} - {ex}");
                 var generated = CreateGeneratedCover(filePath, maxSide);
                 return new AlbumArtResult(generated, generated is null ? AlbumArtSource.None : AlbumArtSource.Generated,
-                    generated is null ? "앨범 이미지 처리 실패" : "앨범 이미지 처리 실패 · 생성형 커버");
+                    generated is null ? "앨범 이미지 처리 실패" : "앨범 이미지 처리 실패 · 생성형 커버", duration);
             }
         }
 
@@ -170,8 +170,9 @@ namespace AnnieMediaPlayer
             }
         }
 
-        private static unsafe byte[]? TryEmbeddedArt(string filePath, CancellationToken cancellationToken)
+        private static unsafe byte[]? TryEmbeddedArt(string filePath, out TimeSpan? duration, CancellationToken cancellationToken)
         {
+            duration = null;
             try
             {
                 if (!Library.IsInitialized)
@@ -189,6 +190,13 @@ namespace AnnieMediaPlayer
                 {
                     if (ffmpeg.avformat_find_stream_info(formatContext, null) < 0)
                         return null;
+
+                    if (formatContext->duration > 0 && formatContext->duration != ffmpeg.AV_NOPTS_VALUE)
+                    {
+                        var durationSeconds = (double)formatContext->duration / ffmpeg.AV_TIME_BASE;
+                        if (double.IsFinite(durationSeconds) && durationSeconds > 0)
+                            duration = TimeSpan.FromSeconds(durationSeconds);
+                    }
 
                     for (uint index = 0; index < formatContext->nb_streams; index++)
                     {

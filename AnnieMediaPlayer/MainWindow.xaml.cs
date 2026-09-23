@@ -866,6 +866,9 @@ namespace AnnieMediaPlayer
                 var result = await _albumArtService.LoadAsync(item.FilePath, 512, cancellation.Token);
                 if (!cancellation.IsCancellationRequested && vm.Playlist.Items.Contains(item))
                 {
+                    if (result.Duration is TimeSpan duration && duration > TimeSpan.Zero && item.Duration <= TimeSpan.Zero)
+                        item.Duration = duration;
+
                     item.AlbumArt = result.Image;
                 }
             }
