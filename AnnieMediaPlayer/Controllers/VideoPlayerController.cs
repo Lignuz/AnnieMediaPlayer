@@ -686,6 +686,8 @@ namespace AnnieMediaPlayer
         private static bool _isSliderHovered = false;
         private static long _sliderHoverGeneration;
         private readonly record struct PreviewRequest(double PositionX, double TrackLength, long HoverGeneration);
+        private readonly record struct DisplayedPreview(double PositionX, double TrackLength, double SliderMaximum, long MediaVersion);
+        private static DisplayedPreview? _displayedPreview;
         private static readonly ConcurrentQueue<PreviewRequest> _previewQueue = new();
         private static Task? _previewProcessorTask;
 
@@ -732,6 +734,16 @@ namespace AnnieMediaPlayer
                 if (trackLength <= 0)
                     return;
 
+                // 재생 중에는 마우스가 멈춰 있어도 레이아웃 변경으로 MouseMove 가 반복 발생합니다.
+                // 같은 위치의 미리보기가 이미 표시되어 있으면 다시 만들지 않아 깜빡임과 불필요한 디코딩을 막습니다.
+                if (!_isPreviewing && window.OverlayCanvas.Children.Count > 0 &&
+                    _displayedPreview is DisplayedPreview shown &&
+                    shown.MediaVersion == _mediaVersion &&
+                    shown.SliderMaximum == slider.Maximum &&
+                    Math.Abs(shown.PositionX - mousePosition.X) < 0.5 &&
+                    Math.Abs(shown.TrackLength - trackLength) < 0.5)
+                    return;
+
                 // 마우스 이동 이벤트가 프레임 생성보다 빠를 수 있으므로 최신 위치만 유지합니다.
                 _previewQueue.Clear();
                 long hoverGeneration = Interlocked.Read(ref _sliderHoverGeneration);
@@ -774,8 +786,9 @@ namespace AnnieMediaPlayer
                         if (grabber != null)
                         {
                             var slider = window.PlaybackSlider;
+                            double sliderMaximum = slider.Maximum;
                             double ratio = Math.Max(0, Math.Min(1, request.PositionX / request.TrackLength));
-                            double seekTime = slider.Minimum + (ratio * (slider.Maximum - slider.Minimum));
+                            double seekTime = slider.Minimum + (ratio * (sliderMaximum - slider.Minimum));
                             TimeSpan targetTime = TimeSpan.FromSeconds(seekTime);
 
                             int w = grabber.Width;
@@ -855,6 +868,7 @@ namespace AnnieMediaPlayer
                                     // 기존 요소 제거하고 새로 추가
                                     window.OverlayCanvas.Children.Clear();
                                     window.OverlayCanvas.Children.Add(border);
+                                    _displayedPreview = new DisplayedPreview(request.PositionX, request.TrackLength, sliderMaximum, mediaVersion);
                                 });
                             }
                         }
