@@ -484,7 +484,12 @@ namespace AnnieMediaPlayer
 
         private static void FfmePlayer_OnMessageLogged(object? sender, MediaLogMessageEventArgs e)
         {
-            if (e.MessageType == MediaLogMessageType.Warning || e.MessageType == MediaLogMessageType.Error)
+            // 재생 멈춤 원인 추적을 위해 동기 버퍼링과 A/V 동기화 초기화 정보도 기록합니다.
+            var isSyncInfo = e.MessageType == MediaLogMessageType.Info &&
+                (e.Message.StartsWith("SYNC-BUFFER", StringComparison.Ordinal) ||
+                 e.Message.StartsWith("AVSYNC", StringComparison.Ordinal));
+
+            if (e.MessageType == MediaLogMessageType.Warning || e.MessageType == MediaLogMessageType.Error || isSyncInfo)
             {
                 var message = $"FFME {e.MessageType} [{e.AspectName}]: {e.Message}";
                 _ = Task.Run(() => PlayerDiagnostics.Write(message));
