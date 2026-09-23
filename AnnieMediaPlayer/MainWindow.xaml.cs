@@ -851,6 +851,10 @@ namespace AnnieMediaPlayer
                 return;
             }
 
+            // 순서만 바뀐 경우에는 진행 중인 앨범 이미지 로딩을 그대로 유지합니다.
+            if (e.Action == NotifyCollectionChangedAction.Move)
+                return;
+
             if (e.OldItems is not null)
             {
                 foreach (var item in e.OldItems.OfType<PlaylistItemViewModel>())

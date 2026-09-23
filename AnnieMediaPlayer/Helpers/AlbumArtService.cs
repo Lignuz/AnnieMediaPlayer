@@ -1,5 +1,4 @@
-using FFmpeg.AutoGen;
-using System.Collections.Concurrent;
+﻿using FFmpeg.AutoGen;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
@@ -46,7 +45,18 @@ namespace AnnieMediaPlayer
     /// </summary>
     public sealed class AlbumArtService : IDisposable
     {
-        private readonly ConcurrentDictionary<string, AlbumArtResult> _cache = new();
+        // 재생목록 항목이 한꺼번에 요청되므로 파일 열기·디코딩 작업 수를 제한합니다.
+        private static readonly int MaxConcurrentLoads = Math.Clamp(Environment.ProcessorCount / 2, 1, 4);
+        // 캐시된 이미지의 대략적인 메모리 한도입니다. 초과하면 오래 사용하지 않은 항목부터 제거합니다.
+        private const long CacheByteLimit = 64L * 1024 * 1024;
+
+        private sealed record CacheEntry(string Key, AlbumArtResult Result, long Bytes);
+
+        private readonly SemaphoreSlim _loadGate = new(MaxConcurrentLoads, MaxConcurrentLoads);
+        private readonly object _cacheSync = new();
+        private readonly Dictionary<string, LinkedListNode<CacheEntry>> _cache = new();
+        private readonly LinkedList<CacheEntry> _cacheOrder = new(); // 앞쪽이 최근 사용 항목
+        private long _cacheBytes;
         private int _disposed;
 
         public async Task<AlbumArtResult> LoadAsync(string filePath, int maxSide = 96, CancellationToken cancellationToken = default)
@@ -56,20 +66,85 @@ namespace AnnieMediaPlayer
 
             var fullPath = Path.GetFullPath(filePath);
             var key = CreateCacheKey(fullPath, maxSide);
-            if (_cache.TryGetValue(key, out var cached))
+            if (TryGetCached(key, out var cached))
                 return cached;
 
-            var result = await Task.Run(() => LoadCore(fullPath, maxSide, cancellationToken), cancellationToken)
-                .ConfigureAwait(false);
+            await _loadGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                // 대기하는 동안 같은 파일의 결과가 캐시에 들어왔을 수 있습니다.
+                if (TryGetCached(key, out cached))
+                    return cached;
 
-            cancellationToken.ThrowIfCancellationRequested();
-            if (Volatile.Read(ref _disposed) == 0)
-                _cache[key] = result;
+                var result = await Task.Run(() => LoadCore(fullPath, maxSide, cancellationToken), cancellationToken)
+                    .ConfigureAwait(false);
 
-            return result;
+                cancellationToken.ThrowIfCancellationRequested();
+                AddToCache(key, result);
+
+                return result;
+            }
+            finally
+            {
+                _loadGate.Release();
+            }
         }
 
-        public void ClearCache() => _cache.Clear();
+        public void ClearCache()
+        {
+            lock (_cacheSync)
+            {
+                _cache.Clear();
+                _cacheOrder.Clear();
+                _cacheBytes = 0;
+            }
+        }
+
+        private bool TryGetCached(string key, out AlbumArtResult result)
+        {
+            lock (_cacheSync)
+            {
+                if (_cache.TryGetValue(key, out var node))
+                {
+                    _cacheOrder.Remove(node);
+                    _cacheOrder.AddFirst(node);
+                    result = node.Value.Result;
+                    return true;
+                }
+            }
+
+            result = null!;
+            return false;
+        }
+
+        private void AddToCache(string key, AlbumArtResult result)
+        {
+            var image = result.Image;
+            var bytes = image is null ? 0 : (long)image.PixelWidth * image.PixelHeight * 4;
+
+            lock (_cacheSync)
+            {
+                // Dispose 가 캐시를 비운 뒤 늦게 끝난 로딩 결과가 다시 들어가지 않도록 잠금 안에서 확인합니다.
+                if (Volatile.Read(ref _disposed) != 0)
+                    return;
+
+                if (_cache.Remove(key, out var existing))
+                {
+                    _cacheOrder.Remove(existing);
+                    _cacheBytes -= existing.Value.Bytes;
+                }
+
+                _cache[key] = _cacheOrder.AddFirst(new CacheEntry(key, result, bytes));
+                _cacheBytes += bytes;
+
+                while (_cacheBytes > CacheByteLimit && _cacheOrder.Last is { } oldest && oldest != _cacheOrder.First)
+                {
+                    _cacheOrder.RemoveLast();
+                    _cache.Remove(oldest.Value.Key);
+                    _cacheBytes -= oldest.Value.Bytes;
+                }
+            }
+        }
 
         private static string CreateCacheKey(string filePath, int maxSide)
         {
@@ -592,8 +667,9 @@ namespace AnnieMediaPlayer
 
         public void Dispose()
         {
+            // 진행 중인 로딩이 끝나며 Release 할 수 있으므로 _loadGate 는 해제하지 않습니다.
             if (Interlocked.Exchange(ref _disposed, 1) == 0)
-                _cache.Clear();
+                ClearCache();
         }
 
         private const uint COINIT_APARTMENTTHREADED = 0x2;

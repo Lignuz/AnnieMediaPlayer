@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows.Media.Imaging;
 
@@ -121,11 +121,16 @@ namespace AnnieMediaPlayer
             var remaining = Items.Where(item => !selected.Contains(item)).ToList();
             var adjustedTargetIndex = Math.Clamp(originalTargetIndex - itemsBeforeTarget, 0, remaining.Count);
 
-            foreach (var item in selected)
-                Items.Remove(item);
+            var ordered = remaining;
+            ordered.InsertRange(adjustedTargetIndex, selected);
 
-            for (var index = 0; index < selected.Count; index++)
-                Items.Insert(adjustedTargetIndex + index, selected[index]);
+            // 제거·삽입 대신 Move 를 사용하여 항목이 목록에서 빠졌다가 다시 들어온 것으로 처리되지 않게 합니다.
+            for (var index = 0; index < ordered.Count; index++)
+            {
+                var currentIndex = Items.IndexOf(ordered[index]);
+                if (currentIndex != index)
+                    Items.Move(currentIndex, index);
+            }
 
             return true;
         }
