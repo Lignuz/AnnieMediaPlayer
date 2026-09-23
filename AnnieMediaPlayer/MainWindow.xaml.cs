@@ -38,10 +38,13 @@ namespace AnnieMediaPlayer
         private bool _playlistNavigationInProgress;
         private readonly AlbumArtService _albumArtService = new();
         private readonly Dictionary<PlaylistItemViewModel, CancellationTokenSource> _albumArtLoads = new();
+        private readonly DispatcherTimer _playlistSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
 
         public MainWindow()
         {
             InitializeComponent();
+
+            _playlistSaveTimer.Tick += (_, _) => SavePlaylistNow();
 
             FFMELoader.Initialize();
             if (OptionViewModel.Instance.CurrentOption.UsePlaylistPersistence)
@@ -128,6 +131,10 @@ namespace AnnieMediaPlayer
 
             try
             {
+                // 대기 중인 재생목록 저장이 있으면 종료 전에 바로 저장합니다.
+                if (_playlistSaveTimer.IsEnabled)
+                    SavePlaylistNow();
+
                 CancelAllAlbumArtLoads();
                 ffmeMediaElement.RenderingAudio -= FfmeMediaElement_RenderingAudio;
                 await VideoPlayerController.Stop();
@@ -135,6 +142,10 @@ namespace AnnieMediaPlayer
             }
             finally
             {
+                // 종료 정리 중에도 창이 열려 있어 재생목록이 바뀔 수 있으므로, 닫기 직전에 한 번 더 저장합니다.
+                if (_playlistSaveTimer.IsEnabled)
+                    SavePlaylistNow();
+
                 _albumArtService.Dispose();
                 Close();
             }
@@ -827,8 +838,12 @@ namespace AnnieMediaPlayer
 
         private void PlaylistItems_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
+            // 추가·이동은 항목마다 변경 알림이 발생하므로 연속된 변경을 모아 한 번만 저장합니다.
             if (OptionViewModel.Instance.CurrentOption.UsePlaylistPersistence)
-                PlaylistStorage.Save(vm.Playlist.Items.Select(item => item.FilePath));
+            {
+                _playlistSaveTimer.Stop();
+                _playlistSaveTimer.Start();
+            }
 
             if (e.Action == NotifyCollectionChangedAction.Reset)
             {
@@ -847,6 +862,13 @@ namespace AnnieMediaPlayer
                 foreach (var item in e.NewItems.OfType<PlaylistItemViewModel>())
                     QueueAlbumArtLoad(item);
             }
+        }
+
+        private void SavePlaylistNow()
+        {
+            _playlistSaveTimer.Stop();
+            if (OptionViewModel.Instance.CurrentOption.UsePlaylistPersistence)
+                PlaylistStorage.Save(vm.Playlist.Items.Select(item => item.FilePath));
         }
 
         private void QueueAlbumArtLoad(PlaylistItemViewModel item)
