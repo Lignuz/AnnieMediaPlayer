@@ -12,7 +12,7 @@
 		<Company>Annie Choi</Company>
 		<VersionPrefix>0.9.9.6</VersionPrefix>
 		<RepositoryUrl>https://github.com/Lignuz/AnnieMediaPlayer.git</RepositoryUrl>
-		<Copyright>Copyright 2025 Annie Choi, All Rights Reserved.</Copyright>
+		<Copyright>Copyright 2025 Annie Choi</Copyright>
 		<PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 	</PropertyGroup>

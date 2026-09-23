@@ -113,7 +113,7 @@
     <sys:String x:Key="Text.Info.Update">업데이트</sys:String>
     <sys:String x:Key="Text.Info.ProjectPage">프로젝트 페이지</sys:String>
     <sys:String x:Key="Text.Info.Copyright">저작권 정보</sys:String>
-    <sys:String x:Key="Text.Info.Copyright.Description" xml:space="preserve">Copyright 2025 Annie Choi,&#10;All Rights Reserved.</sys:String>    
+    <sys:String x:Key="Text.Info.Copyright.Description" xml:space="preserve">Copyright 2025 Annie Choi&#10;GPL v3 라이선스로 배포됩니다.</sys:String>    
     <sys:String x:Key="Text.Info.Version.Update.Check.Ready">업데이트를 준비 중입니다.</sys:String>
     <sys:String x:Key="Text.Info.Version.Update.Check.CheckUpdate">업데이트를 확인하는 중입니다.</sys:String>
     <sys:String x:Key="Text.Info.Version.Update.Check.Available">새로운 버전이 있습니다.</sys:String>
