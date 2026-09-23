@@ -22,6 +22,9 @@ namespace AnnieMediaPlayer.CustomControls
         private const int ModeCount = 3;
         private const int AdditiveLayerCount = 6;
         private const int OpacityLevels = 64;
+
+        // 화면 주사율과 관계없이 초당 최대 약 40번만 분석·그리기를 합니다.
+        private static readonly TimeSpan MinimumFrameInterval = TimeSpan.FromMilliseconds(25);
         private static readonly string[] ModeNames = { "Aura", "Halo", "Ribbon" };
         private static readonly FontFamily TextFont = new("Segoe UI Variable Display, Segoe UI");
         private static readonly CultureInfo TextCulture = CultureInfo.GetCultureInfo("ko-KR");
@@ -103,9 +106,16 @@ namespace AnnieMediaPlayer.CustomControls
             Loaded += (_, _) =>
             {
                 _window = Window.GetWindow(this);
+                if (_window != null)
+                    _window.StateChanged += OnWindowStateChanged;
                 UpdateRenderingHook();
             };
-            Unloaded += (_, _) => UpdateRenderingHook();
+            Unloaded += (_, _) =>
+            {
+                if (_window != null)
+                    _window.StateChanged -= OnWindowStateChanged;
+                UpdateRenderingHook();
+            };
             MouseMove += OnMouseMove;
             MouseLeftButtonDown += OnMouseLeftButtonDown;
         }
@@ -305,9 +315,12 @@ namespace AnnieMediaPlayer.CustomControls
 
         #region 렌더링 루프
 
+        private void OnWindowStateChanged(object? sender, EventArgs e) => UpdateRenderingHook();
+
         private void UpdateRenderingHook()
         {
-            var wanted = IsActive && IsVisible;
+            // 최소화 중에는 렌더링 이벤트 구독을 해제해 WPF가 매 프레임 깨어나지 않게 합니다.
+            var wanted = IsActive && IsVisible && _window?.WindowState != WindowState.Minimized;
             if (wanted && !_renderingHooked)
             {
                 _lastRenderingTime = null;
@@ -326,6 +339,10 @@ namespace AnnieMediaPlayer.CustomControls
         {
             if (e is not RenderingEventArgs args || args.RenderingTime == _lastRenderingTime)
                 return; // 같은 프레임에서 여러 번 호출되는 경우
+
+            // 주사율이 높은 화면에서도 분석과 그리기 비용이 늘지 않도록 프레임을 건너뜁니다.
+            if (_lastRenderingTime is TimeSpan previous && args.RenderingTime - previous < MinimumFrameInterval)
+                return;
 
             var dt = _lastRenderingTime is TimeSpan last ? (args.RenderingTime - last).TotalSeconds : 1.0 / 60.0;
             _lastRenderingTime = args.RenderingTime;

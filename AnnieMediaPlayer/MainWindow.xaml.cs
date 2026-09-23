@@ -41,6 +41,8 @@ namespace AnnieMediaPlayer
         private readonly AlbumArtService _currentAlbumArtService = new();
         private CancellationTokenSource? _currentAlbumArtLoad;
         private readonly DispatcherTimer _playlistSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
+        private static readonly TimeSpan PositionUpdateInterval = TimeSpan.FromMilliseconds(50);
+        private long _lastPositionUpdateTimestamp;
 
         public MainWindow()
         {
@@ -308,6 +310,21 @@ namespace AnnieMediaPlayer
 
         private void VideoPlayerController_OnPositionChanged(object? sender, PositionChangedEventArgs e)
         {
+            // 재생 중에는 FFME 렌더링 주기(약 15ms)마다 위치가 전달됩니다.
+            // 슬라이더와 시간 표시는 초당 20번이면 충분하므로 바인딩·레이아웃 갱신을 줄이고,
+            // 최소화 중에는 복원될 때 한 번에 반영합니다. 일시정지·탐색·느린 재생은 바로 반영합니다.
+            if (VideoPlayerController.IsPlaying && !VideoPlayerController.IsFrameStepMode)
+            {
+                if (WindowState == WindowState.Minimized)
+                    return;
+
+                var now = System.Diagnostics.Stopwatch.GetTimestamp();
+                if (System.Diagnostics.Stopwatch.GetElapsedTime(_lastPositionUpdateTimestamp, now) < PositionUpdateInterval)
+                    return;
+
+                _lastPositionUpdateTimestamp = now;
+            }
+
             vm.Position = e.Position;
         }
 
@@ -1058,6 +1075,10 @@ namespace AnnieMediaPlayer
         private void Window_StateChanged(object sender, EventArgs e)
         {
             UpdateMaxRestoreButton();
+
+            // 최소화 중 건너뛴 재생 위치를 복원 시 반영합니다.
+            if (WindowState != WindowState.Minimized && vm.IsOpened)
+                vm.Position = VideoPlayerController.CurrentPosition;
 
             if (WindowState == WindowState.Maximized && _playlistDocked && _playlistWindow?.IsVisible == true)
                 _playlistDocked = false;
