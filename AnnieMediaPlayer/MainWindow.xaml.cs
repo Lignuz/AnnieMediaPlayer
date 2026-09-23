@@ -200,6 +200,9 @@ namespace AnnieMediaPlayer
         // 파일 열기할 때 설정
         private void VideoPlayerController_OnMediaOpening(object? sender, MediaOpeningEventArgs e)
         {
+            vm.AudioTitle = string.Empty;
+            vm.AudioArtist = string.Empty;
+
             // Keep audio rendering from waiting behind video frame presentation.
             e.Options.UseParallelRendering = true;
             ffmeMediaElement.RendererOptions.UseLegacyAudioOut =
@@ -245,6 +248,16 @@ namespace AnnieMediaPlayer
             vm.IsOpened = true;
             vm.FilePath = e.Info.MediaSource;
             vm.IsAudioOnly = !VideoPlayerController.HasVideo;
+            if (vm.IsAudioOnly)
+            {
+                var audioMetadata = e.Info.BestStreams.TryGetValue(AVMediaType.AVMEDIA_TYPE_AUDIO, out var audioStream)
+                    ? audioStream.Metadata
+                    : null;
+                vm.AudioTitle = FindMetadataValue(e.Info.Metadata, audioMetadata, "title")
+                    ?? Path.GetFileNameWithoutExtension(e.Info.MediaSource);
+                vm.AudioArtist = FindMetadataValue(e.Info.Metadata, audioMetadata,
+                    "artist", "performer", "album_artist", "album-artist", "albumartist") ?? string.Empty;
+            }
             UpdateSpeedInfo();
             vm.Duration = e.Info.Duration;
             vm.Position = e.Info.StartTime;
@@ -284,6 +297,8 @@ namespace AnnieMediaPlayer
                 vm.IsOpened = false;
                 vm.IsAudioOnly = false;
                 vm.FilePath = string.Empty;
+                vm.AudioTitle = string.Empty;
+                vm.AudioArtist = string.Empty;
                 vm.Duration = TimeSpan.Zero;
                 vm.Position = TimeSpan.Zero;
                 vm.FrameIndex = 0;
@@ -317,6 +332,28 @@ namespace AnnieMediaPlayer
                 }
             }
             UpdateSpeedInfo();
+        }
+
+        private static string? FindMetadataValue(
+            IReadOnlyDictionary<string, string>? containerMetadata,
+            IReadOnlyDictionary<string, string>? streamMetadata,
+            params string[] keys)
+        {
+            foreach (var metadata in new[] { containerMetadata, streamMetadata })
+            {
+                if (metadata is null)
+                    continue;
+
+                foreach (var key in keys)
+                foreach (var entry in metadata)
+                {
+                    if (string.Equals(entry.Key, key, StringComparison.OrdinalIgnoreCase) &&
+                        !string.IsNullOrWhiteSpace(entry.Value))
+                        return entry.Value.Trim();
+                }
+            }
+
+            return null;
         }
 
         // 렌더 될때마다 
@@ -1103,7 +1140,6 @@ namespace AnnieMediaPlayer
 
             // 초기 상태 설정
             panel_control.Opacity = 1;
-            panel_titlebar.Opacity = 1;
         }
 
         private void HideControlsTimer_Tick(object? sender, EventArgs e)
@@ -1124,7 +1160,6 @@ namespace AnnieMediaPlayer
                 var showControlsAnimation = (Storyboard)FindResource("ShowControls");
 
                 showControlsAnimation.Begin(panel_control);
-                panel_titlebar.Opacity = 1;
 
                 _hideControlsTimer.Stop();
                 _hideControlsTimer.Start();
@@ -1140,7 +1175,6 @@ namespace AnnieMediaPlayer
                 var hideControlsAnimation = (Storyboard)FindResource("HideControls");
 
                 hideControlsAnimation.Begin(panel_control);
-                panel_titlebar.Opacity = 1;
             }
         }
 
@@ -1168,7 +1202,6 @@ namespace AnnieMediaPlayer
             {
                 grid_bottom.Children.Add(panel_control);
                 panel_control.Opacity = 1;
-                panel_titlebar.Opacity = 1;
                 _isControlsVisible = true;
                 _hideControlsTimer.Interval = TimeSpan.FromSeconds(0.5);
                 _hideControlsTimer.Stop();
@@ -1180,7 +1213,6 @@ namespace AnnieMediaPlayer
 
                 _isControlsVisible = true;
                 _isMouseOverControls = false;
-                panel_titlebar.Opacity = 1;
                 panel_control.Opacity = 1;
                 _hideControlsTimer.Interval = TimeSpan.FromSeconds(0.1);
                 _hideControlsTimer.Start();

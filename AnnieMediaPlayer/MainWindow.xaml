@@ -60,7 +60,7 @@
                 <Canvas x:Name="OverlayCanvas" IsHitTestVisible="False" Panel.ZIndex="10"  Focusable="False" Visibility="{Binding ElementName=PlaybackSlider, Path=IsMouseOver, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" IsVisibleChanged="OverlayCanvas_IsVisibleChanged"/>
 
                 <!-- 🎀 커스텀 타이틀바 -->
-                <Grid Grid.Row="0" x:Name="grid_top">
+                <Grid Grid.Row="0">
                     <DockPanel x:Name="panel_titlebar" Background="{DynamicResource BackgroundBrush}" 
                                MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" MouseRightButtonDown="TitleBar_MouseRightButtonDown"
                                MouseMove="TitleBar_MouseMove" MouseLeftButtonUp="TitleBar_MouseLeftButtonUp" MouseRightButtonUp="TitleBar_MouseRightButtonUp"
@@ -122,6 +122,8 @@
                             x:Name="AudioVisualizer"
                             IsActive="{Binding IsAudioOnly}"
                             AlbumArt="{Binding Playlist.CurrentItem.AlbumArt}"
+                            Title="{Binding AudioTitle}"
+                            Artist="{Binding AudioArtist}"
                             FilePath="{Binding FilePath}"
                             IsPlaying="{Binding IsPlaying}"
                             Background="Transparent"
