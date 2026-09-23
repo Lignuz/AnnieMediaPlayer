@@ -213,6 +213,7 @@ namespace AnnieMediaPlayer
         {
             vm.AudioTitle = string.Empty;
             vm.AudioArtist = string.Empty;
+            vm.AudioAlbum = string.Empty;
 
             // Keep audio rendering from waiting behind video frame presentation.
             e.Options.UseParallelRendering = true;
@@ -268,6 +269,7 @@ namespace AnnieMediaPlayer
                     ?? Path.GetFileNameWithoutExtension(e.Info.MediaSource);
                 vm.AudioArtist = FindMetadataValue(e.Info.Metadata, audioMetadata,
                     "artist", "performer", "album_artist", "album-artist", "albumartist") ?? string.Empty;
+                vm.AudioAlbum = FindMetadataValue(e.Info.Metadata, audioMetadata, "album") ?? string.Empty;
             }
             UpdateSpeedInfo();
             vm.Duration = e.Info.Duration;
@@ -310,6 +312,7 @@ namespace AnnieMediaPlayer
                 vm.FilePath = string.Empty;
                 vm.AudioTitle = string.Empty;
                 vm.AudioArtist = string.Empty;
+                vm.AudioAlbum = string.Empty;
                 vm.Duration = TimeSpan.Zero;
                 vm.Position = TimeSpan.Zero;
                 vm.FrameIndex = 0;

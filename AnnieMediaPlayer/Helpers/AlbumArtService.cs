@@ -20,7 +20,6 @@ using DrawingLinearGradientBrush = System.Drawing.Drawing2D.LinearGradientBrush;
 using DrawingPathGradientBrush = System.Drawing.Drawing2D.PathGradientBrush;
 using DrawingPixelFormat = System.Drawing.Imaging.PixelFormat;
 using DrawingRectangleF = System.Drawing.RectangleF;
-using DrawingSizeF = System.Drawing.SizeF;
 using DrawingStringFormat = System.Drawing.StringFormat;
 using DrawingStringFormatFlags = System.Drawing.StringFormatFlags;
 using DrawingStringTrimming = System.Drawing.StringTrimming;
@@ -402,100 +401,62 @@ namespace AnnieMediaPlayer
                 var hash = Fnv1a(paletteKey);
                 var hue = hash % 360;
                 var spread = 30 + (hash >> 9) % 60;
+                // 그라디언트 스타일 생성 커버: 여백 없이 가득 채우고, 모서리 둥글림은 표시하는 쪽에서 처리합니다.
                 var first = HslToColor(hue, 0.65f, 0.45f);
-                var second = HslToColor(hue + spread, 0.70f, 0.24f);
+                var second = HslToColor(hue + spread, 0.70f, 0.22f);
+                float s = size;
 
                 using var bitmap = new DrawingBitmap(size, size, DrawingPixelFormat.Format32bppArgb);
                 using var graphics = DrawingGraphics.FromImage(bitmap);
                 graphics.SmoothingMode = SmoothingMode.HighQuality;
                 graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                // ClearType은 투명 비트맵의 RGB 채널에 색 프린지를 남길 수 있으므로
-                // WPF Image로 표시되는 생성 커버에는 회색조 안티앨리어싱을 사용합니다.
+                // ClearType은 비트맵의 RGB 채널에 색 프린지를 남길 수 있으므로 회색조 안티앨리어싱을 사용합니다.
                 graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
                 graphics.TextContrast = 0;
-                graphics.Clear(DrawingColor.FromArgb(255, 18, 12, 16));
 
-                var cardPadding = Math.Max(8f, size * 0.035f);
-                var card = new DrawingRectangleF(cardPadding, cardPadding,
-                    size - cardPadding * 2, size - cardPadding * 2);
-                var radius = Math.Max(10f, size * 0.035f);
+                // (a) 배경: 대각 선형 그라디언트
+                using (var background = new DrawingLinearGradientBrush(new System.Drawing.PointF(0, 0), new System.Drawing.PointF(s, s), first, second))
+                    graphics.FillRectangle(background, 0, 0, s, s);
 
-                using (var cardPath = CreateRoundedRectangle(card, radius))
+                // (b) 블롭: 해시 비트로 위치/크기 결정 → 메시 그라디언트 느낌
+                for (var index = 0; index < 4; index++)
                 {
-                    graphics.SetClip(cardPath);
-                    using (var background = new DrawingLinearGradientBrush(card, first, second, 35f))
-                        graphics.FillRectangle(background, card);
+                    var seed = hash * (2654435761u + (uint)index * 40503u);
+                    var x = s * (0.10f + (seed & 0xff) / 255f * 0.80f);
+                    var y = s * (0.10f + ((seed >> 8) & 0xff) / 255f * 0.80f);
+                    var r = s * (0.30f + ((seed >> 16) & 0xff) / 255f * 0.35f);
+                    var blobColor = HslToColor(hue + spread * (index - 1.5f) * 1.3f, 0.80f, 0.60f);
 
-                    for (var index = 0; index < 4; index++)
+                    using var blobPath = new DrawingGraphicsPath();
+                    blobPath.AddEllipse(x - r, y - r, r * 2, r * 2);
+                    using var blob = new DrawingPathGradientBrush(blobPath)
                     {
-                        var seed = hash * (2654435761u + (uint)index * 40503u);
-                        var x = card.Left + card.Width * (0.10f + ((seed & 0xff) / 255f) * 0.80f);
-                        var y = card.Top + card.Height * (0.10f + (((seed >> 8) & 0xff) / 255f) * 0.72f);
-                        var radiusX = card.Width * (0.24f + (((seed >> 16) & 0xff) / 255f) * 0.22f);
-                        var radiusY = radiusX * (0.75f + (((seed >> 24) & 0xff) / 255f) * 0.35f);
-                        var blobColor = HslToColor(hue + spread * (index - 1.5f) * 1.3f, 0.80f, 0.60f);
-
-                        using var blobPath = new DrawingGraphicsPath();
-                        blobPath.AddEllipse(x - radiusX, y - radiusY, radiusX * 2, radiusY * 2);
-                        using var blob = new DrawingPathGradientBrush(blobPath)
-                        {
-                            CenterColor = DrawingColor.FromArgb(92, blobColor),
-                            SurroundColors = new[] { DrawingColor.FromArgb(0, blobColor) }
-                        };
-                        graphics.FillPath(blob, blobPath);
-                    }
-
-                    // 카드 전체에 투명한 시작점을 포함한 그라디언트를 겹쳐 그립니다.
-                    // 별도 사각형의 시작 경계가 남지 않도록 하단 스크림의 경계선을 제거합니다.
-                    using (var scrim = new DrawingLinearGradientBrush(card,
-                               DrawingColor.FromArgb(0, 0, 0, 0), DrawingColor.FromArgb(205, 0, 0, 0), 90f))
-                    {
-                        scrim.InterpolationColors = new ColorBlend
-                        {
-                            Positions = new[] { 0.0f, 0.48f, 0.62f, 1.0f },
-                            Colors = new[]
-                            {
-                                DrawingColor.FromArgb(0, 0, 0, 0),
-                                DrawingColor.FromArgb(0, 0, 0, 0),
-                                DrawingColor.FromArgb(85, 0, 0, 0),
-                                DrawingColor.FromArgb(205, 0, 0, 0)
-                            }
-                        };
-                        graphics.FillPath(scrim, cardPath);
-                    }
-
-                    graphics.ResetClip();
-
-                    using var outline = new System.Drawing.Pen(DrawingColor.FromArgb(34, 255, 255, 255), Math.Max(1f, size / 320f));
-                    graphics.DrawPath(outline, cardPath);
+                        CenterColor = DrawingColor.FromArgb(140, blobColor),
+                        SurroundColors = new[] { DrawingColor.FromArgb(0, blobColor) }
+                    };
+                    graphics.FillPath(blob, blobPath);
                 }
 
-                var contentPadding = card.Width * 0.075f;
-                var textLeft = card.Left + contentPadding;
-                var textWidth = card.Width - contentPadding * 2;
-                var initials = GetInitials(string.IsNullOrWhiteSpace(metadata.Album) ? metadata.Title : metadata.Album);
-                var initialsRect = new DrawingRectangleF(textLeft, card.Top + card.Height * 0.10f,
-                    textWidth, card.Height * 0.31f);
-                var titleRect = new DrawingRectangleF(textLeft, card.Top + card.Height * 0.76f,
-                    textWidth, card.Height * 0.105f);
-                var artistRect = new DrawingRectangleF(textLeft, card.Top + card.Height * 0.865f,
-                    textWidth, card.Height * 0.075f);
+                // (c) 하단 가독성용 스크림 (0.55 지점부터 아래로 어두워짐)
+                using (var scrim = new DrawingLinearGradientBrush(new System.Drawing.PointF(0, s * 0.55f - 1), new System.Drawing.PointF(0, s + 1),
+                           DrawingColor.FromArgb(0, 0, 0, 0), DrawingColor.FromArgb(140, 0, 0, 0)))
+                    graphics.FillRectangle(scrim, 0, s * 0.55f, s, s * 0.45f);
 
-                using var whiteBrush = new DrawingSolidBrush(DrawingColor.FromArgb(248, 255, 255, 255));
-                using var softBrush = new DrawingSolidBrush(DrawingColor.FromArgb(210, 255, 255, 255));
-                using var initialsFont = new DrawingFont("Segoe UI", Math.Max(18f, card.Width * 0.25f),
-                    DrawingFontStyle.Bold, DrawingGraphicsUnit.Pixel);
-                using var titleFont = CreateFittingFont(graphics, metadata.Title, textWidth,
-                    Math.Max(14f, card.Width * 0.072f), Math.Max(10f, card.Width * 0.045f), DrawingFontStyle.Bold);
-                using var artistFont = CreateFittingFont(graphics, metadata.Artist, textWidth,
-                    Math.Max(11f, card.Width * 0.045f), Math.Max(9f, card.Width * 0.032f), DrawingFontStyle.Regular);
+                // (d) 타이포그래피: 이니셜(Black) + 제목(Semibold) + 아티스트
+                var pad = s * 0.07f;
+                var initials = GetInitials(string.IsNullOrWhiteSpace(metadata.Album) ? metadata.Title : metadata.Album);
+                using var whiteBrush = new DrawingSolidBrush(DrawingColor.FromArgb(242, 255, 255, 255));
+                using var softBrush = new DrawingSolidBrush(DrawingColor.FromArgb(179, 255, 255, 255));
+                var artist = string.IsNullOrWhiteSpace(metadata.Artist) ? "Unknown Artist" : metadata.Artist;
+                using var initialsFont = CreateCoverFont(initials, s * 0.30f, "Segoe UI Black", bold: true);
+                using var titleFont = CreateCoverFont(metadata.Title, s * 0.065f, "Segoe UI Semibold", bold: true);
+                using var artistFont = CreateCoverFont(artist, s * 0.045f, "Segoe UI", bold: false);
                 using var textFormat = CreateSingleLineTextFormat();
 
-                graphics.DrawString(initials, initialsFont, whiteBrush, initialsRect, textFormat);
-                graphics.DrawString(metadata.Title, titleFont, whiteBrush, titleRect, textFormat);
-                graphics.DrawString(string.IsNullOrWhiteSpace(metadata.Artist) ? "Unknown Artist" : metadata.Artist,
-                    artistFont, softBrush, artistRect, textFormat);
+                graphics.DrawString(initials, initialsFont, whiteBrush, new DrawingRectangleF(pad, pad * 0.6f, s - pad * 2, s * 0.5f - pad * 0.6f), textFormat);
+                graphics.DrawString(metadata.Title, titleFont, whiteBrush, new DrawingRectangleF(pad, s * 0.76f, s - pad * 2, s * 0.10f), textFormat);
+                graphics.DrawString(artist, artistFont, softBrush, new DrawingRectangleF(pad, s * 0.86f, s - pad * 2, s * 0.08f), textFormat);
 
                 using var stream = new MemoryStream();
                 bitmap.Save(stream, ImageFormat.Png);
@@ -557,43 +518,23 @@ namespace AnnieMediaPlayer
             return null;
         }
 
-        private static DrawingGraphicsPath CreateRoundedRectangle(DrawingRectangleF rectangle, float radius)
+        // GDI+ 는 글꼴 대체 시 굵기를 유지하지 못해 "Segoe UI Black" 으로 한글을 그리면 가늘게 나옵니다.
+        // 한글·한자가 있으면 맑은 고딕(굵게/보통)을 사용합니다.
+        private static DrawingFont CreateCoverFont(string text, float pixelSize, string latinFamily, bool bold)
         {
-            var path = new DrawingGraphicsPath();
-            var diameter = radius * 2;
-            path.AddArc(rectangle.Left, rectangle.Top, diameter, diameter, 180, 90);
-            path.AddArc(rectangle.Right - diameter, rectangle.Top, diameter, diameter, 270, 90);
-            path.AddArc(rectangle.Right - diameter, rectangle.Bottom - diameter, diameter, diameter, 0, 90);
-            path.AddArc(rectangle.Left, rectangle.Bottom - diameter, diameter, diameter, 90, 90);
-            path.CloseFigure();
-            return path;
+            var needsCjkFont = text.Any(c => c is >= 'ᄀ' and <= 'ᇿ' or >= '　' and <= '鿿' or >= '가' and <= '힯');
+            return needsCjkFont
+                ? new DrawingFont("Malgun Gothic", pixelSize, bold ? DrawingFontStyle.Bold : DrawingFontStyle.Regular, DrawingGraphicsUnit.Pixel)
+                : new DrawingFont(latinFamily, pixelSize, DrawingFontStyle.Regular, DrawingGraphicsUnit.Pixel);
         }
 
         private static DrawingStringFormat CreateSingleLineTextFormat() => new(System.Drawing.StringFormat.GenericTypographic)
         {
             Alignment = System.Drawing.StringAlignment.Near,
-            LineAlignment = System.Drawing.StringAlignment.Center,
+            LineAlignment = System.Drawing.StringAlignment.Near,
             FormatFlags = DrawingStringFormatFlags.NoWrap,
             Trimming = DrawingStringTrimming.EllipsisCharacter
         };
-
-        private static DrawingFont CreateFittingFont(DrawingGraphics graphics, string text, float width,
-            float maxSize, float minSize, DrawingFontStyle style)
-        {
-            text = string.IsNullOrWhiteSpace(text) ? "Unknown Artist" : text;
-            using var format = CreateSingleLineTextFormat();
-            for (var size = maxSize; size >= minSize; size -= 1f)
-            {
-                var candidate = new DrawingFont("Segoe UI", size, style, DrawingGraphicsUnit.Pixel);
-                var measured = graphics.MeasureString(text, candidate, new DrawingSizeF(width, float.MaxValue), format);
-                if (measured.Width <= width + 1f)
-                    return candidate;
-
-                candidate.Dispose();
-            }
-
-            return new DrawingFont("Segoe UI", minSize, style, DrawingGraphicsUnit.Pixel);
-        }
 
         private static uint Fnv1a(string value)
         {

@@ -36,6 +36,11 @@
 	</ItemGroup>
 	
 	<ItemGroup>
+		<!-- 시각화 가산 혼합 셰이더 (소스: Shaders\AdditiveBlend.fx, fxc /T ps_2_0 으로 컴파일) -->
+		<EmbeddedResource Include="Shaders\AdditiveBlend.ps" LogicalName="AnnieMediaPlayer.Shaders.AdditiveBlend.ps" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<FFmpegDlls Include="..\ffmpeg\**\*.*" />
 	</ItemGroup>
 	

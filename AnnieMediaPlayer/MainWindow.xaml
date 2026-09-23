@@ -124,6 +124,7 @@
                             AlbumArt="{Binding Playlist.CurrentItem.AlbumArt}"
                             Title="{Binding AudioTitle}"
                             Artist="{Binding AudioArtist}"
+                            Album="{Binding AudioAlbum}"
                             FilePath="{Binding FilePath}"
                             IsPlaying="{Binding IsPlaying}"
                             Background="Transparent"
