@@ -84,14 +84,21 @@
                         <DataTemplate DataType="{x:Type local:PlaylistItemViewModel}">
                             <Grid Margin="2,5">
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"
+                                <Image Width="16"
+                                       Height="16"
+                                       Margin="0,0,7,0"
+                                       Source="{Binding FileTypeIcon}"
+                                       VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1"
+                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"
                                            Text="{Binding FileName}"
                                            TextTrimming="CharacterEllipsis"
                                            ToolTip="{Binding FilePath}" />
-                                <TextBlock Grid.Column="1"
+                                <TextBlock Grid.Column="2"
                                            Margin="8,0,0,0"
                                            Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"
                                            Text="{Binding Duration, Converter={StaticResource PlaylistDurationFormatter}}"

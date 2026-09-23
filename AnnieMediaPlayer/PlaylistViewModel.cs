@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows.Media.Imaging;
+using AnnieMediaPlayer.Helpers;
 
 namespace AnnieMediaPlayer
 {
@@ -9,10 +10,12 @@ namespace AnnieMediaPlayer
         public PlaylistItemViewModel(string filePath)
         {
             FilePath = filePath;
+            FileTypeIcon = FileTypeIconService.GetIcon(filePath);
         }
 
         public string FilePath { get; }
         public string FileName => Path.GetFileName(FilePath);
+        public BitmapSource? FileTypeIcon { get; }
         public TimeSpan Duration { get => Get(); set => Set(value); }
 
         private BitmapSource? _albumArt;
