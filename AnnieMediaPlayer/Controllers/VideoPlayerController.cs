@@ -683,7 +683,9 @@ namespace AnnieMediaPlayer
 
         // 슬라이더 탐색에 대한 상태 변수 추가
         private static bool _isPreviewing = false;
-        private readonly record struct PreviewRequest(double PositionX, double TrackLength);
+        private static bool _isSliderHovered = false;
+        private static long _sliderHoverGeneration;
+        private readonly record struct PreviewRequest(double PositionX, double TrackLength, long HoverGeneration);
         private static readonly ConcurrentQueue<PreviewRequest> _previewQueue = new();
         private static Task? _previewProcessorTask;
 
@@ -718,6 +720,7 @@ namespace AnnieMediaPlayer
 
         public static void OnSliderMouseHover(MainWindow window, MouseEventArgs e)
         {
+            _isSliderHovered = true;
             if (!HasVideo || OptionViewModel.Instance.CurrentOption.UseSeekFramePreview == false)
                 return;
 
@@ -731,7 +734,8 @@ namespace AnnieMediaPlayer
 
                 // 마우스 이동 이벤트가 프레임 생성보다 빠를 수 있으므로 최신 위치만 유지합니다.
                 _previewQueue.Clear();
-                _previewQueue.Enqueue(new PreviewRequest(mousePosition.X, trackLength));
+                long hoverGeneration = Interlocked.Read(ref _sliderHoverGeneration);
+                _previewQueue.Enqueue(new PreviewRequest(mousePosition.X, trackLength, hoverGeneration));
 
                 if (!_isPreviewing)
                 {
@@ -742,6 +746,9 @@ namespace AnnieMediaPlayer
 
         public static void OnSliderMouseLeave(MainWindow window, MouseEventArgs e)
         {
+            // 진행 중인 프레임 생성이 끝나도 떠난 뒤에는 미리보기를 그리지 않도록 합니다.
+            _isSliderHovered = false;
+            Interlocked.Increment(ref _sliderHoverGeneration);
             _previewQueue.Clear();
             window.OverlayCanvas.Children.Clear();
         }
@@ -789,10 +796,16 @@ namespace AnnieMediaPlayer
                             }
 
                             // 프리뷰 이미지 업데이트
-                            if (bmp != null && _mediaChanging == false && mediaVersion == _mediaVersion && ReferenceEquals(grabber, ffmpegFrameGrabber))
+                            if (bmp != null && _mediaChanging == false && mediaVersion == _mediaVersion &&
+                                request.HoverGeneration == Interlocked.Read(ref _sliderHoverGeneration) &&
+                                ReferenceEquals(grabber, ffmpegFrameGrabber))
                             {
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
+                                    if (!_isSliderHovered ||
+                                        request.HoverGeneration != Interlocked.Read(ref _sliderHoverGeneration))
+                                        return;
+
                                     var image = new Image
                                     {
                                         Source = bmp,

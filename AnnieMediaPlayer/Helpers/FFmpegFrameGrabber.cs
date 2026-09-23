@@ -8,7 +8,6 @@ namespace AnnieMediaPlayer
     {
         private AVFormatContext* _formatContext = null;
         private AVCodecContext* _videoCodecContext = null;
-        private SwsContext* _swsContext = null;
         private SwsContext* _scaledSwsContext = null; // 리사이징
         private int _videoStreamIndex = -1;
         private readonly string _filePath;
@@ -17,12 +16,11 @@ namespace AnnieMediaPlayer
         private int _previewWidth;
         private int _previewHeight;
 
-        private AVFrame* _rgbFrame = null; // RGB 변환 프레임
-        private byte* _buffer = null; // RGB 변환 버퍼
         private AVFrame* _scaledRgbFrame = null; // 리사이징된 프레임
         private byte* _scaledBuffer = null; // 리사이징된 버퍼
         private readonly object _sync = new();
         private bool _isDisposed;
+        private int _decodeErrorLogged;
 
         public int Width => _width;
         public int Height => _height;
@@ -55,7 +53,10 @@ namespace AnnieMediaPlayer
 
                 for (int i = 0; i < _formatContext->nb_streams; i++)
                 {
-                    if (_formatContext->streams[i]->codecpar->codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO)
+                    // 내장 앨범 이미지 스트림은 영상이 아니므로 건너뜁니다. (HasVideo 판단과 동일한 기준)
+                    var stream = _formatContext->streams[i];
+                    if (stream->codecpar->codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO &&
+                        (stream->disposition & ffmpeg.AV_DISPOSITION_ATTACHED_PIC) == 0)
                     {
                         _videoStreamIndex = i;
                         break;
@@ -86,38 +87,7 @@ namespace AnnieMediaPlayer
                 if (_width <= 0 || _height <= 0)
                     throw new ApplicationException("Invalid video dimensions.");
 
-                _swsContext = ffmpeg.sws_getContext(
-                    _width, _height, _videoCodecContext->pix_fmt,
-                    _width, _height, AVPixelFormat.AV_PIX_FMT_BGR24,
-                    ffmpeg.SWS_BILINEAR, null, null, null);
-
-                if (_swsContext == null)
-                    throw new ApplicationException("Error creating SwsContext.");
-
-                // RGB 프레임 버퍼 초기화
-                _rgbFrame = ffmpeg.av_frame_alloc();
-                if (_rgbFrame == null)
-                    throw new ApplicationException("Error allocating RGB frame.");
-
-                int bufferSize = ffmpeg.av_image_get_buffer_size(AVPixelFormat.AV_PIX_FMT_BGR24, _width, _height, 1);
-                if (bufferSize <= 0)
-                    throw new ApplicationException("Error calculating RGB buffer size.");
-
-                _buffer = (byte*)ffmpeg.av_malloc((ulong)bufferSize);
-                if (_buffer == null)
-                    throw new ApplicationException("Error allocating RGB buffer.");
-
-                byte_ptrArray4 rgbDataArray = new byte_ptrArray4();
-                int_array4 rgbLinesizeArray = new int_array4();
-
-                if (ffmpeg.av_image_fill_arrays(ref rgbDataArray, ref rgbLinesizeArray, _buffer, AVPixelFormat.AV_PIX_FMT_BGR24, _width, _height, 1) < 0)
-                    throw new ApplicationException("Error initializing RGB buffer.");
-
-                for (uint i = 0; i < 4; i++)
-                {
-                    _rgbFrame->data[i] = rgbDataArray[i];
-                    _rgbFrame->linesize[i] = rgbLinesizeArray[i];
-                }
+                // 미리보기 출력용 변환 버퍼는 크기가 정해질 때 AllocateScaledFrame 에서 생성합니다.
             }
             catch
             {
@@ -231,30 +201,65 @@ namespace AnnieMediaPlayer
                 ffmpeg.av_seek_frame(_formatContext, _videoStreamIndex, targetFramePts, seekFlags);
                 ffmpeg.avcodec_flush_buffers(_videoCodecContext);
 
-                while (ffmpeg.av_read_frame(_formatContext, packet) >= 0 && !frameFound)
+                while (!frameFound)
                 {
-                    if (packet->stream_index == _videoStreamIndex)
+                    if (ffmpeg.av_read_frame(_formatContext, packet) < 0)
                     {
-                        if (ffmpeg.avcodec_send_packet(_videoCodecContext, packet) == 0)
+                        // 파일 끝에서는 디코더에 남아 있는 프레임을 꺼냅니다.
+                        int flushResult = ffmpeg.avcodec_send_packet(_videoCodecContext, null);
+                        if (flushResult == ffmpeg.AVERROR(ffmpeg.EAGAIN))
                         {
-                            if (ffmpeg.avcodec_receive_frame(_videoCodecContext, frame) == 0)
+                            frameFound = TryReceiveFrame(frame, timeBase, targetTime, useKeyFrame, ref currentTime, ref result);
+                            if (!frameFound)
                             {
-                                if (useKeyFrame || Math.Abs((frame->pts * timeBase) - targetTime.TotalSeconds) < 0.1)
-                                {
-                                    currentTime = TimeSpan.FromSeconds(frame->pts * timeBase);
-
-                                    ffmpeg.sws_scale(_scaledSwsContext, frame->data, frame->linesize, 0, _height,
-                                        _scaledRgbFrame->data, _scaledRgbFrame->linesize);
-
-                                    result = ConvertFrameToBitmapSource(_scaledRgbFrame, _previewWidth, _previewHeight);
-                                    frameFound = true;
-                                }
-                                ffmpeg.av_frame_unref(frame);
-                                if (frameFound) break;
+                                flushResult = ffmpeg.avcodec_send_packet(_videoCodecContext, null);
+                                if (flushResult < 0 && flushResult != ffmpeg.AVERROR_EOF)
+                                    LogDecodeErrorOnce("flush retry", flushResult);
                             }
                         }
+                        else if (flushResult < 0 && flushResult != ffmpeg.AVERROR_EOF)
+                        {
+                            LogDecodeErrorOnce("flush", flushResult);
+                        }
+
+                        if (!frameFound && flushResult >= 0)
+                            frameFound = TryReceiveFrame(frame, timeBase, targetTime, useKeyFrame, ref currentTime, ref result);
+                        break;
                     }
-                    ffmpeg.av_packet_unref(packet);
+
+                    try
+                    {
+                        if (packet->stream_index != _videoStreamIndex)
+                            continue;
+
+                        // 한 패킷에서 여러 프레임이 나올 수 있으므로 받을 수 있는 프레임을 모두 확인합니다.
+                        int sendResult = ffmpeg.avcodec_send_packet(_videoCodecContext, packet);
+                        if (sendResult == ffmpeg.AVERROR(ffmpeg.EAGAIN))
+                        {
+                            // 디코더 입력이 가득 찬 경우 출력 큐를 비운 뒤 같은 패킷을 다시 보냅니다.
+                            frameFound = TryReceiveFrame(frame, timeBase, targetTime, useKeyFrame, ref currentTime, ref result);
+                            if (!frameFound)
+                            {
+                                int retryResult = ffmpeg.avcodec_send_packet(_videoCodecContext, packet);
+                                if (retryResult < 0)
+                                    LogDecodeErrorOnce("packet retry", retryResult);
+                                else
+                                    frameFound = TryReceiveFrame(frame, timeBase, targetTime, useKeyFrame, ref currentTime, ref result);
+                            }
+                        }
+                        else if (sendResult < 0)
+                        {
+                            LogDecodeErrorOnce("packet send", sendResult);
+                        }
+                        else
+                        {
+                            frameFound = TryReceiveFrame(frame, timeBase, targetTime, useKeyFrame, ref currentTime, ref result);
+                        }
+                    }
+                    finally
+                    {
+                        ffmpeg.av_packet_unref(packet);
+                    }
                 }
             }
             finally
@@ -263,6 +268,47 @@ namespace AnnieMediaPlayer
                 ffmpeg.av_packet_free(&packet);
             }
             return result;
+        }
+
+        private void LogDecodeErrorOnce(string operation, int errorCode)
+        {
+            if (Interlocked.Exchange(ref _decodeErrorLogged, 1) == 0)
+                PlayerDiagnostics.Write($"Preview decoder {operation} failed (FFmpeg error {errorCode}): {_filePath}");
+        }
+
+        // 디코더에서 받을 수 있는 프레임을 확인하여 조건에 맞는 프레임을 미리보기 이미지로 변환합니다.
+        private unsafe bool TryReceiveFrame(AVFrame* frame, double timeBase, TimeSpan targetTime, bool useKeyFrame,
+            ref TimeSpan currentTime, ref BitmapSource? result)
+        {
+            int receiveResult;
+            while ((receiveResult = ffmpeg.avcodec_receive_frame(_videoCodecContext, frame)) == 0)
+            {
+                try
+                {
+                    long pts = frame->best_effort_timestamp != ffmpeg.AV_NOPTS_VALUE ? frame->best_effort_timestamp : frame->pts;
+                    double frameSeconds = pts == ffmpeg.AV_NOPTS_VALUE ? targetTime.TotalSeconds : pts * timeBase;
+
+                    if (useKeyFrame || Math.Abs(frameSeconds - targetTime.TotalSeconds) < 0.1)
+                    {
+                        currentTime = TimeSpan.FromSeconds(Math.Max(0, frameSeconds));
+
+                        ffmpeg.sws_scale(_scaledSwsContext, frame->data, frame->linesize, 0, _height,
+                            _scaledRgbFrame->data, _scaledRgbFrame->linesize);
+
+                        result = ConvertFrameToBitmapSource(_scaledRgbFrame, _previewWidth, _previewHeight);
+                        return true;
+                    }
+                }
+                finally
+                {
+                    ffmpeg.av_frame_unref(frame);
+                }
+            }
+
+            if (receiveResult < 0 && receiveResult != ffmpeg.AVERROR(ffmpeg.EAGAIN) && receiveResult != ffmpeg.AVERROR_EOF)
+                LogDecodeErrorOnce("frame receive", receiveResult);
+
+            return false;
         }
 
         public void Dispose()
@@ -293,23 +339,7 @@ namespace AnnieMediaPlayer
                 ffmpeg.avcodec_free_context(&videoCodecContext);
                 _videoCodecContext = null;
             }
-            if (_swsContext != null)
-            {
-                ffmpeg.sws_freeContext(_swsContext);
-                _swsContext = null;
-            }
             FreeScaledFrame();
-            if (_rgbFrame != null)
-            {
-                var rgbFrame = _rgbFrame;
-                ffmpeg.av_frame_free(&rgbFrame);
-                _rgbFrame = null;
-            }
-            if (_buffer != null)
-            {
-                ffmpeg.av_free(_buffer);
-                _buffer = null;
-            }
         }
 
         ~FFmpegFrameGrabber()
