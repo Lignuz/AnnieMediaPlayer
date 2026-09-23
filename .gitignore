@@ -1,0 +1,15 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.rsuser
+
+# Build outputs
+[Bb]in/
+[Oo]bj/
+.obj-localverify/
+/build-visualizer-verify/
+
+# Test projects and outputs (not committed)
+TestResults/
+/Support/
