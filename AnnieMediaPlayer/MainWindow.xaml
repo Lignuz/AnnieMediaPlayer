@@ -7,6 +7,7 @@
         xmlns:ffme="clr-namespace:Unosquare.FFME;assembly=ffme.win"
         xmlns:option="clr-namespace:AnnieMediaPlayer.Options"
         xmlns:panels="clr-namespace:AnnieMediaPlayer.Windows.Panels"
+        xmlns:controls="clr-namespace:AnnieMediaPlayer.CustomControls"
         mc:Ignorable="d"
         MinWidth="560" MinHeight="310"
         Title="Annie Media Player" Height="600" Width="900"
@@ -117,13 +118,21 @@
                            MaxHeight="512"
                            SnapsToDevicePixels="True"
                            Visibility="{Binding IsAudioOnly, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <controls:AudioVisualizerControl
+                            x:Name="AudioVisualizer"
+                            IsActive="{Binding IsAudioOnly}"
+                            AlbumArt="{Binding Playlist.CurrentItem.AlbumArt}"
+                            FilePath="{Binding FilePath}"
+                            IsPlaying="{Binding IsPlaying}"
+                            Background="Transparent"
+                            Visibility="{Binding IsAudioOnly, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            Panel.ZIndex="2" />
                     <TextBlock Name="OverlayMessage" TextWrapping="Wrap" Margin="10" FontWeight="Bold" Foreground="White">
                         <TextBlock.Effect>
                             <DropShadowEffect Color="Black" BlurRadius="4" ShadowDepth="2" Direction="315" Opacity="0.8" />
                         </TextBlock.Effect>
                     </TextBlock>
                     <panels:PropertiesPanelControl x:Name="PropertiesPanel" HorizontalAlignment="Right" Visibility="{Binding IsPropertiesPanelOpen, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                    <Grid x:Name="grid_center_top" Background="Transparent" VerticalAlignment="Top" Height="{Binding ElementName=panel_titlebar, Path=ActualHeight}" PreviewMouseMove="overlayCheck_PreviewMouseMove" Visibility="{Binding Path=CurrentOption.UseOverlayControl, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                     <Grid x:Name="grid_center_bottom" Background="Transparent" VerticalAlignment="Bottom" Height="{Binding ElementName=panel_control, Path=ActualHeight, Mode=OneTime}" PreviewMouseMove="overlayCheck_PreviewMouseMove" Visibility="{Binding Path=CurrentOption.UseOverlayControl, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                 </Grid>
 

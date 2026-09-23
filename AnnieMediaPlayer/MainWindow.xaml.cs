@@ -52,6 +52,7 @@ namespace AnnieMediaPlayer
                 QueueAlbumArtLoad(item);
 
             VideoPlayerController.Initialize(ffmeMediaElement);
+            ffmeMediaElement.RenderingAudio += FfmeMediaElement_RenderingAudio;
             VideoPlayerController.OnMediaOpening += VideoPlayerController_OnMediaOpening;
             VideoPlayerController.OnMediaOpened += VideoPlayerController_OnMediaOpened;
             VideoPlayerController.OnMediaEnded += VideoPlayerController_OnMediaEnded;
@@ -128,6 +129,7 @@ namespace AnnieMediaPlayer
             try
             {
                 CancelAllAlbumArtLoads();
+                ffmeMediaElement.RenderingAudio -= FfmeMediaElement_RenderingAudio;
                 await VideoPlayerController.Stop();
                 await VideoPlayerController.DisposeAsync();
             }
@@ -136,6 +138,11 @@ namespace AnnieMediaPlayer
                 _albumArtService.Dispose();
                 Close();
             }
+        }
+
+        private void FfmeMediaElement_RenderingAudio(object? sender, RenderingAudioEventArgs e)
+        {
+            AudioVisualizer.PushAudioSamples(e.Buffer, e.BufferLength, e.SampleRate, e.ChannelCount, e.BitsPerSample);
         }
 
         // 마우스 휠
@@ -1114,11 +1121,10 @@ namespace AnnieMediaPlayer
             {
                 _isControlsVisible = true;
 
-                var showTitleBarAnimation = (Storyboard)FindResource("ShowControls");
                 var showControlsAnimation = (Storyboard)FindResource("ShowControls");
 
-                showTitleBarAnimation.Begin(panel_control);
-                showControlsAnimation.Begin(panel_titlebar);
+                showControlsAnimation.Begin(panel_control);
+                panel_titlebar.Opacity = 1;
 
                 _hideControlsTimer.Stop();
                 _hideControlsTimer.Start();
@@ -1131,11 +1137,10 @@ namespace AnnieMediaPlayer
             {
                 _isControlsVisible = false;
 
-                var hideTitleBarAnimation = (Storyboard)FindResource("HideControls");
                 var hideControlsAnimation = (Storyboard)FindResource("HideControls");
 
-                hideTitleBarAnimation.Begin(panel_control);
-                hideControlsAnimation.Begin(panel_titlebar);
+                hideControlsAnimation.Begin(panel_control);
+                panel_titlebar.Opacity = 1;
             }
         }
 
@@ -1157,16 +1162,14 @@ namespace AnnieMediaPlayer
         {
             Grid? oldParent = panel_control.Parent as Grid;
             oldParent?.Children.Remove(panel_control);
-            oldParent = panel_titlebar.Parent as Grid;
-            oldParent?.Children.Remove(panel_titlebar);
 
             // 기본 모드
             if (UseOverlayControl == false)
             {
                 grid_bottom.Children.Add(panel_control);
-                grid_top.Children.Add(panel_titlebar);
-
-                ShowControls();
+                panel_control.Opacity = 1;
+                panel_titlebar.Opacity = 1;
+                _isControlsVisible = true;
                 _hideControlsTimer.Interval = TimeSpan.FromSeconds(0.5);
                 _hideControlsTimer.Stop();
             }
@@ -1174,10 +1177,11 @@ namespace AnnieMediaPlayer
             else
             {
                 grid_center_bottom.Children.Add(panel_control);
-                grid_center_top.Children.Add(panel_titlebar);
 
                 _isControlsVisible = true;
                 _isMouseOverControls = false;
+                panel_titlebar.Opacity = 1;
+                panel_control.Opacity = 1;
                 _hideControlsTimer.Interval = TimeSpan.FromSeconds(0.1);
                 _hideControlsTimer.Start();
             }
