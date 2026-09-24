@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 
 namespace AnnieMediaPlayer.CustomControls
@@ -40,6 +41,12 @@ namespace AnnieMediaPlayer.CustomControls
         private readonly Grid _root = new();
         private readonly DrawingHost _baseHost = new();
         private readonly DrawingHost _overlayHost = new();
+        private readonly Image _modeTransitionImage = new()
+        {
+            IsHitTestVisible = false,
+            Stretch = Stretch.Fill,
+            Visibility = Visibility.Collapsed
+        };
         private readonly Decorator _innerLayer = new();
         private readonly Decorator _outerLayer = new();
         private readonly AdditiveBlendEffect _innerEffect = new();
@@ -50,6 +57,7 @@ namespace AnnieMediaPlayer.CustomControls
         // 시뮬레이션 상태
         private readonly List<Particle> _particles = new();
         private int _mode;
+        private int _modeTransitionVersion;
         private float _t;
         private float _hudRemaining = 2.8f;
         private float _spin;
@@ -100,6 +108,7 @@ namespace AnnieMediaPlayer.CustomControls
             _outerLayer.Child = _innerLayer;
             _root.Children.Add(_outerLayer);
             _root.Children.Add(_overlayHost);
+            _root.Children.Add(_modeTransitionImage);
             AddVisualChild(_root);
 
             IsVisibleChanged += (_, _) => UpdateRenderingHook();
@@ -112,6 +121,7 @@ namespace AnnieMediaPlayer.CustomControls
             };
             Unloaded += (_, _) =>
             {
+                ClearModeTransition();
                 if (_window != null)
                     _window.StateChanged -= OnWindowStateChanged;
                 _window = null;
@@ -126,6 +136,10 @@ namespace AnnieMediaPlayer.CustomControls
         public static readonly DependencyProperty IsActiveProperty = DependencyProperty.Register(
             nameof(IsActive), typeof(bool), typeof(AudioVisualizerControl),
             new FrameworkPropertyMetadata(false, OnIsActiveChanged));
+
+        public static readonly DependencyProperty UseTransitionFadeProperty = DependencyProperty.Register(
+            nameof(UseTransitionFade), typeof(bool), typeof(AudioVisualizerControl),
+            new FrameworkPropertyMetadata(true, OnUseTransitionFadeChanged));
 
         public static readonly DependencyProperty AlbumArtProperty = DependencyProperty.Register(
             nameof(AlbumArt), typeof(BitmapSource), typeof(AudioVisualizerControl),
@@ -155,6 +169,12 @@ namespace AnnieMediaPlayer.CustomControls
         {
             get => (bool)GetValue(IsActiveProperty);
             set => SetValue(IsActiveProperty, value);
+        }
+
+        public bool UseTransitionFade
+        {
+            get => (bool)GetValue(UseTransitionFadeProperty);
+            set => SetValue(UseTransitionFadeProperty, value);
         }
 
         public BitmapSource? AlbumArt
@@ -195,13 +215,36 @@ namespace AnnieMediaPlayer.CustomControls
 
         public int Mode => _mode;
 
+        private double _hudBottomInset;
+        public double HudBottomInset
+        {
+            get => _hudBottomInset;
+            set
+            {
+                var inset = Math.Max(0, value);
+                if (Math.Abs(_hudBottomInset - inset) < 0.5)
+                    return;
+
+                _hudBottomInset = inset;
+                RenderNow();
+            }
+        }
+
         private static void OnIsActiveChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var control = (AudioVisualizerControl)d;
+            if (!(bool)e.NewValue)
+                control.ClearModeTransition();
             control._hudRemaining = 2.8f;
             control.ResetAudioInput();
             control.UpdateRenderingHook();
             control.RenderNow();
+        }
+
+        private static void OnUseTransitionFadeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (!(bool)e.NewValue)
+                ((AudioVisualizerControl)d).ClearModeTransition();
         }
 
         private static void OnAlbumArtChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -453,16 +496,77 @@ namespace AnnieMediaPlayer.CustomControls
 
         private void SetMode(int mode)
         {
-            _mode = (mode + ModeCount) % ModeCount;
+            var nextMode = (mode + ModeCount) % ModeCount;
+            var previousFrame = UseTransitionFade && nextMode != _mode ? CaptureModeFrame() : null;
+            if (!UseTransitionFade)
+                ClearModeTransition();
+            _mode = nextMode;
             _hudRemaining = 2.8f;
             RenderNow();
+            if (previousFrame != null)
+                FadeModeTransition(previousFrame);
+        }
+
+        private BitmapSource? CaptureModeFrame()
+        {
+            if (!IsActive || _width < 16 || _height < 16)
+                return null;
+
+            try
+            {
+                var dpi = VisualTreeHelper.GetDpi(this);
+                var scale = Math.Min(1d, Math.Min(
+                    1920d / (_width * dpi.DpiScaleX),
+                    1080d / (_height * dpi.DpiScaleY)));
+                var snapshot = new RenderTargetBitmap(
+                    (int)Math.Ceiling(_width * dpi.DpiScaleX * scale),
+                    (int)Math.Ceiling(_height * dpi.DpiScaleY * scale),
+                    dpi.PixelsPerInchX * scale, dpi.PixelsPerInchY * scale, PixelFormats.Pbgra32);
+                snapshot.Render(_root);
+                snapshot.Freeze();
+                return snapshot;
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or OutOfMemoryException)
+            {
+                PlayerDiagnostics.Write($"Visualizer transition snapshot failed: {ex.Message}");
+                return null;
+            }
+        }
+
+        private void FadeModeTransition(BitmapSource previousFrame)
+        {
+            ClearModeTransition();
+            _modeTransitionImage.Source = previousFrame;
+            _modeTransitionImage.Visibility = Visibility.Visible;
+
+            var version = ++_modeTransitionVersion;
+            var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(150))
+            {
+                FillBehavior = FillBehavior.HoldEnd
+            };
+            fade.Completed += (_, _) =>
+            {
+                if (version == _modeTransitionVersion)
+                    ClearModeTransition();
+            };
+            _modeTransitionImage.BeginAnimation(UIElement.OpacityProperty, fade);
+        }
+
+        private void ClearModeTransition()
+        {
+            _modeTransitionVersion++;
+            _modeTransitionImage.BeginAnimation(UIElement.OpacityProperty, null);
+            _modeTransitionImage.Opacity = 1;
+            _modeTransitionImage.Visibility = Visibility.Collapsed;
+            _modeTransitionImage.Source = null;
         }
 
         private Rect HudRect(int index)
         {
             double segment = 96 * _unit, height = 38 * _unit, pad = 5 * _unit;
             var width = segment * ModeCount + pad * 2;
-            var rect = new Rect(_width / 2 - width / 2, _height - height - 28 * _unit, width, height);
+            var bottomMargin = Math.Max(28 * _unit, _hudBottomInset + 12 * _unit);
+            var rect = new Rect(_width / 2 - width / 2, _height - height - bottomMargin, width, height);
             return index < 0 ? rect : new Rect(rect.Left + pad + segment * index, rect.Top + pad, segment, height - pad * 2);
         }
 

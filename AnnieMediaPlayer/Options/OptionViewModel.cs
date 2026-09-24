@@ -96,6 +96,7 @@ namespace AnnieMediaPlayer.Options
                 case nameof(Option.UseOpenPlay):
                 case nameof(Option.UseLegacyAudioOut):
                 case nameof(Option.UseAudioVisualizer):
+                case nameof(Option.UseTransitionFade):
                 case nameof(Option.UsePlaylistPersistence):
                 case nameof(Option.UseContinuousPlayback):
                 case nameof(Option.UseFlipHorizontal):

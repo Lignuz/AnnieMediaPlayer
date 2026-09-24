@@ -90,6 +90,7 @@
 
                 <!-- 🎞 영상 출력 영역 -->
                 <Grid Grid.Row="1" x:Name="grid_center">
+                    <Grid x:Name="MediaPresentation">
                     <Border Name="VideoImageContainer">
                         <ffme:MediaElement Name="ffmeMediaElement" Background="Black" LoadedBehavior="Manual" UnloadedBehavior="Manual" IsDesignPreviewEnabled="True">
                             <ffme:MediaElement.LayoutTransform>
@@ -134,6 +135,7 @@
                             Album="{Binding AudioAlbum}"
                             FilePath="{Binding FilePath}"
                             IsPlaying="{Binding IsPlaying}"
+                            UseTransitionFade="{Binding CurrentOption.UseTransitionFade}"
                             Background="Transparent"
                             Panel.ZIndex="2">
                         <controls:AudioVisualizerControl.Style>
@@ -153,7 +155,9 @@
                             </Style>
                         </controls:AudioVisualizerControl.Style>
                     </controls:AudioVisualizerControl>
-                    <TextBlock Name="OverlayMessage" TextWrapping="Wrap" Margin="10" FontWeight="Bold" Foreground="White">
+                    </Grid>
+                    <Image x:Name="MediaTransitionImage" Stretch="Fill" Visibility="Collapsed" IsHitTestVisible="False"/>
+                    <TextBlock Name="OverlayMessage" TextWrapping="Wrap" Margin="10" FontWeight="Bold" Foreground="White" IsHitTestVisible="False">
                         <TextBlock.Effect>
                             <DropShadowEffect Color="Black" BlurRadius="4" ShadowDepth="2" Direction="315" Opacity="0.8" />
                         </TextBlock.Effect>

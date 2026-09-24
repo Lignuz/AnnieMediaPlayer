@@ -61,16 +61,14 @@ namespace AnnieMediaPlayer
             else if (e.Key == Key.F4)
             {
                 // 정지
-                if (VideoPlayerController.IsOpened)
-                    _ = VideoPlayerController.Stop();
+                _ = window.StopPlaybackAsync();
             }
             else if (e.Key == Key.Space)
             {
                 // Ctrl + Space : 정지
                 if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
                 {
-                    if (VideoPlayerController.IsOpened)
-                        _ = VideoPlayerController.Stop();
+                    _ = window.StopPlaybackAsync();
                 }
                 // Space : 현재 항목 재생 또는 일시정지 (목록이 비어 있으면 파일 열기)
                 else

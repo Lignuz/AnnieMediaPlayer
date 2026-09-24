@@ -41,15 +41,35 @@ namespace AnnieMediaPlayer
         private readonly AlbumArtService _currentAlbumArtService = new();
         private CancellationTokenSource? _currentAlbumArtLoad;
         private readonly DispatcherTimer _playlistSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
+        private readonly DispatcherTimer _mediaTransitionTimeout = new() { Interval = TimeSpan.FromSeconds(3) };
         private static readonly TimeSpan PositionUpdateInterval = TimeSpan.FromMilliseconds(50);
         private const int AudioOnlyBlockCache = 256;
         private long _lastPositionUpdateTimestamp;
+        private volatile bool _mediaTransitionPending;
+        private volatile StreamInfo? _transitionVideoStream;
+        private bool _automaticNextTransitionPending;
+        private bool _explicitStopTransitionPending;
+        private bool _stopRequestedDuringOpen;
+        private bool _skipNextAutoAdvance;
+        private bool _openingMedia;
+        private int _mediaTransitionVersion;
+        private int _videoTransitionReleaseQueued;
 
         public MainWindow()
         {
             InitializeComponent();
 
             _playlistSaveTimer.Tick += (_, _) => SavePlaylistNow();
+            _mediaTransitionTimeout.Tick += (_, _) =>
+            {
+                if (_explicitStopTransitionPending)
+                {
+                    _explicitStopTransitionPending = false;
+                    ResetStoppedMediaUi();
+                }
+                FinishMediaTransition(true);
+            };
+            panel_control.SizeChanged += (_, _) => UpdateAudioVisualizerHudInset();
 
             FFMELoader.Initialize();
             if (OptionViewModel.Instance.CurrentOption.UsePlaylistPersistence)
@@ -137,6 +157,8 @@ namespace AnnieMediaPlayer
             e.Cancel = true;
             _isClosing = true;
             OptionViewModel.Instance.UseOverlayControlChanged -= UseOverlayControlChanged;
+            _explicitStopTransitionPending = false;
+            FinishMediaTransition(false);
 
             try
             {
@@ -313,6 +335,9 @@ namespace AnnieMediaPlayer
         // 파일 닫힘 처리는 OnMediaStateChanged 에서 합니다.
         private void VideoPlayerController_OnMediaOpened(object? sender, MediaOpenedEventArgs e)
         {
+            if (_stopRequestedDuringOpen)
+                return;
+
             vm.IsOpened = true;
             vm.FilePath = e.Info.MediaSource;
             vm.IsAudioOnly = !VideoPlayerController.HasVideo;
@@ -339,10 +364,25 @@ namespace AnnieMediaPlayer
             vm.FrameIndex = 0;
             vm.IsPlaying = false;
             _openedPlaylistSource = e.Info.MediaSource;
+            if (_mediaTransitionPending && VideoPlayerController.HasVideo &&
+                e.Info.Streams.TryGetValue(ffmeMediaElement.VideoStreamIndex, out var videoStream))
+                _transitionVideoStream = videoStream;
             var currentPlaylistItem = vm.Playlist.CurrentItem;
             if (currentPlaylistItem != null &&
                 string.Equals(currentPlaylistItem.FilePath, _openedPlaylistSource, StringComparison.OrdinalIgnoreCase))
                 currentPlaylistItem.Duration = e.Info.Duration;
+
+            if (_mediaTransitionPending && !VideoPlayerController.HasVideo)
+            {
+                var openedSource = e.Info.MediaSource;
+                // 오디오 시각화와 앨범 아트의 바인딩이 반영된 뒤 전환 화면을 내립니다.
+                Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                {
+                    if (_mediaTransitionPending && !_stopRequestedDuringOpen &&
+                        string.Equals(_openedPlaylistSource, openedSource, StringComparison.OrdinalIgnoreCase))
+                        FinishMediaTransition(true);
+                }));
+            }
         }
 
         private void VideoPlayerController_OnMediaEnded(object? sender, EventArgs e)
@@ -354,6 +394,12 @@ namespace AnnieMediaPlayer
         {
             Dispatcher.Invoke(() =>
             {
+                if (_mediaTransitionPending)
+                {
+                    _explicitStopTransitionPending = false;
+                    ResetStoppedMediaUi();
+                    FinishMediaTransition(false);
+                }
                 MessageBox.Show($"재생 오류: {e.ErrorException.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
             });
         }
@@ -381,24 +427,35 @@ namespace AnnieMediaPlayer
         // 미디어 상태 변경시 이벤트 
         private void VideoPlayerController_OnMediaStateChanged(object? sender, MediaStateChangedEventArgs e)
         {
+            if (_stopRequestedDuringOpen)
+                return;
+
             if (e.MediaState == MediaPlaybackState.Close || 
                 e.MediaState == MediaPlaybackState.Stop)
             {
-                vm.IsOpened = false;
-                vm.IsAudioOnly = false;
-                vm.FilePath = string.Empty;
-                vm.AudioTitle = string.Empty;
-                vm.AudioArtist = string.Empty;
-                vm.AudioAlbum = string.Empty;
-                vm.Duration = TimeSpan.Zero;
-                vm.Position = TimeSpan.Zero;
-                vm.FrameIndex = 0;
-                vm.IsPlaying = false;
-
-                if (e.MediaState == MediaPlaybackState.Close)
+                if (e.MediaState == MediaPlaybackState.Stop && _explicitStopTransitionPending)
                 {
+                    _explicitStopTransitionPending = false;
+                    ResetStoppedMediaUi();
+                    FinishMediaTransition(true);
                     return;
                 }
+
+                if (_mediaTransitionPending)
+                    return;
+
+                if (e.MediaState == MediaPlaybackState.Stop)
+                {
+                    if (ShouldHoldForAutomaticNextItem() && BeginMediaTransition(true))
+                        return;
+
+                    if (OptionViewModel.Instance.CurrentOption.UseTransitionFade)
+                        BeginMediaTransition();
+                }
+
+                ResetStoppedMediaUi();
+                FinishMediaTransition(e.MediaState == MediaPlaybackState.Stop);
+                return;
             }
             else
             {
@@ -423,6 +480,32 @@ namespace AnnieMediaPlayer
                 }
             }
             UpdateSpeedInfo();
+        }
+
+        private void ResetStoppedMediaUi()
+        {
+            _openedPlaylistSource = null;
+            vm.IsOpened = false;
+            vm.IsAudioOnly = false;
+            vm.FilePath = string.Empty;
+            vm.AudioTitle = string.Empty;
+            vm.AudioArtist = string.Empty;
+            vm.AudioAlbum = string.Empty;
+            vm.Duration = TimeSpan.Zero;
+            vm.Position = TimeSpan.Zero;
+            vm.FrameIndex = 0;
+            vm.IsPlaying = false;
+            UpdateSpeedInfo();
+        }
+
+        private bool ShouldHoldForAutomaticNextItem()
+        {
+            var currentItem = vm.Playlist.CurrentItem;
+            return ffmeMediaElement.HasMediaEnded &&
+                OptionViewModel.Instance.CurrentOption.UseContinuousPlayback &&
+                currentItem != null &&
+                string.Equals(currentItem.FilePath, _openedPlaylistSource, StringComparison.OrdinalIgnoreCase) &&
+                vm.Playlist.GetNextItem() != null;
         }
 
         private static string? FindMetadataValue(
@@ -451,6 +534,19 @@ namespace AnnieMediaPlayer
         private void VideoPlayerController_OnVideoFrameRendered(object? sender, RenderingVideoEventArgs e)
         {
             Interlocked.Exchange(ref _latestFrameIndex, e.PictureNumber - 1);
+
+            if (_mediaTransitionPending && ReferenceEquals(e.Stream, _transitionVideoStream) &&
+                Interlocked.Exchange(ref _videoTransitionReleaseQueued, 1) == 0)
+            {
+                var renderedStream = e.Stream;
+                // FFME의 프레임 이벤트는 실제 WPF 화면 갱신보다 먼저 올 수 있습니다.
+                Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                {
+                    Interlocked.Exchange(ref _videoTransitionReleaseQueued, 0);
+                    if (_mediaTransitionPending && ReferenceEquals(renderedStream, _transitionVideoStream))
+                        FinishMediaTransition(true);
+                }));
+            }
 
             if (Dispatcher.CheckAccess())
             {
@@ -608,6 +704,185 @@ namespace AnnieMediaPlayer
 
         private void OpenVideo_Click(object sender, RoutedEventArgs e) => OpenVideoFromDialog();
 
+        private bool BeginMediaTransition(bool automaticAdvance = false)
+        {
+            if (_mediaTransitionPending)
+            {
+                _automaticNextTransitionPending |= automaticAdvance;
+                return true;
+            }
+
+            if (_isClosing || !MediaPresentation.IsVisible ||
+                MediaPresentation.ActualWidth <= 0 || MediaPresentation.ActualHeight <= 0)
+                return false;
+
+            try
+            {
+                var dpi = VisualTreeHelper.GetDpi(MediaPresentation);
+                // 전환 화면은 잠깐만 쓰므로 큰 창에서도 스냅샷 메모리를 제한합니다.
+                var scale = Math.Min(1d, Math.Min(
+                    2560d / (MediaPresentation.ActualWidth * dpi.DpiScaleX),
+                    1440d / (MediaPresentation.ActualHeight * dpi.DpiScaleY)));
+                var width = (int)Math.Ceiling(MediaPresentation.ActualWidth * dpi.DpiScaleX * scale);
+                var height = (int)Math.Ceiling(MediaPresentation.ActualHeight * dpi.DpiScaleY * scale);
+                var snapshot = new RenderTargetBitmap(width, height,
+                    dpi.PixelsPerInchX * scale, dpi.PixelsPerInchY * scale, PixelFormats.Pbgra32);
+                snapshot.Render(MediaPresentation);
+                snapshot.Freeze();
+
+                ClearMediaTransitionOverlay();
+                MediaTransitionImage.Source = snapshot;
+                MediaTransitionImage.Visibility = Visibility.Visible;
+                _mediaTransitionPending = true;
+                _automaticNextTransitionPending = automaticAdvance;
+                _transitionVideoStream = null;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                PlayerDiagnostics.Write($"Media transition snapshot failed: {ex}");
+                return false;
+            }
+        }
+
+        private void FinishMediaTransition(bool fadeOut)
+        {
+            _mediaTransitionTimeout.Stop();
+            var hasPendingSnapshot = _mediaTransitionPending && MediaTransitionImage.Source != null;
+            _mediaTransitionPending = false;
+            _automaticNextTransitionPending = false;
+            _transitionVideoStream = null;
+
+            if (!fadeOut || !hasPendingSnapshot || !OptionViewModel.Instance.CurrentOption.UseTransitionFade)
+            {
+                ClearMediaTransitionOverlay();
+                return;
+            }
+
+            var version = ++_mediaTransitionVersion;
+            var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(150))
+            {
+                FillBehavior = FillBehavior.HoldEnd
+            };
+            fade.Completed += (_, _) =>
+            {
+                if (version == _mediaTransitionVersion)
+                    ClearMediaTransitionOverlay();
+            };
+            MediaTransitionImage.BeginAnimation(UIElement.OpacityProperty, fade);
+        }
+
+        private void ClearMediaTransitionOverlay()
+        {
+            _mediaTransitionVersion++;
+            MediaTransitionImage.BeginAnimation(UIElement.OpacityProperty, null);
+            MediaTransitionImage.Opacity = 1;
+            MediaTransitionImage.Visibility = Visibility.Collapsed;
+            MediaTransitionImage.Source = null;
+        }
+
+        private async Task<bool> OpenMediaWithTransitionAsync(string filePath)
+        {
+            if (_openingMedia)
+                return false;
+
+            _openingMedia = true;
+            if (!vm.IsOpened && !_mediaTransitionPending && MediaTransitionImage.Source != null)
+                FinishMediaTransition(false);
+            // 기존 미디어 교체 때는 페이드 옵션과 관계없이 마지막 화면을 붙잡아
+            // FFME가 잠시 Stop 상태에 들어가는 동안 기본 이미지가 보이지 않게 합니다.
+            if (vm.IsOpened || OptionViewModel.Instance.CurrentOption.UseTransitionFade)
+                BeginMediaTransition();
+            _automaticNextTransitionPending = false;
+            try
+            {
+                var opened = await VideoPlayerController.Open(filePath);
+                if (_stopRequestedDuringOpen)
+                {
+                    if (opened)
+                        await VideoPlayerController.Stop();
+                    // FFME가 앞서 예약한 열림/재생 상태 이벤트까지 처리한 뒤 UI를 정지 상태로 확정합니다.
+                    await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
+                    ResetStoppedMediaUi();
+                    FinishMediaTransition(false);
+                    return false;
+                }
+
+                if (!opened)
+                {
+                    if (!VideoPlayerController.IsOpened)
+                        ResetStoppedMediaUi();
+                    FinishMediaTransition(false);
+                }
+                else if (_mediaTransitionPending)
+                {
+                    // 첫 프레임이 나오지 않는 파일도 이전 화면에 계속 묶이지 않게 합니다.
+                    _mediaTransitionTimeout.Start();
+                }
+
+                return opened;
+            }
+            catch
+            {
+                if (!VideoPlayerController.IsOpened)
+                    ResetStoppedMediaUi();
+                FinishMediaTransition(false);
+                throw;
+            }
+            finally
+            {
+                _stopRequestedDuringOpen = false;
+                _openingMedia = false;
+            }
+        }
+
+        internal async Task StopPlaybackAsync()
+        {
+            if (_openingMedia)
+            {
+                _stopRequestedDuringOpen = true;
+                ResetStoppedMediaUi();
+                FinishMediaTransition(true);
+                return;
+            }
+
+            if (_automaticNextTransitionPending)
+            {
+                _skipNextAutoAdvance = true;
+                ResetStoppedMediaUi();
+                FinishMediaTransition(true);
+                return;
+            }
+
+            if (_explicitStopTransitionPending)
+                return;
+
+            if (OptionViewModel.Instance.CurrentOption.UseTransitionFade &&
+                !_mediaTransitionPending && VideoPlayerController.IsOpened && BeginMediaTransition())
+                _explicitStopTransitionPending = true;
+
+            try
+            {
+                var stopped = await VideoPlayerController.Stop();
+                if (!stopped && _explicitStopTransitionPending)
+                {
+                    _explicitStopTransitionPending = false;
+                    FinishMediaTransition(false);
+                }
+                else if (stopped && _explicitStopTransitionPending)
+                {
+                    // 상태 이벤트가 늦거나 누락돼도 정지 화면으로 돌아갑니다.
+                    _mediaTransitionTimeout.Start();
+                }
+            }
+            catch
+            {
+                _explicitStopTransitionPending = false;
+                FinishMediaTransition(false);
+                throw;
+            }
+        }
+
         internal void OpenVideoFromDialog()
         {
             var dialog = new OpenFileDialog
@@ -622,7 +897,7 @@ namespace AnnieMediaPlayer
 
         private async Task OpenDirectFileAsync(string filePath)
         {
-            var opened = await VideoPlayerController.Open(filePath);
+            var opened = await OpenMediaWithTransitionAsync(filePath);
             if (opened)
             {
                 var currentPlaylistItem = vm.Playlist.AddFile(filePath);
@@ -642,7 +917,7 @@ namespace AnnieMediaPlayer
                 return;
             }
 
-            var opened = await VideoPlayerController.Open(item.FilePath);
+            var opened = await OpenMediaWithTransitionAsync(item.FilePath);
             if (opened)
             {
                 vm.Playlist.SetCurrent(item);
@@ -678,15 +953,31 @@ namespace AnnieMediaPlayer
 
         private async Task PlayNextPlaylistItemAsync()
         {
-            if (!OptionViewModel.Instance.CurrentOption.UseContinuousPlayback)
-                return;
+            try
+            {
+                if (_skipNextAutoAdvance)
+                    return;
 
-            var currentItem = vm.Playlist.CurrentItem;
-            if (currentItem == null ||
-                !string.Equals(currentItem.FilePath, _openedPlaylistSource, StringComparison.OrdinalIgnoreCase))
-                return;
+                if (_openingMedia || !OptionViewModel.Instance.CurrentOption.UseContinuousPlayback)
+                    return;
 
-            await PlayAdjacentPlaylistItemAsync(true);
+                var currentItem = vm.Playlist.CurrentItem;
+                if (currentItem == null ||
+                    !string.Equals(currentItem.FilePath, _openedPlaylistSource, StringComparison.OrdinalIgnoreCase))
+                    return;
+
+                await PlayAdjacentPlaylistItemAsync(true);
+            }
+            finally
+            {
+                _skipNextAutoAdvance = false;
+                // 다음 항목이 없거나 남은 항목이 모두 누락됐으면 실제 정지 화면으로 돌아갑니다.
+                if (_automaticNextTransitionPending)
+                {
+                    ResetStoppedMediaUi();
+                    FinishMediaTransition(true);
+                }
+            }
         }
 
         private async Task PlayAdjacentPlaylistItemAsync(bool forward)
@@ -1117,7 +1408,7 @@ namespace AnnieMediaPlayer
         private void NextPlaylist_Click(object sender, RoutedEventArgs e) =>
             _ = PlayAdjacentPlaylistItemAsync(true);
         private void PlayPause_Click(object sender, RoutedEventArgs e) => _ = PlayOrOpenAsync();
-        private void Stop_Click(object sender, RoutedEventArgs e) => _ = VideoPlayerController.Stop();
+        private void Stop_Click(object sender, RoutedEventArgs e) => _ = StopPlaybackAsync();
 
         private void SpeedDown_Click(object sender, RoutedEventArgs e)
         {
@@ -1414,6 +1705,9 @@ namespace AnnieMediaPlayer
         }
 
         private bool UseOverlayControl => OptionViewModel.Instance.CurrentOption.UseOverlayControl;
+        private void UpdateAudioVisualizerHudInset() =>
+            AudioVisualizer.HudBottomInset = UseOverlayControl ? panel_control.ActualHeight : 0;
+
         private void UseOverlayControlChanged(object? sender, EventArgs e)
         {
             ResetOverlayVisuals();
@@ -1425,7 +1719,10 @@ namespace AnnieMediaPlayer
                 grid_center_top.Visibility = Visibility.Visible;
                 grid_center_bottom.Visibility = Visibility.Visible;
                 Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
-                    UpdateOverlayVisibility(Mouse.GetPosition(grid_center))));
+                {
+                    UpdateAudioVisualizerHudInset();
+                    UpdateOverlayVisibility(Mouse.GetPosition(grid_center));
+                }));
             }
             else
             {
@@ -1433,6 +1730,7 @@ namespace AnnieMediaPlayer
                 MoveControl(panel_control, grid_bottom);
                 grid_center_top.Visibility = Visibility.Collapsed;
                 grid_center_bottom.Visibility = Visibility.Collapsed;
+                UpdateAudioVisualizerHudInset();
             }
         }
 
