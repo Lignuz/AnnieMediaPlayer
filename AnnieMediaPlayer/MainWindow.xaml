@@ -236,22 +236,24 @@
                             <DockPanel LastChildFill="False">
                                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" HorizontalAlignment="Left">
                                     <Button Name="OpenButton" Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource OpenMediaIconData}" ToolTip="{DynamicResource Text.Open}" Click="OpenVideo_Click" Width="42" Height="32" Margin="0,0,10,0"/>
-                                    <Button Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource PreviousPlaylistIconData}" ToolTip="{DynamicResource Text.Playlist.Previous}" IsEnabled="{Binding Playlist.CanPlayPrevious}" Click="PreviousPlaylist_Click" Width="32" Height="32" Margin="0,0,4,0"/>
-                                    <Button Name="PlayPauseButton" IsEnabled="{Binding CanPlay}" Click="PlayPause_Click" Width="42" Height="32" Margin="0,0,10,0">
-                                        <Button.Style>
-                                            <Style TargetType="Button" BasedOn="{StaticResource MediaIconButtonStyle}">
-                                                <Setter Property="Content" Value="{StaticResource PlayMediaIconData}"/>
-                                                <Setter Property="ToolTip" Value="{DynamicResource Text.Play}"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsPlaying}" Value="True">
-                                                        <Setter Property="Content" Value="{StaticResource PauseMediaIconData}"/>
-                                                        <Setter Property="ToolTip" Value="{DynamicResource Text.Pause}"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Button.Style>
-                                    </Button>
-                                    <Button Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource NextPlaylistIconData}" ToolTip="{DynamicResource Text.Playlist.Next}" IsEnabled="{Binding Playlist.CanPlayNext}" Click="NextPlaylist_Click" Width="32" Height="32" Margin="0,0,4,0"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
+                                        <Button Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource PreviousPlaylistIconData}" ToolTip="{DynamicResource Text.Playlist.Previous}" IsEnabled="{Binding Playlist.CanPlayPrevious}" Click="PreviousPlaylist_Click" Width="32" Height="32" Margin="0,0,4,0"/>
+                                        <Button Name="PlayPauseButton" IsEnabled="{Binding CanPlay}" Click="PlayPause_Click" Width="42" Height="32" Margin="0,0,4,0">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource MediaIconButtonStyle}">
+                                                    <Setter Property="Content" Value="{StaticResource PlayMediaIconData}"/>
+                                                    <Setter Property="ToolTip" Value="{DynamicResource Text.Play}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                                            <Setter Property="Content" Value="{StaticResource PauseMediaIconData}"/>
+                                                            <Setter Property="ToolTip" Value="{DynamicResource Text.Pause}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                        <Button Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource NextPlaylistIconData}" ToolTip="{DynamicResource Text.Playlist.Next}" IsEnabled="{Binding Playlist.CanPlayNext}" Click="NextPlaylist_Click" Width="32" Height="32" Margin="0"/>
+                                    </StackPanel>
                                     <Button Name="StopButton" Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource StopMediaIconData}" ToolTip="{DynamicResource Text.Stop}" IsEnabled="{Binding IsOpened}" Click="Stop_Click" Width="42" Height="32" Margin="0,0,10,0"/>
                                     <ToggleButton Name="InfoToggleButton" Style="{StaticResource MediaInfoToggleButtonStyle}" Width="34" Height="32" Margin="0" Padding="4" IsChecked="{Binding Path=IsPropertiesPanelOpen}" ToolTip="{DynamicResource Text.Properties}">
                                         <Canvas Width="20" Height="20">
