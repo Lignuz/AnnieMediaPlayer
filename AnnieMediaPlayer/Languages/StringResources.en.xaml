@@ -25,6 +25,7 @@
     <sys:String x:Key="Text.Playlist.Clear">Clear All</sys:String>
     <sys:String x:Key="Text.Playlist.Previous">Play previous item</sys:String>
     <sys:String x:Key="Text.Playlist.Next">Play next item</sys:String>
+    <sys:String x:Key="Text.Playlist.Current">Current item</sys:String>
 
     <sys:String x:Key="Text.OpenDialogTitle">Open Media File</sys:String>
     <sys:String x:Key="Text.OpenDialogFilter">Media Files|*.mp4;*.avi;*.mov;*.mkv;*.wmv;*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg;*.opus;*.wma;*.aiff;*.aif|Video Files (*.mp4;*.avi;*.mov;*.mkv;*.wmv)|*.mp4;*.avi;*.mov;*.mkv;*.wmv|Audio Files (*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg;*.opus;*.wma;*.aiff;*.aif)|*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg;*.opus;*.wma;*.aiff;*.aif|All Files (*.*)|*.*</sys:String>
@@ -72,7 +73,7 @@
     <sys:String x:Key="Text.Shortcut.F4.Description">Stops the currently playing media.</sys:String>
     <sys:String x:Key="Text.Shortcut.Space.Shortcut">Space</sys:String>
     <sys:String x:Key="Text.Shortcut.Space.Action">Open / Play and Pause</sys:String>
-    <sys:String x:Key="Text.Shortcut.Space.Description">If no media is open, it opens and plays new media. If media is open, it toggles between play and pause.</sys:String>
+    <sys:String x:Key="Text.Shortcut.Space.Description">If no media is open, plays the current playlist item (or the first item). Opens a file if the playlist is empty. Otherwise toggles play and pause.</sys:String>
     <sys:String x:Key="Text.Shortcut.CtrlSpace.Shortcut">Ctrl + Space</sys:String>
     <sys:String x:Key="Text.Shortcut.CtrlSpace.Action">Stop</sys:String>
     <sys:String x:Key="Text.Shortcut.CtrlSpace.Description">Stops the currently playing media.</sys:String>

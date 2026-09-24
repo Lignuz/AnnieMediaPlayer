@@ -25,6 +25,7 @@
     <sys:String x:Key="Text.Playlist.Clear">전체 삭제</sys:String>
     <sys:String x:Key="Text.Playlist.Previous">이전 항목 재생</sys:String>
     <sys:String x:Key="Text.Playlist.Next">다음 항목 재생</sys:String>
+    <sys:String x:Key="Text.Playlist.Current">현재 항목</sys:String>
 
     <sys:String x:Key="Text.OpenDialogTitle">미디어 파일 열기</sys:String>
     <sys:String x:Key="Text.OpenDialogFilter">미디어 파일|*.mp4;*.avi;*.mov;*.mkv;*.wmv;*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg;*.opus;*.wma;*.aiff;*.aif|비디오 파일 (*.mp4;*.avi;*.mov;*.mkv;*.wmv)|*.mp4;*.avi;*.mov;*.mkv;*.wmv|오디오 파일 (*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg;*.opus;*.wma;*.aiff;*.aif)|*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg;*.opus;*.wma;*.aiff;*.aif|모든 파일 (*.*)|*.*</sys:String>
@@ -72,7 +73,7 @@
     <sys:String x:Key="Text.Shortcut.F4.Description">현재 재생 중인 미디어를 정지합니다.</sys:String>
     <sys:String x:Key="Text.Shortcut.Space.Shortcut">Space</sys:String>
     <sys:String x:Key="Text.Shortcut.Space.Action">열기 / 재생 및 일시정지</sys:String>
-    <sys:String x:Key="Text.Shortcut.Space.Description">미디어가 열려있지 않으면 새 미디어를 열고 재생하며, 열려있으면 재생과 일시정지를 전환합니다.</sys:String>
+    <sys:String x:Key="Text.Shortcut.Space.Description">열린 미디어가 없으면 재생목록의 현재 항목(없으면 첫 항목)을 재생하고, 목록이 비어 있으면 파일을 엽니다. 미디어가 열려 있으면 재생과 일시정지를 전환합니다.</sys:String>
     <sys:String x:Key="Text.Shortcut.CtrlSpace.Shortcut">Ctrl + Space</sys:String>
     <sys:String x:Key="Text.Shortcut.CtrlSpace.Action">정지</sys:String>
     <sys:String x:Key="Text.Shortcut.CtrlSpace.Description">현재 재생 중인 미디어를 정지합니다.</sys:String>

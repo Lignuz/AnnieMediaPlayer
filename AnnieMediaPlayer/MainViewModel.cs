@@ -29,6 +29,11 @@ namespace AnnieMediaPlayer
             IsNormalSpeed = true;
 
             PropertyChanged += MainViewModel_PropertyChanged;
+            Playlist.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(PlaylistViewModel.HasItems))
+                    OnPropertyChanged(nameof(CanPlay));
+            };
             LanguageManager.LanguageChanged += LanguageManager_LanguageChanged;
         }
 
@@ -37,6 +42,10 @@ namespace AnnieMediaPlayer
             if (e.PropertyName == nameof(IsPlaying))
             {
                 UpdateTextResources();
+            }
+            else if (e.PropertyName == nameof(IsOpened))
+            {
+                OnPropertyChanged(nameof(CanPlay));
             }
         }
 
@@ -102,6 +111,7 @@ namespace AnnieMediaPlayer
         public double FPS { get => Get(); set => Set(value); }
 
         public bool IsPlaying { get => Get(); set => Set(value); }
+        public bool CanPlay => IsOpened || Playlist.HasItems;
         public string PlayPauseButtonText { get => Get(); private set => Set(value); }
         public string PlayStateText { get => Get(); private set => Set(value); }
         public bool IsNormalSpeed { get => Get(); set => Set(value); }

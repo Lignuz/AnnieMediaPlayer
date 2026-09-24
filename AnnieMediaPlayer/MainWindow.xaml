@@ -194,7 +194,7 @@
                                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" HorizontalAlignment="Left">
                                     <Button Name="OpenButton" Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource OpenMediaIconData}" ToolTip="{DynamicResource Text.Open}" Click="OpenVideo_Click" Width="42" Height="32" Margin="0,0,10,0"/>
                                     <Button Style="{StaticResource MediaIconButtonStyle}" Content="{StaticResource PreviousPlaylistIconData}" ToolTip="{DynamicResource Text.Playlist.Previous}" IsEnabled="{Binding Playlist.CanPlayPrevious}" Click="PreviousPlaylist_Click" Width="32" Height="32" Margin="0,0,4,0"/>
-                                    <Button Name="PlayPauseButton" IsEnabled="{Binding IsOpened}" Click="PlayPause_Click" Width="42" Height="32" Margin="0,0,10,0">
+                                    <Button Name="PlayPauseButton" IsEnabled="{Binding CanPlay}" Click="PlayPause_Click" Width="42" Height="32" Margin="0,0,10,0">
                                         <Button.Style>
                                             <Style TargetType="Button" BasedOn="{StaticResource MediaIconButtonStyle}">
                                                 <Setter Property="Content" Value="{StaticResource PlayMediaIconData}"/>

@@ -17,6 +17,7 @@ namespace AnnieMediaPlayer
         public string FileName => Path.GetFileName(FilePath);
         public BitmapSource? FileTypeIcon { get; }
         public TimeSpan Duration { get => Get(); set => Set(value); }
+        public bool IsCurrent { get => Get(); internal set => Set(value); }
 
         private BitmapSource? _albumArt;
 
@@ -57,7 +58,11 @@ namespace AnnieMediaPlayer
                 if (ReferenceEquals(_currentItem, value))
                     return;
 
+                if (_currentItem != null)
+                    _currentItem.IsCurrent = false;
                 _currentItem = value;
+                if (_currentItem != null)
+                    _currentItem.IsCurrent = true;
                 OnPropertyChanged();
                 NotifyPlaylistStateChanged();
             }

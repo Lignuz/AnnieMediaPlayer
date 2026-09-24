@@ -72,13 +72,10 @@ namespace AnnieMediaPlayer
                     if (VideoPlayerController.IsOpened)
                         _ = VideoPlayerController.Stop();
                 }
-                // Space : 열기, 일시정지/재생 토글
+                // Space : 현재 항목 재생 또는 일시정지 (목록이 비어 있으면 파일 열기)
                 else
                 {
-                    if (VideoPlayerController.IsOpened)
-                        _ = VideoPlayerController.TogglePlayPause();
-                    else
-                        window.OpenVideoFromDialog();
+                    _ = window.PlayOrOpenAsync();
                 }
                 e.Handled = true;
             }

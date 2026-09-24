@@ -9,13 +9,16 @@ namespace AnnieMediaPlayer.Windows.Panels
         public event EventHandler? AddFilesRequested;
         public event EventHandler<IReadOnlyList<PlaylistItemViewModel>>? RemoveRequested;
         public event EventHandler? ClearRequested;
+        public event EventHandler? PlayPauseRequested;
         public event EventHandler<(IReadOnlyList<PlaylistItemViewModel> Items, int TargetIndex)>? ItemMoveRequested;
-        public event EventHandler<PlaylistItemViewModel>? ItemDoubleClicked;
+        public event EventHandler<PlaylistItemViewModel>? ItemActivated;
         private Point _dragStartPoint;
         private PlaylistItemViewModel? _pressedItem;
         private IReadOnlyList<PlaylistItemViewModel> _pressedSelection = Array.Empty<PlaylistItemViewModel>();
 
         public IReadOnlyList<PlaylistItemViewModel> SelectedItems => PlaylistList.SelectedItems.OfType<PlaylistItemViewModel>().ToList();
+        public PlaylistItemViewModel? SelectedItem => PlaylistList.SelectedItem as PlaylistItemViewModel;
+        public bool IsListKeyboardFocusWithin => PlaylistList.IsKeyboardFocusWithin;
 
         public PlaylistPanelControl()
         {
@@ -25,6 +28,7 @@ namespace AnnieMediaPlayer.Windows.Panels
         private void AddButton_Click(object sender, RoutedEventArgs e) => AddFilesRequested?.Invoke(this, EventArgs.Empty);
         private void RemoveButton_Click(object sender, RoutedEventArgs e) => RemoveRequested?.Invoke(this, SelectedItems);
         private void ClearButton_Click(object sender, RoutedEventArgs e) => ClearRequested?.Invoke(this, EventArgs.Empty);
+        private void PlayPauseButton_Click(object sender, RoutedEventArgs e) => PlayPauseRequested?.Invoke(this, EventArgs.Empty);
 
         private void PlaylistList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -98,7 +102,7 @@ namespace AnnieMediaPlayer.Windows.Panels
         {
             if (ItemsControl.ContainerFromElement(PlaylistList, e.OriginalSource as DependencyObject) is ListBoxItem container &&
                 container.DataContext is PlaylistItemViewModel item)
-                ItemDoubleClicked?.Invoke(this, item);
+                ItemActivated?.Invoke(this, item);
         }
 
         private bool UpdateDropIndicator(DragEventArgs e)

@@ -53,7 +53,10 @@ namespace AnnieMediaPlayer
 
             FFMELoader.Initialize();
             if (OptionViewModel.Instance.CurrentOption.UsePlaylistPersistence)
+            {
                 vm.Playlist.AddFiles(PlaylistStorage.Load());
+                SelectFirstPlaylistItemIfIdle();
+            }
 
             vm.Playlist.Items.CollectionChanged += PlaylistItems_CollectionChanged;
             foreach (var item in vm.Playlist.Items)
@@ -649,6 +652,30 @@ namespace AnnieMediaPlayer
                 await VideoPlayerController.Play();
         }
 
+        internal async Task PlayOrOpenAsync()
+        {
+            if (VideoPlayerController.IsOpened)
+            {
+                await VideoPlayerController.TogglePlayPause();
+                return;
+            }
+
+            var item = vm.Playlist.CurrentItem ?? vm.Playlist.Items.FirstOrDefault();
+            while (item != null && !File.Exists(item.FilePath))
+            {
+                var index = vm.Playlist.Items.IndexOf(item);
+                vm.Playlist.Remove(item);
+                item = vm.Playlist.Items.Count > 0
+                    ? vm.Playlist.Items[Math.Min(index, vm.Playlist.Items.Count - 1)]
+                    : null;
+            }
+
+            if (item != null)
+                await PlayPlaylistItemAsync(item);
+            else
+                OpenVideoFromDialog();
+        }
+
         private async Task PlayNextPlaylistItemAsync()
         {
             if (!OptionViewModel.Instance.CurrentOption.UseContinuousPlayback)
@@ -725,8 +752,9 @@ namespace AnnieMediaPlayer
             _playlistWindow.AddFilesRequested += PlaylistPanel_AddFilesRequested;
             _playlistWindow.RemoveRequested += PlaylistPanel_RemoveRequested;
             _playlistWindow.ClearRequested += PlaylistPanel_ClearRequested;
+            _playlistWindow.PlayPauseRequested += (_, _) => _ = PlayOrOpenAsync();
             _playlistWindow.ItemMoveRequested += PlaylistPanel_ItemMoveRequested;
-            _playlistWindow.ItemDoubleClicked += PlaylistPanel_ItemDoubleClicked;
+            _playlistWindow.ItemActivated += PlaylistPanel_ItemActivated;
             _playlistWindow.LocationChanged += PlaylistWindow_LocationChanged;
             _playlistWindow.SizeChanged += PlaylistWindow_SizeChanged;
             _playlistWindow.MoveCompleted += PlaylistWindow_MoveCompleted;
@@ -1059,7 +1087,16 @@ namespace AnnieMediaPlayer
             };
 
             if (dialog.ShowDialog() == true)
+            {
                 vm.Playlist.AddFiles(dialog.FileNames);
+                SelectFirstPlaylistItemIfIdle();
+            }
+        }
+
+        private void SelectFirstPlaylistItemIfIdle()
+        {
+            if (!vm.IsOpened && vm.Playlist.CurrentItem == null)
+                vm.Playlist.SetCurrent(vm.Playlist.Items.FirstOrDefault());
         }
 
         private void PlaylistPanel_RemoveRequested(object? sender, IReadOnlyList<PlaylistItemViewModel> items)
@@ -1073,13 +1110,13 @@ namespace AnnieMediaPlayer
         private void PlaylistPanel_ItemMoveRequested(object? sender, (IReadOnlyList<PlaylistItemViewModel> Items, int TargetIndex) move) =>
             vm.Playlist.MoveManyTo(move.Items, move.TargetIndex);
 
-        private void PlaylistPanel_ItemDoubleClicked(object? sender, PlaylistItemViewModel item) =>
+        private void PlaylistPanel_ItemActivated(object? sender, PlaylistItemViewModel item) =>
             _ = PlayPlaylistItemAsync(item);
         private void PreviousPlaylist_Click(object sender, RoutedEventArgs e) =>
             _ = PlayAdjacentPlaylistItemAsync(false);
         private void NextPlaylist_Click(object sender, RoutedEventArgs e) =>
             _ = PlayAdjacentPlaylistItemAsync(true);
-        private void PlayPause_Click(object sender, RoutedEventArgs e) => _ = VideoPlayerController.TogglePlayPause();
+        private void PlayPause_Click(object sender, RoutedEventArgs e) => _ = PlayOrOpenAsync();
         private void Stop_Click(object sender, RoutedEventArgs e) => _ = VideoPlayerController.Stop();
 
         private void SpeedDown_Click(object sender, RoutedEventArgs e)
