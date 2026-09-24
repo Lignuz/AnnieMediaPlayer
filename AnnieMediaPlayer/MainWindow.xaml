@@ -19,6 +19,8 @@
         MouseLeftButtonDown="win_MouseLeftButtonDown"
         MouseRightButtonDown="win_MouseRightButtonDown"
         PreviewMouseMove="win_PreviewMouseMove"
+        MouseEnter="win_MouseEnter"
+        MouseLeave="win_MouseLeave"
         PreviewMouseLeftButtonUp="win_PreviewMouseLeftButtonUp"
         PreviewMouseRightButtonUp="win_PreviewMouseRightButtonUp"
         Loaded="Window_Loaded"
@@ -35,13 +37,6 @@
         <local:FileNameConverter x:Key="FileNameConverter"/>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
 
-        <!-- 오버레이 영역을 위한 애니메이션 정의 -->
-        <Storyboard x:Key="ShowControls">
-            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.3" />
-        </Storyboard>
-        <Storyboard x:Key="HideControls">
-            <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.3" />
-        </Storyboard>
     </local:BaseWindow.Resources>
 
     <Border>
@@ -60,11 +55,10 @@
                 <Canvas x:Name="OverlayCanvas" IsHitTestVisible="False" Panel.ZIndex="10"  Focusable="False" Visibility="{Binding ElementName=PlaybackSlider, Path=IsMouseOver, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" IsVisibleChanged="OverlayCanvas_IsVisibleChanged"/>
 
                 <!-- 🎀 커스텀 타이틀바 -->
-                <Grid Grid.Row="0">
+                <Grid Grid.Row="0" x:Name="grid_titlebar">
                     <DockPanel x:Name="panel_titlebar" Background="{DynamicResource BackgroundBrush}" 
                                MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" MouseRightButtonDown="TitleBar_MouseRightButtonDown"
                                MouseMove="TitleBar_MouseMove" MouseLeftButtonUp="TitleBar_MouseLeftButtonUp" MouseRightButtonUp="TitleBar_MouseRightButtonUp"
-                               PreviewMouseMove="overlayCheck_PreviewMouseMove" MouseEnter="panel_MouseEnter" MouseLeave="panel_MouseLeave"
                                LastChildFill="True" Height="40">
                         <!-- 🎨 아이콘 + 제목 묶기 -->
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
@@ -136,14 +130,14 @@
                         </TextBlock.Effect>
                     </TextBlock>
                     <panels:PropertiesPanelControl x:Name="PropertiesPanel" HorizontalAlignment="Right" Visibility="{Binding IsPropertiesPanelOpen, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                    <Grid x:Name="grid_center_bottom" Background="Transparent" VerticalAlignment="Bottom" Height="{Binding ElementName=panel_control, Path=ActualHeight, Mode=OneTime}" PreviewMouseMove="overlayCheck_PreviewMouseMove" Visibility="{Binding Path=CurrentOption.UseOverlayControl, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <Grid x:Name="grid_center_top" VerticalAlignment="Top" Panel.ZIndex="20" Visibility="Collapsed" />
+                    <Grid x:Name="grid_center_bottom" VerticalAlignment="Bottom" Panel.ZIndex="20" Visibility="Collapsed" />
                 </Grid>
 
                 <!-- 컨트롤 영역 -->
                 <Grid Grid.Row="2" x:Name="grid_bottom">
                     <!-- 🎛 컨트롤 영역 -->
-                    <Grid x:Name="panel_control" Background="{DynamicResource BackgroundBrush}"
-                          PreviewMouseMove="overlayCheck_PreviewMouseMove" MouseEnter="panel_MouseEnter" MouseLeave="panel_MouseLeave">
+                    <Grid x:Name="panel_control" Background="{DynamicResource BackgroundBrush}">
                         <StackPanel Grid.Row="1" Margin="15">
                             <Grid Height="24">
                                 <!-- 재생 슬라이더 -->

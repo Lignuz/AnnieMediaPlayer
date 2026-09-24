@@ -133,6 +133,7 @@ namespace AnnieMediaPlayer
 
             e.Cancel = true;
             _isClosing = true;
+            OptionViewModel.Instance.UseOverlayControlChanged -= UseOverlayControlChanged;
 
             try
             {
@@ -190,9 +191,44 @@ namespace AnnieMediaPlayer
                 TitleBarController.MouseRightButtonDown(this, e);
         }
 
-        private void win_PreviewMouseMove(object sender, MouseEventArgs e) => TitleBarController.MouseMove(this, e);
-        private void win_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e) => TitleBarController.MouseLeftButtonUp();
-        private void win_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e) => TitleBarController.MouseRightButtonUp();
+        private void win_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            TitleBarController.MouseMove(this, e);
+
+            if (!UseOverlayControl || _isClosing)
+                return;
+
+            UpdateOverlayVisibility(e.GetPosition(grid_center));
+        }
+
+        private void win_MouseEnter(object sender, MouseEventArgs e)
+        {
+            if (!UseOverlayControl || _isClosing)
+                return;
+
+            UpdateOverlayVisibility(e.GetPosition(grid_center));
+        }
+
+        private void win_MouseLeave(object sender, MouseEventArgs e)
+        {
+            if (!UseOverlayControl || _isClosing ||
+                Mouse.LeftButton == MouseButtonState.Pressed || Mouse.RightButton == MouseButtonState.Pressed)
+                return;
+
+            HideControls();
+        }
+
+        private void win_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            TitleBarController.MouseLeftButtonUp();
+            QueueOverlayVisibilityUpdate();
+        }
+
+        private void win_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            TitleBarController.MouseRightButtonUp();
+            QueueOverlayVisibilityUpdate();
+        }
         private void Window_Deactivated(object? sender, EventArgs e) => TitleBarController.Cancel();
 
         private static bool IsButtonInput(DependencyObject? element)
@@ -1241,114 +1277,125 @@ namespace AnnieMediaPlayer
         }
 
 
-        // 오버레이 컨트롤을 위한 타이머와 플래그
-        private bool _isControlsVisible = false;
-        private bool _isMouseOverControls = false;
-        private System.Windows.Threading.DispatcherTimer _hideControlsTimer = new System.Windows.Threading.DispatcherTimer();
+        // 마우스가 상단 또는 하단 컨트롤 영역에 있을 때만 오버레이를 표시합니다.
+        private bool _isControlsVisible = true;
 
-        // 오버레이를 위한 컨트롤 초기화 설정
         private void InitializeOverlayControls()
         {
-            // 컨트롤 숨김 타이머 기본 설정 
-            _hideControlsTimer.Interval = TimeSpan.FromSeconds(0.5);
-            _hideControlsTimer.Tick += HideControlsTimer_Tick;
-
-            // 초기 상태 설정
-            panel_control.Opacity = 1;
+            ResetOverlayVisuals();
         }
 
-        private void HideControlsTimer_Tick(object? sender, EventArgs e)
+        private void QueueOverlayVisibilityUpdate()
         {
-            if (!_isMouseOverControls)
-            {
+            if (!UseOverlayControl || _isClosing)
+                return;
+
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() =>
+                UpdateOverlayVisibility(Mouse.GetPosition(grid_center))));
+        }
+
+        private void UpdateOverlayVisibility(Point position)
+        {
+            if (!UseOverlayControl || _isClosing ||
+                Mouse.LeftButton == MouseButtonState.Pressed || Mouse.RightButton == MouseButtonState.Pressed)
+                return;
+
+            bool isInsideMedia = position.X >= 0 && position.X <= grid_center.ActualWidth &&
+                position.Y >= 0 && position.Y <= grid_center.ActualHeight;
+            bool isOverControls = isInsideMedia &&
+                (position.Y <= panel_titlebar.ActualHeight ||
+                 position.Y >= grid_center.ActualHeight - panel_control.ActualHeight);
+
+            if (isOverControls)
+                ShowControls();
+            else
                 HideControls();
-            }
-            _hideControlsTimer.Stop();
         }
 
         private void ShowControls()
         {
-            if (!_isControlsVisible)
-            {
-                _isControlsVisible = true;
+            if (!UseOverlayControl || _isControlsVisible)
+                return;
 
-                var showControlsAnimation = (Storyboard)FindResource("ShowControls");
-
-                showControlsAnimation.Begin(panel_control);
-
-                _hideControlsTimer.Stop();
-                _hideControlsTimer.Start();
-            }
+            _isControlsVisible = true;
+            grid_center_top.IsHitTestVisible = true;
+            grid_center_bottom.IsHitTestVisible = true;
+            FadeControl(panel_titlebar, 1);
+            FadeControl(panel_control, 1);
         }
 
         private void HideControls()
         {
-            if (_isControlsVisible && !_isMouseOverControls)
+            if (!UseOverlayControl || !_isControlsVisible)
+                return;
+
+            _isControlsVisible = false;
+            grid_center_top.IsHitTestVisible = false;
+            grid_center_bottom.IsHitTestVisible = false;
+            FadeControl(panel_titlebar, 0);
+            FadeControl(panel_control, 0);
+        }
+
+        private static void FadeControl(UIElement control, double opacity)
+        {
+            var currentOpacity = control.Opacity;
+            control.BeginAnimation(UIElement.OpacityProperty, null);
+            control.Opacity = opacity;
+
+            if (Math.Abs(currentOpacity - opacity) > 0.01)
             {
-                _isControlsVisible = false;
-
-                var hideControlsAnimation = (Storyboard)FindResource("HideControls");
-
-                hideControlsAnimation.Begin(panel_control);
+                control.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation
+                {
+                    From = currentOpacity,
+                    To = opacity,
+                    Duration = TimeSpan.FromMilliseconds(300),
+                    FillBehavior = FillBehavior.Stop,
+                });
             }
         }
 
-        private void overlayCheck_PreviewMouseMove(object sender, MouseEventArgs e)
+        private void ResetOverlayVisuals()
         {
-            if (UseOverlayControl)
-            {
-                // 마우스가 움직일 때마다 컨트롤 표시
-                ShowControls();
+            panel_titlebar.BeginAnimation(UIElement.OpacityProperty, null);
+            panel_control.BeginAnimation(UIElement.OpacityProperty, null);
+            panel_titlebar.Opacity = 1;
+            panel_control.Opacity = 1;
+            grid_center_top.IsHitTestVisible = true;
+            grid_center_bottom.IsHitTestVisible = true;
+            _isControlsVisible = true;
+        }
 
-                // 마우스가 움직일 때마다 타이머 재설정
-                _hideControlsTimer.Stop();
-                _hideControlsTimer.Start();
-            }
+        private static void MoveControl(FrameworkElement control, Panel destination)
+        {
+            if (ReferenceEquals(control.Parent, destination))
+                return;
+
+            if (control.Parent is Panel parent)
+                parent.Children.Remove(control);
+
+            destination.Children.Add(control);
         }
 
         private bool UseOverlayControl => OptionViewModel.Instance.CurrentOption.UseOverlayControl;
         private void UseOverlayControlChanged(object? sender, EventArgs e)
         {
-            Grid? oldParent = panel_control.Parent as Grid;
-            oldParent?.Children.Remove(panel_control);
+            ResetOverlayVisuals();
 
-            // 기본 모드
-            if (UseOverlayControl == false)
+            if (UseOverlayControl)
             {
-                grid_bottom.Children.Add(panel_control);
-                panel_control.Opacity = 1;
-                _isControlsVisible = true;
-                _hideControlsTimer.Interval = TimeSpan.FromSeconds(0.5);
-                _hideControlsTimer.Stop();
+                MoveControl(panel_titlebar, grid_center_top);
+                MoveControl(panel_control, grid_center_bottom);
+                grid_center_top.Visibility = Visibility.Visible;
+                grid_center_bottom.Visibility = Visibility.Visible;
+                Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+                    UpdateOverlayVisibility(Mouse.GetPosition(grid_center))));
             }
-            // 컨트롤 자동 숨김 모드
             else
             {
-                grid_center_bottom.Children.Add(panel_control);
-
-                _isControlsVisible = true;
-                _isMouseOverControls = false;
-                panel_control.Opacity = 1;
-                _hideControlsTimer.Interval = TimeSpan.FromSeconds(0.1);
-                _hideControlsTimer.Start();
-            }
-        }
-
-        private void panel_MouseEnter(object sender, MouseEventArgs e)
-        {
-            if (UseOverlayControl)
-            {
-                _isMouseOverControls = true;
-                ShowControls();
-            }
-        }
-
-        private void panel_MouseLeave(object sender, MouseEventArgs e)
-        {
-            if (UseOverlayControl)
-            {
-                _isMouseOverControls = false;
-                _hideControlsTimer.Start();
+                MoveControl(panel_titlebar, grid_titlebar);
+                MoveControl(panel_control, grid_bottom);
+                grid_center_top.Visibility = Visibility.Collapsed;
+                grid_center_bottom.Visibility = Visibility.Collapsed;
             }
         }
 
