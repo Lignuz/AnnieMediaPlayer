@@ -114,6 +114,7 @@ namespace AnnieMediaPlayer.CustomControls
             {
                 if (_window != null)
                     _window.StateChanged -= OnWindowStateChanged;
+                _window = null;
                 UpdateRenderingHook();
             };
             MouseMove += OnMouseMove;
@@ -197,7 +198,6 @@ namespace AnnieMediaPlayer.CustomControls
         private static void OnIsActiveChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var control = (AudioVisualizerControl)d;
-            control._acceptAudioSamples = (bool)e.NewValue;
             control._hudRemaining = 2.8f;
             control.ResetAudioInput();
             control.UpdateRenderingHook();
@@ -319,8 +319,10 @@ namespace AnnieMediaPlayer.CustomControls
 
         private void UpdateRenderingHook()
         {
-            // 최소화 중에는 렌더링 이벤트 구독을 해제해 WPF가 매 프레임 깨어나지 않게 합니다.
-            var wanted = IsActive && IsVisible && _window?.WindowState != WindowState.Minimized;
+            // 화면에 보이지 않을 때는 렌더링과 시각화용 오디오 샘플 복사를 함께 멈춥니다.
+            var wanted = IsActive && IsLoaded && IsVisible &&
+                _window != null && _window.WindowState != WindowState.Minimized;
+            _acceptAudioSamples = wanted;
             if (wanted && !_renderingHooked)
             {
                 _lastRenderingTime = null;

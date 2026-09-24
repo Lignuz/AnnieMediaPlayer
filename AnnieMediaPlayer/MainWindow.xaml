@@ -104,17 +104,30 @@
                     </Border>
                     <Image Name="BackgroundImage" Stretch="UniformToFill" Visibility="{Binding IsOpened, Converter={StaticResource BooleanToVisibilityInvertedConverter}}"/>
                     <Image Name="AudioAlbumArtImage"
-                           Source="{Binding Playlist.CurrentItem.AlbumArt}"
+                           Source="{Binding CurrentAlbumArt}"
                            Stretch="Uniform"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            MaxWidth="512"
                            MaxHeight="512"
-                           SnapsToDevicePixels="True"
-                           Visibility="{Binding IsAudioOnly, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                           SnapsToDevicePixels="True">
+                        <Image.Style>
+                            <Style TargetType="Image">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsAudioOnly}" Value="True" />
+                                            <Condition Binding="{Binding CurrentOption.UseAudioVisualizer}" Value="False" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Image.Style>
+                    </Image>
                     <controls:AudioVisualizerControl
                             x:Name="AudioVisualizer"
-                            IsActive="{Binding IsAudioOnly}"
                             AlbumArt="{Binding CurrentAlbumArt}"
                             Title="{Binding AudioTitle}"
                             Artist="{Binding AudioArtist}"
@@ -122,8 +135,24 @@
                             FilePath="{Binding FilePath}"
                             IsPlaying="{Binding IsPlaying}"
                             Background="Transparent"
-                            Visibility="{Binding IsAudioOnly, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            Panel.ZIndex="2" />
+                            Panel.ZIndex="2">
+                        <controls:AudioVisualizerControl.Style>
+                            <Style TargetType="{x:Type controls:AudioVisualizerControl}">
+                                <Setter Property="IsActive" Value="False" />
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsAudioOnly}" Value="True" />
+                                            <Condition Binding="{Binding CurrentOption.UseAudioVisualizer}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="IsActive" Value="True" />
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </controls:AudioVisualizerControl.Style>
+                    </controls:AudioVisualizerControl>
                     <TextBlock Name="OverlayMessage" TextWrapping="Wrap" Margin="10" FontWeight="Bold" Foreground="White">
                         <TextBlock.Effect>
                             <DropShadowEffect Color="Black" BlurRadius="4" ShadowDepth="2" Direction="315" Opacity="0.8" />
