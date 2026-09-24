@@ -42,6 +42,7 @@ namespace AnnieMediaPlayer
         private CancellationTokenSource? _currentAlbumArtLoad;
         private readonly DispatcherTimer _playlistSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
         private static readonly TimeSpan PositionUpdateInterval = TimeSpan.FromMilliseconds(50);
+        private const int AudioOnlyBlockCache = 256;
         private long _lastPositionUpdateTimestamp;
 
         public MainWindow()
@@ -221,8 +222,18 @@ namespace AnnieMediaPlayer
             vm.AudioArtist = string.Empty;
             vm.AudioAlbum = string.Empty;
 
-            // Keep audio rendering from waiting behind video frame presentation.
-            e.Options.UseParallelRendering = true;
+            // 병렬 렌더링은 보통 우선순위의 스레드풀에서 실행되어, CPU를 많이 쓰는 프로그램이
+            // 포그라운드에 있으면 오디오 공급이 몇 초씩 밀립니다. 렌더링 스레드(최고 우선순위)에서
+            // 순서대로 처리하고, FFME가 오디오를 영상보다 먼저 처리해 영상 표시를 기다리지 않게 합니다.
+            e.Options.UseParallelRendering = false;
+
+            // 오디오 전용 미디어는 몇 초 분량을 미리 디코딩해 CPU 부하가 잠시 몰려도 재생이 끊기지 않게 합니다.
+            // (기본 48블록은 MP3 기준 약 1.2초이며, 256블록은 약 6.7초입니다.)
+            var hasVideo = e.Info.Streams.Values.Any(stream =>
+                stream.CodecType == AVMediaType.AVMEDIA_TYPE_VIDEO &&
+                (stream.Disposition & ffmpeg.AV_DISPOSITION_ATTACHED_PIC) == 0);
+            if (!hasVideo)
+                e.Options.AudioBlockCache = AudioOnlyBlockCache;
             ffmeMediaElement.RendererOptions.UseLegacyAudioOut =
                 OptionViewModel.Instance.CurrentOption.UseLegacyAudioOut;
             PlayerDiagnostics.Write(

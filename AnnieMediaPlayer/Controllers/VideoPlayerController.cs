@@ -491,7 +491,8 @@ namespace AnnieMediaPlayer
 
             if (e.MessageType == MediaLogMessageType.Warning || e.MessageType == MediaLogMessageType.Error || isSyncInfo)
             {
-                var message = $"FFME {e.MessageType} [{e.AspectName}]: {e.Message}";
+                // FFME 로그는 별도 스레드에서 모아 전달되므로 실제 발생 시각을 함께 남깁니다.
+                var message = $"FFME {e.MessageType} [{e.AspectName}] @{e.TimestampUtc.ToLocalTime():HH:mm:ss.fff}: {e.Message}";
                 _ = Task.Run(() => PlayerDiagnostics.Write(message));
             }
         }

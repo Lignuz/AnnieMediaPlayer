@@ -1423,15 +1423,24 @@ namespace AnnieMediaPlayer.CustomControls
 
             public AudioRingBuffer(int size) => _buffer = new float[size];
 
+            // 오디오 출력 스레드에서 호출됩니다. UI 스레드가 잠금을 쥔 채 CPU를 받지 못하면
+            // 오디오 출력까지 멈추므로, 잠금을 바로 얻지 못하면 이번 샘플은 시각화에서 건너뜁니다.
             public void Push(ReadOnlySpan<float> samples)
             {
-                lock (_sync)
+                if (!Monitor.TryEnter(_sync))
+                    return;
+
+                try
                 {
                     foreach (var sample in samples)
                     {
                         _buffer[_write] = sample;
                         _write = (_write + 1) % _buffer.Length;
                     }
+                }
+                finally
+                {
+                    Monitor.Exit(_sync);
                 }
             }
 
