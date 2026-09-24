@@ -294,7 +294,12 @@ namespace AnnieMediaPlayer
                 stream.CodecType == AVMediaType.AVMEDIA_TYPE_VIDEO &&
                 (stream.Disposition & ffmpeg.AV_DISPOSITION_ATTACHED_PIC) == 0);
             if (!hasVideo)
+            {
+                // 오디오 표지는 아래 앨범 이미지 화면에서 처리합니다.
+                if (e.Options.AudioStream is not null)
+                    e.Options.IsVideoDisabled = true;
                 e.Options.AudioBlockCache = AudioOnlyBlockCache;
+            }
             ffmeMediaElement.RendererOptions.UseLegacyAudioOut =
                 OptionViewModel.Instance.CurrentOption.UseLegacyAudioOut;
             PlayerDiagnostics.Write(
@@ -341,6 +346,7 @@ namespace AnnieMediaPlayer
             vm.IsOpened = true;
             vm.FilePath = e.Info.MediaSource;
             vm.IsAudioOnly = !VideoPlayerController.HasVideo;
+            Task albumArtLoad = Task.CompletedTask;
             if (vm.IsAudioOnly)
             {
                 var audioMetadata = e.Info.BestStreams.TryGetValue(AVMediaType.AVMEDIA_TYPE_AUDIO, out var audioStream)
@@ -351,12 +357,13 @@ namespace AnnieMediaPlayer
                 vm.AudioArtist = FindMetadataValue(e.Info.Metadata, audioMetadata,
                     "artist", "performer", "album_artist", "album-artist", "albumartist") ?? string.Empty;
                 vm.AudioAlbum = FindMetadataValue(e.Info.Metadata, audioMetadata, "album") ?? string.Empty;
-                _ = LoadCurrentAlbumArtAsync(e.Info.MediaSource);
+                albumArtLoad = LoadCurrentAlbumArtAsync(e.Info.MediaSource);
             }
             else
             {
                 _currentAlbumArtLoad?.Cancel();
                 vm.CurrentAlbumArt = null;
+                vm.CurrentAlbumArtBackdrop = null;
             }
             UpdateSpeedInfo();
             vm.Duration = e.Info.Duration;
@@ -375,14 +382,24 @@ namespace AnnieMediaPlayer
             if (_mediaTransitionPending && !VideoPlayerController.HasVideo)
             {
                 var openedSource = e.Info.MediaSource;
-                // 오디오 시각화와 앨범 아트의 바인딩이 반영된 뒤 전환 화면을 내립니다.
-                Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
-                {
-                    if (_mediaTransitionPending && !_stopRequestedDuringOpen &&
-                        string.Equals(_openedPlaylistSource, openedSource, StringComparison.OrdinalIgnoreCase))
-                        FinishMediaTransition(true);
-                }));
+                var transitionVersion = _mediaTransitionVersion;
+                _ = FinishAudioTransitionWhenReadyAsync(albumArtLoad, openedSource, transitionVersion);
             }
+        }
+
+        private async Task FinishAudioTransitionWhenReadyAsync(Task albumArtLoad, string source, int version)
+        {
+            // 시각화를 끈 경우에는 흐린 배경과 선명한 표지가 준비된 뒤 화면을 전환합니다.
+            if (!OptionViewModel.Instance.CurrentOption.UseAudioVisualizer)
+                await albumArtLoad;
+
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (_mediaTransitionPending && !_stopRequestedDuringOpen &&
+                    version == _mediaTransitionVersion &&
+                    string.Equals(_openedPlaylistSource, source, StringComparison.OrdinalIgnoreCase))
+                    FinishMediaTransition(true);
+            }, DispatcherPriority.Background);
         }
 
         private void VideoPlayerController_OnMediaEnded(object? sender, EventArgs e)
@@ -484,6 +501,9 @@ namespace AnnieMediaPlayer
 
         private void ResetStoppedMediaUi()
         {
+            _currentAlbumArtLoad?.Cancel();
+            vm.CurrentAlbumArt = null;
+            vm.CurrentAlbumArtBackdrop = null;
             _openedPlaylistSource = null;
             vm.IsOpened = false;
             vm.IsAudioOnly = false;
@@ -1318,6 +1338,7 @@ namespace AnnieMediaPlayer
         private async Task LoadCurrentAlbumArtAsync(string filePath)
         {
             _currentAlbumArtLoad?.Cancel();
+            vm.CurrentAlbumArtBackdrop = null;
             if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
             {
                 vm.CurrentAlbumArt = null;
@@ -1328,14 +1349,22 @@ namespace AnnieMediaPlayer
             _currentAlbumArtLoad = cancellation;
 
             // 고해상도 이미지를 읽는 동안에는 재생목록에서 이미 읽어 둔 이미지를 먼저 보여줍니다.
-            vm.CurrentAlbumArt = vm.Playlist.Items.FirstOrDefault(item =>
+            var placeholder = vm.Playlist.Items.FirstOrDefault(item =>
                 string.Equals(item.FilePath, filePath, StringComparison.OrdinalIgnoreCase))?.AlbumArt;
+            vm.CurrentAlbumArt = placeholder;
 
             try
             {
                 var result = await _currentAlbumArtService.LoadAsync(filePath, 1024, cancellation.Token);
-                if (!cancellation.IsCancellationRequested && result.Image is not null)
-                    vm.CurrentAlbumArt = result.Image;
+                var artwork = result.Image ?? placeholder;
+                if (!cancellation.IsCancellationRequested && artwork is not null)
+                {
+                    vm.CurrentAlbumArt = artwork;
+                    var backdrop = await Task.Run(() =>
+                        AlbumArtBackdropFactory.Create(artwork, cancellation.Token), cancellation.Token);
+                    if (!cancellation.IsCancellationRequested)
+                        vm.CurrentAlbumArtBackdrop = backdrop;
+                }
             }
             catch (OperationCanceledException)
             {

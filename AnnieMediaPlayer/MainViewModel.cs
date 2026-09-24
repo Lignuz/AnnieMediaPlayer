@@ -105,6 +105,19 @@ namespace AnnieMediaPlayer
                 OnPropertyChanged();
             }
         }
+        private BitmapSource? _currentAlbumArtBackdrop;
+        public BitmapSource? CurrentAlbumArtBackdrop
+        {
+            get => _currentAlbumArtBackdrop;
+            set
+            {
+                if (ReferenceEquals(_currentAlbumArtBackdrop, value))
+                    return;
+
+                _currentAlbumArtBackdrop = value;
+                OnPropertyChanged();
+            }
+        }
         public TimeSpan Duration { get => Get(); set => Set(value); }
         public TimeSpan Position { get => Get(); set => Set(value); }
         public long FrameIndex { get => Get(); set => Set(value); }

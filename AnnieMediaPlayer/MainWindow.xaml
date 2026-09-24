@@ -104,16 +104,9 @@
                         </ffme:MediaElement>
                     </Border>
                     <Image Name="BackgroundImage" Stretch="UniformToFill" Visibility="{Binding IsOpened, Converter={StaticResource BooleanToVisibilityInvertedConverter}}"/>
-                    <Image Name="AudioAlbumArtImage"
-                           Source="{Binding CurrentAlbumArt}"
-                           Stretch="Uniform"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           MaxWidth="512"
-                           MaxHeight="512"
-                           SnapsToDevicePixels="True">
-                        <Image.Style>
-                            <Style TargetType="Image">
+                    <Grid ClipToBounds="True" IsHitTestVisible="False">
+                        <Grid.Style>
+                            <Style TargetType="Grid">
                                 <Setter Property="Visibility" Value="Collapsed" />
                                 <Style.Triggers>
                                     <MultiDataTrigger>
@@ -125,8 +118,25 @@
                                     </MultiDataTrigger>
                                 </Style.Triggers>
                             </Style>
-                        </Image.Style>
-                    </Image>
+                        </Grid.Style>
+                        <Border Background="#17151B" />
+                        <Image Source="{Binding CurrentAlbumArtBackdrop}"
+                               Stretch="UniformToFill"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                        <Border Background="#59000000" />
+                        <Image Name="AudioAlbumArtImage"
+                               Source="{Binding CurrentAlbumArt}"
+                               Stretch="Uniform"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               MaxWidth="512"
+                               MaxHeight="512"
+                               SnapsToDevicePixels="True">
+                            <Image.Effect>
+                                <DropShadowEffect Color="Black" BlurRadius="22" ShadowDepth="6" Direction="270" Opacity="0.5" />
+                            </Image.Effect>
+                        </Image>
+                    </Grid>
                     <controls:AudioVisualizerControl
                             x:Name="AudioVisualizer"
                             AlbumArt="{Binding CurrentAlbumArt}"
