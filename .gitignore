@@ -10,6 +10,12 @@
 .obj-localverify/
 /build-visualizer-verify/
 
-# Test projects and outputs (not committed)
+# Test outputs and local helper tools
 TestResults/
-/Support/
+/Support/*
+!/Support/PlaybackStallBench/
+/Support/PlaybackStallBench/*
+!/Support/PlaybackStallBench/PlaybackStallBench.csproj
+!/Support/PlaybackStallBench/Program.cs
+!/Support/PlaybackStallBench/LoopbackMonitor.cs
+!/Support/PlaybackStallBench/run-output-bench.ps1

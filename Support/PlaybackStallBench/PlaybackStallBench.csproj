@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+		재생 멈춤 및 실제 장치 출력 비교 벤치마크.
+		FfmeRoot 로 비교할 FFME 소스를 지정하며 run-output-bench.ps1 로 반복 측정합니다.
+	-->
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Nullable>disable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<FfmeRoot Condition="'$(FfmeRoot)' == ''">$(MSBuildThisFileDirectory)..\..\ExternalLibs\FFME</FfmeRoot>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="$(FfmeRoot)\Unosquare.FFME.Windows\Unosquare.FFME.Windows.csproj" />
+		<PackageReference Include="NAudio.Wasapi" Version="2.4.0" />
+	</ItemGroup>
+
+</Project>
