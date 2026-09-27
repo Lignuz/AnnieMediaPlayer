@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Windows.Threading;
 using System.Windows.Data;
 using FFmpeg.AutoGen;
+using Unosquare.FFME.Diagnostics;
 
 namespace AnnieMediaPlayer
 {
@@ -431,7 +432,16 @@ namespace AnnieMediaPlayer
 
         private static void FfmePlayer_OnMediaOpening(object? sender, MediaOpeningEventArgs e)
         {
+            WriteVideoPipelineSummary();
             OnMediaOpening?.Invoke(sender, e);
+        }
+
+        // 영상 처리 단계(디코딩, GPU 전송 호출, 변환, 화면 출력)별 평균 시간을 남겨 끊김 원인을 구분할 수 있게 합니다.
+        private static void WriteVideoPipelineSummary()
+        {
+            var snapshot = VideoPipelineStatistics.CaptureAndReset();
+            if (!snapshot.IsEmpty)
+                PlayerDiagnostics.Write($"Video pipeline: {snapshot}");
         }
 
         private static void FfmePlayer_OnMediaOpened(object? sender, MediaOpenedEventArgs e)
@@ -487,7 +497,8 @@ namespace AnnieMediaPlayer
             // 재생 멈춤 원인 추적을 위해 동기 버퍼링과 A/V 동기화 초기화 정보도 기록합니다.
             var isSyncInfo = e.MessageType == MediaLogMessageType.Info &&
                 (e.Message.StartsWith("SYNC-BUFFER", StringComparison.Ordinal) ||
-                 e.Message.StartsWith("AVSYNC", StringComparison.Ordinal));
+                 e.Message.StartsWith("AVSYNC", StringComparison.Ordinal) ||
+                 e.Message.StartsWith("VIDEO DECODER", StringComparison.Ordinal));
 
             if (e.MessageType == MediaLogMessageType.Warning || e.MessageType == MediaLogMessageType.Error || isSyncInfo)
             {
@@ -520,6 +531,7 @@ namespace AnnieMediaPlayer
 
         private static void FfmePlayer_OnMediaClosed(object? sender, EventArgs e)
         {
+            WriteVideoPipelineSummary();
             PlayerDiagnostics.Write("Media closed event received.");
             OnMediaClosed?.Invoke(sender, e);
         }
@@ -634,6 +646,9 @@ namespace AnnieMediaPlayer
                 _mediaElement = null;
 #pragma warning restore CS8625 // Null 리터럴을 null을 허용하지 않는 참조 형식으로 변환할 수 없습니다.
             }
+
+            // 이벤트 구독을 먼저 해제하므로 닫힘 이벤트 없이 끝나는 마지막 영상의 통계를 여기서 남깁니다.
+            WriteVideoPipelineSummary();
         }
 
         private static void UnsubscribeFFMEPlayerEvents()

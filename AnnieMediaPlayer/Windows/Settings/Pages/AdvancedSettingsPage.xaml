@@ -12,7 +12,8 @@
             <TextBlock Text="{DynamicResource Text.Advanced}" FontWeight="Bold" Margin="0,0,0,10"/>
 
             <!-- 하드웨어 가속 디코딩 -->
-            <CheckBox Content="{DynamicResource Text.UseHWAccelerator}" IsChecked="{Binding CurrentOption.UseHWAccelerator}" Margin="0,20,0,5"/>
+            <CheckBox Content="{DynamicResource Text.UseHWAccelerator}" IsChecked="{Binding CurrentOption.UseHWAccelerator}" Margin="0,20,0,2"/>
+            <TextBlock Text="{DynamicResource Text.UseHWAccelerator.Description}" TextWrapping="Wrap" FontSize="11" Opacity="0.7" Margin="20,0,0,5"/>
             <!-- DirectSound 문제가 있을 때 사용할 대체 오디오 출력 -->
             <CheckBox Content="{DynamicResource Text.UseLegacyAudioOut}" IsChecked="{Binding CurrentOption.UseLegacyAudioOut}" Margin="0,15,0,5"/>
             <CheckBox Content="{DynamicResource Text.UseAudioVisualizer}" IsChecked="{Binding CurrentOption.UseAudioVisualizer}" Margin="0,15,0,5"/>

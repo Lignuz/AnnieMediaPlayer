@@ -44,6 +44,8 @@ namespace AnnieMediaPlayer
         private readonly DispatcherTimer _mediaTransitionTimeout = new() { Interval = TimeSpan.FromSeconds(3) };
         private static readonly TimeSpan PositionUpdateInterval = TimeSpan.FromMilliseconds(50);
         private const int AudioOnlyBlockCache = 256;
+        // 코어 수만큼, 최대 8개. 스레드가 많을수록 프레임 지연과 메모리 사용이 늘어납니다.
+        private static readonly int VideoDecoderThreadCount = Math.Clamp(Environment.ProcessorCount, 1, 8);
         private long _lastPositionUpdateTimestamp;
         private volatile bool _mediaTransitionPending;
         private volatile StreamInfo? _transitionVideoStream;
@@ -97,7 +99,19 @@ namespace AnnieMediaPlayer
 
             BackgroundImage.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/background01.png"));
             ThemeManager.ThemeChanged += ThemeManager_ThemeChanged;
+
+            vm.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is nameof(MainViewModel.IsPlaying) or nameof(MainViewModel.IsAudioOnly) or nameof(MainViewModel.IsOpened))
+                    Dispatcher.BeginInvoke(UpdatePlaybackPowerRequest);
+            };
         }
+
+        // 재생 중 절전 방지. 영상이 보이는 동안만 화면 꺼짐도 막고, 최소화하면 시스템 절전만 막습니다.
+        private void UpdatePlaybackPowerRequest() =>
+            PlaybackPowerRequest.Update(
+                vm.IsOpened && vm.IsPlaying,
+                !vm.IsAudioOnly && WindowState != WindowState.Minimized);
 
         protected override void OnSourceInitialized(EventArgs e)
         {
@@ -178,6 +192,7 @@ namespace AnnieMediaPlayer
                 if (_playlistSaveTimer.IsEnabled)
                     SavePlaylistNow();
 
+                PlaybackPowerRequest.Clear();
                 _albumArtService.Dispose();
                 _currentAlbumArtService.Dispose();
                 Close();
@@ -300,11 +315,23 @@ namespace AnnieMediaPlayer
                     e.Options.IsVideoDisabled = true;
                 e.Options.AudioBlockCache = AudioOnlyBlockCache;
             }
+
+            // 영상 디코딩은 여러 스레드를 씁니다(FFmpeg 라이브러리 기본값은 1개).
+            // 하드웨어 가속을 켜도 적용해, 하드웨어가 지원하지 않는 영상이 소프트웨어로 전환됐을 때도
+            // 멀티스레드로 디코딩합니다. 영상 스트림에만 적용하며, 오디오는 FFME의 별도 작업이
+            // 디코딩하므로 영상 디코딩 스레드가 CPU 부하에 밀려도 소리는 끊기지 않습니다.
+            if (hasVideo && e.Options.VideoStream is StreamInfo decodedVideoStream)
+            {
+                e.Options.DecoderParams[decodedVideoStream.StreamIndex, "threads"] =
+                    VideoDecoderThreadCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+
             ffmeMediaElement.RendererOptions.UseLegacyAudioOut =
                 OptionViewModel.Instance.CurrentOption.UseLegacyAudioOut;
             PlayerDiagnostics.Write(
                 $"Media opening: audio={(ffmeMediaElement.RendererOptions.UseLegacyAudioOut ? "Legacy" : "DirectSound")}, " +
-                $"hardware={OptionViewModel.Instance.CurrentOption.UseHWAccelerator}");
+                $"hardware={OptionViewModel.Instance.CurrentOption.UseHWAccelerator}, " +
+                $"video threads={(hasVideo ? VideoDecoderThreadCount : 0)}");
 
             // 하드웨어 가속 옵션이 꺼져있으면 하드웨어 디바이스 목록을 설정하지 않습니다.
             if (OptionViewModel.Instance.CurrentOption.UseHWAccelerator == false)
@@ -1479,6 +1506,7 @@ namespace AnnieMediaPlayer
         private void Window_StateChanged(object sender, EventArgs e)
         {
             UpdateMaxRestoreButton();
+            UpdatePlaybackPowerRequest();
 
             // 최소화 중 건너뛴 재생 위치를 복원 시 반영합니다.
             if (WindowState != WindowState.Minimized && vm.IsOpened)

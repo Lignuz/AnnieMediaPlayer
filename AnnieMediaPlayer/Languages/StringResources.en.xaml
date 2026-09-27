@@ -51,6 +51,7 @@
     <sys:String x:Key="Text.UseContinuousPlayback">Automatically play the next playlist item</sys:String>
 
     <sys:String x:Key="Text.UseHWAccelerator">Use hardware acceleration</sys:String>
+    <sys:String x:Key="Text.UseHWAccelerator.Description">Frames decoded by the GPU are copied back to the CPU for display, so depending on the PC it may not reduce CPU usage and can slow down seeking and frame stepping. Applies to the next opened file.</sys:String>
     <sys:String x:Key="Text.UseLegacyAudioOut">Use compatibility audio output (instead of DirectSound)</sys:String>
     <sys:String x:Key="Text.UseAudioVisualizer">Show audio visualization</sys:String>
     <sys:String x:Key="Text.UseTransitionFade">Fade between playback screens</sys:String>
