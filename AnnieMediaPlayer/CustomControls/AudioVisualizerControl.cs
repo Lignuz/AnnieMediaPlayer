@@ -1553,7 +1553,16 @@ namespace AnnieMediaPlayer.CustomControls
                     var now = Stopwatch.GetTimestamp();
                     var remaining = 0L;
                     if (_lastPushTimestamp != 0)
-                        remaining = Math.Max(0, _queuedAtPush - SamplesSince(_lastPushTimestamp, now));
+                    {
+                        var elapsed = SamplesSince(_lastPushTimestamp, now);
+                        remaining = Math.Max(0, _queuedAtPush - elapsed);
+
+                        // 출력이 끊겨 분석 구간이 무음으로 넘어가 있었다면, 그만큼의 무음을 먼저 채워
+                        // 새 조각이 화면에 보이던 위치에서 이어지게 합니다. (조각을 건너뛴 경우도 짧은 무음으로 처리됩니다.)
+                        var silence = elapsed - _queuedAtPush - SilenceGrace;
+                        if (silence > 0)
+                            WriteSilence(silence);
+                    }
 
                     var write = (int)(_written % _buffer.Length);
                     foreach (var sample in samples)
@@ -1584,8 +1593,7 @@ namespace AnnieMediaPlayer.CustomControls
                         var heard = _written - _queuedAtPush + elapsed;
                         // 잔량을 다 쓰고 잠시(50ms) 더 기다려도 새 조각이 없으면 출력이 끊긴 것으로 보고
                         // 무음 구간으로 계속 이동해, 직전 스펙트럼에 멈추지 않고 자연스럽게 잦아들게 합니다.
-                        var grace = _sampleRate / 20;
-                        end = elapsed <= _queuedAtPush + grace ? Math.Min(heard, _written) : heard - grace;
+                        end = elapsed <= _queuedAtPush + SilenceGrace ? Math.Min(heard, _written) : heard - SilenceGrace;
                     }
 
                     // 아직 받지 않았거나 이미 덮어쓴 구간은 무음으로 채웁니다.
@@ -1608,6 +1616,22 @@ namespace AnnieMediaPlayer.CustomControls
                     _lastPushTimestamp = 0;
                     _queuedAtPush = 0;
                 }
+            }
+
+            // 출력이 끊긴 것으로 판단하기 전에 기다리는 시간(50ms)의 샘플 수
+            private long SilenceGrace => _sampleRate / 20;
+
+            private void WriteSilence(long count)
+            {
+                var write = (int)(_written % _buffer.Length);
+                var clear = (int)Math.Min(count, _buffer.Length);
+                for (var i = 0; i < clear; i++)
+                {
+                    _buffer[write] = 0f;
+                    write = (write + 1) % _buffer.Length;
+                }
+
+                _written += count;
             }
 
             private long SamplesSince(long timestamp, long now) =>
