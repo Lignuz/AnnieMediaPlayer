@@ -320,10 +320,14 @@ namespace AnnieMediaPlayer
             // 하드웨어 가속을 켜도 적용해, 하드웨어가 지원하지 않는 영상이 소프트웨어로 전환됐을 때도
             // 멀티스레드로 디코딩합니다. 영상 스트림에만 적용하며, 오디오는 FFME의 별도 작업이
             // 디코딩하므로 영상 디코딩 스레드가 CPU 부하에 밀려도 소리는 끊기지 않습니다.
-            if (hasVideo && e.Options.VideoStream is StreamInfo decodedVideoStream)
+            // 단, 이 FFmpeg 빌드는 디버거가 있으면 작업 스레드 이름을 예외(0x406D1388)로 알리는데,
+            // Visual Studio의 관리 코드 디버거는 이를 처리하지 않아 프로세스가 종료됩니다.
+            // 디버거가 붙어 있으면 작업 스레드를 만들지 않도록 FFmpeg 기본값(1개)을 사용합니다.
+            var videoThreadCount = !hasVideo ? 0 : System.Diagnostics.Debugger.IsAttached ? 1 : VideoDecoderThreadCount;
+            if (videoThreadCount > 1 && e.Options.VideoStream is StreamInfo decodedVideoStream)
             {
                 e.Options.DecoderParams[decodedVideoStream.StreamIndex, "threads"] =
-                    VideoDecoderThreadCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    videoThreadCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
             }
 
             ffmeMediaElement.RendererOptions.UseLegacyAudioOut =
@@ -331,7 +335,7 @@ namespace AnnieMediaPlayer
             PlayerDiagnostics.Write(
                 $"Media opening: audio={(ffmeMediaElement.RendererOptions.UseLegacyAudioOut ? "Legacy" : "DirectSound")}, " +
                 $"hardware={OptionViewModel.Instance.CurrentOption.UseHWAccelerator}, " +
-                $"video threads={(hasVideo ? VideoDecoderThreadCount : 0)}");
+                $"video threads={videoThreadCount}{(System.Diagnostics.Debugger.IsAttached ? " (debugger attached)" : string.Empty)}");
 
             // 하드웨어 가속 옵션이 꺼져있으면 하드웨어 디바이스 목록을 설정하지 않습니다.
             if (OptionViewModel.Instance.CurrentOption.UseHWAccelerator == false)
