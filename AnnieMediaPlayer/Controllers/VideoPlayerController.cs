@@ -498,7 +498,10 @@ namespace AnnieMediaPlayer
             var isSyncInfo = e.MessageType == MediaLogMessageType.Info &&
                 (e.Message.StartsWith("SYNC-BUFFER", StringComparison.Ordinal) ||
                  e.Message.StartsWith("AVSYNC", StringComparison.Ordinal) ||
-                 e.Message.StartsWith("VIDEO DECODER", StringComparison.Ordinal));
+                 e.Message.StartsWith("VIDEO DECODER", StringComparison.Ordinal) ||
+                 e.Message.StartsWith("AUDIO END", StringComparison.Ordinal) ||
+                 e.Message.StartsWith("AUDIO GAP", StringComparison.Ordinal) ||
+                 e.Message.StartsWith("AUDIO RESUMED", StringComparison.Ordinal));
 
             if (e.MessageType == MediaLogMessageType.Warning || e.MessageType == MediaLogMessageType.Error || isSyncInfo)
             {
