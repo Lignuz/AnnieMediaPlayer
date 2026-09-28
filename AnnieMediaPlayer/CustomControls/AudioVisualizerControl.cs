@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace AnnieMediaPlayer.CustomControls
 {
@@ -25,9 +26,9 @@ namespace AnnieMediaPlayer.CustomControls
         private const int AdditiveLayerCount = 6;
         private const int OpacityLevels = 64;
 
-        // 주사율이 높은 화면에서 분석·그리기 횟수가 과도하게 늘지 않도록 프레임 사이 최소 간격을 둡니다.
-        // 60Hz 화면의 프레임(약 16.7ms)은 흔들림이 있어도 건너뛰지 않고, 120Hz 이상에서는 60~72fps 로 제한됩니다.
-        private static readonly TimeSpan MinimumFrameInterval = TimeSpan.FromMilliseconds(12);
+        // 분석·그리기 주기. Windows 기본 타이머 해상도(15.6ms)에서는 31.25ms 간격(약 32fps)으로 동작합니다.
+        // 화면 합성 이벤트(초당 60번)에 맞추지 않아 WPF 도 시각화가 갱신될 때만 화면을 합성하므로 CPU 사용이 줄어듭니다.
+        private static readonly TimeSpan FrameInterval = TimeSpan.FromMilliseconds(30);
 
         private static readonly string[] ModeNames = { "Aura", "Halo", "Ribbon" };
         private static readonly FontFamily TextFont = new("Segoe UI Variable Display, Segoe UI");
@@ -69,8 +70,8 @@ namespace AnnieMediaPlayer.CustomControls
         private uint _rng = 777u;
 
         // 렌더링 루프
-        private bool _renderingHooked;
-        private TimeSpan? _lastRenderingTime;
+        private readonly DispatcherTimer _frameTimer = new(DispatcherPriority.Render) { Interval = FrameInterval };
+        private long _lastFrameTimestamp;
         private Window? _window;
 
         // 영역·리소스
@@ -130,6 +131,7 @@ namespace AnnieMediaPlayer.CustomControls
                 _window = null;
                 UpdateRenderingHook();
             };
+            _frameTimer.Tick += OnFrameTimerTick;
             MouseMove += OnMouseMove;
             MouseLeftButtonDown += OnMouseLeftButtonDown;
         }
@@ -369,30 +371,23 @@ namespace AnnieMediaPlayer.CustomControls
             var wanted = IsActive && IsLoaded && IsVisible &&
                 _window != null && _window.WindowState != WindowState.Minimized;
             _acceptAudioSamples = wanted;
-            if (wanted && !_renderingHooked)
+            if (wanted && !_frameTimer.IsEnabled)
             {
-                _lastRenderingTime = null;
-                CompositionTarget.Rendering += OnRendering;
-                _renderingHooked = true;
+                _lastFrameTimestamp = 0;
+                _frameTimer.Start();
             }
-            else if (!wanted && _renderingHooked)
+            else if (!wanted && _frameTimer.IsEnabled)
             {
-                CompositionTarget.Rendering -= OnRendering;
-                _renderingHooked = false;
+                _frameTimer.Stop();
             }
         }
 
-        // 화면 주사율에 맞춰 호출되며, 실제 경과 시간으로 시뮬레이션합니다.
-        private void OnRendering(object? sender, EventArgs e)
+        // 타이머 간격은 정확하지 않으므로 실제 경과 시간으로 시뮬레이션합니다.
+        private void OnFrameTimerTick(object? sender, EventArgs e)
         {
-            if (e is not RenderingEventArgs args || args.RenderingTime == _lastRenderingTime)
-                return; // 같은 프레임에서 여러 번 호출되는 경우
-
-            if (_lastRenderingTime is TimeSpan previous && args.RenderingTime - previous < MinimumFrameInterval)
-                return;
-
-            var dt = _lastRenderingTime is TimeSpan last ? (args.RenderingTime - last).TotalSeconds : 1.0 / 60.0;
-            _lastRenderingTime = args.RenderingTime;
+            var now = Stopwatch.GetTimestamp();
+            var dt = _lastFrameTimestamp == 0 ? FrameInterval.TotalSeconds : Stopwatch.GetElapsedTime(_lastFrameTimestamp, now).TotalSeconds;
+            _lastFrameTimestamp = now;
 
             // 창이 최소화되어 보이지 않으면 분석·그리기를 쉽니다.
             if (_window?.WindowState == WindowState.Minimized)
