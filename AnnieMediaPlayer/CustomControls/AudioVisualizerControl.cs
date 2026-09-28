@@ -18,7 +18,7 @@ namespace AnnieMediaPlayer.CustomControls
     //
     // 화면 구성: base(일반 합성) → 가산 레이어(AdditiveBlendEffect) → overlay(일반 합성)
     // 가산 혼합은 픽셀 셰이더로 처리하며, 매 프레임 DrawingGroup 만 다시 기록해 레이아웃 패스를 피합니다.
-    public sealed class AudioVisualizerControl : Control
+    public sealed partial class AudioVisualizerControl : Control
     {
         private const int FftSize = 4096;
         private const int BandCount = 64;
@@ -112,8 +112,10 @@ namespace AnnieMediaPlayer.CustomControls
             _outerLayer.Child = _innerLayer;
             _root.Children.Add(_outerLayer);
             _root.Children.Add(_overlayHost);
+            _root.Children.Add(_gpuImage);
             _root.Children.Add(_modeTransitionImage);
             AddVisualChild(_root);
+            InitializeGpuLayer();
 
             IsVisibleChanged += (_, _) => UpdateRenderingHook();
             Loaded += (_, _) =>
@@ -126,6 +128,7 @@ namespace AnnieMediaPlayer.CustomControls
             Unloaded += (_, _) =>
             {
                 ClearModeTransition();
+                ReleaseGpu();
                 if (_window != null)
                     _window.StateChanged -= OnWindowStateChanged;
                 _window = null;
@@ -239,7 +242,10 @@ namespace AnnieMediaPlayer.CustomControls
         {
             var control = (AudioVisualizerControl)d;
             if (!(bool)e.NewValue)
+            {
                 control.ClearModeTransition();
+                control.ReleaseGpu(); // 보이지 않는 동안 GPU 메모리를 돌려줍니다.
+            }
             control._hudRemaining = 2.8f;
             control.ResetAudioInput();
             control.UpdateRenderingHook();
@@ -494,6 +500,16 @@ namespace AnnieMediaPlayer.CustomControls
         private void SetMode(int mode)
         {
             var nextMode = (mode + ModeCount) % ModeCount;
+            if (IsGpuActive)
+            {
+                if (UseTransitionFade && nextMode != _mode)
+                    BeginGpuTransition();
+                _mode = nextMode;
+                _hudRemaining = 2.8f;
+                RenderNow();
+                return;
+            }
+
             var previousFrame = UseTransitionFade && nextMode != _mode ? CaptureModeFrame() : null;
             if (!UseTransitionFade)
                 ClearModeTransition();
@@ -551,6 +567,7 @@ namespace AnnieMediaPlayer.CustomControls
 
         private void ClearModeTransition()
         {
+            _gpu?.ClearTransition();
             _modeTransitionVersion++;
             _modeTransitionImage.BeginAnimation(UIElement.OpacityProperty, null);
             _modeTransitionImage.Opacity = 1;
@@ -596,11 +613,16 @@ namespace AnnieMediaPlayer.CustomControls
             EnsureResources();
             var res = _res!;
             var s = _analyzer.Spectrum;
+            if (TryRenderGpu(res, s))
+                return;
 
-            _innerLayer.Effect = _mode == 0 ? null : _innerEffect;
-            _outerLayer.Effect = _mode == 2 ? _outerEffect : null;
+            // WPF 가 소프트웨어로 렌더링하면 가산 혼합 셰이더가 매우 느리므로, 가산 레이어를 바탕에 일반 혼합으로 그립니다.
+            // (어두운 배경이라 결과가 거의 같습니다.)
+            var software = IsWpfSoftwareRendering();
+            _innerLayer.Effect = software || _mode == 0 ? null : _innerEffect;
+            _outerLayer.Effect = !software && _mode == 2 ? _outerEffect : null;
             // 효과가 켜진 레이어의 입력은 모두 채웁니다 (빈 이미지를 셰이더 입력으로 넘기지 않도록 Ribbon 의 6번째도 투명 레이어로 유지).
-            var usedLayers = _mode switch { 0 => 0, 1 => 3, _ => 6 };
+            var usedLayers = software ? 0 : _mode switch { 0 => 0, 1 => 3, _ => 6 };
             for (var i = usedLayers; i < AdditiveLayerCount; i++)
             {
                 if (_additive[i].Children.Count > 0)
@@ -624,12 +646,13 @@ namespace AnnieMediaPlayer.CustomControls
 
                 // 바탕도 영역으로 잘라야 셰이더 입력(바탕)과 가산 레이어 이미지의 영역이 일치합니다.
                 baseDc.PushClip(new RectangleGeometry(full));
+                var additiveTargets = software ? Enumerable.Repeat(baseDc, AdditiveLayerCount).ToArray() : add;
 
                 switch (_mode)
                 {
                     case 0: DrawAura(res, s, baseDc); break;
-                    case 1: DrawHalo(res, s, baseDc, add, overlay); break;
-                    default: DrawRibbon(res, s, baseDc, add, overlay); break;
+                    case 1: DrawHalo(res, s, baseDc, additiveTargets, overlay); break;
+                    default: DrawRibbon(res, s, baseDc, additiveTargets, overlay); break;
                 }
                 DrawHud(overlay);
             }
@@ -645,6 +668,11 @@ namespace AnnieMediaPlayer.CustomControls
                 overlay.Close();
             }
         }
+
+        private bool IsWpfSoftwareRendering() =>
+            SystemParameters.IsRemoteSession || RenderCapability.Tier >> 16 == 0 ||
+            RenderOptions.ProcessRenderMode == System.Windows.Interop.RenderMode.SoftwareOnly ||
+            PresentationSource.FromVisual(this) is System.Windows.Interop.HwndSource { CompositionTarget.RenderMode: System.Windows.Interop.RenderMode.SoftwareOnly };
 
         private void ClearLayers()
         {
@@ -985,6 +1013,7 @@ namespace AnnieMediaPlayer.CustomControls
 
             public VizResources(BitmapSource? cover)
             {
+                CoverSource = cover;
                 Color? vibrant = null;
                 try
                 {
@@ -1041,6 +1070,7 @@ namespace AnnieMediaPlayer.CustomControls
             }
 
             public VizPalette Palette { get; }
+            public BitmapSource? CoverSource { get; }
             public SolidColorBrush Deep { get; }
             public SolidColorBrush DeepHole { get; }
             public SolidColorBrush RibbonBackground { get; }
