@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,8 +25,10 @@ namespace AnnieMediaPlayer.CustomControls
         private const int AdditiveLayerCount = 6;
         private const int OpacityLevels = 64;
 
-        // 화면 주사율과 관계없이 초당 최대 약 40번만 분석·그리기를 합니다.
-        private static readonly TimeSpan MinimumFrameInterval = TimeSpan.FromMilliseconds(25);
+        // 주사율이 높은 화면에서 분석·그리기 횟수가 과도하게 늘지 않도록 프레임 사이 최소 간격을 둡니다.
+        // 60Hz 화면의 프레임(약 16.7ms)은 흔들림이 있어도 건너뛰지 않고, 120Hz 이상에서는 60~72fps 로 제한됩니다.
+        private static readonly TimeSpan MinimumFrameInterval = TimeSpan.FromMilliseconds(12);
+
         private static readonly string[] ModeNames = { "Aura", "Halo", "Ribbon" };
         private static readonly FontFamily TextFont = new("Segoe UI Variable Display, Segoe UI");
         private static readonly CultureInfo TextCulture = CultureInfo.GetCultureInfo("ko-KR");
@@ -342,7 +345,7 @@ namespace AnnieMediaPlayer.CustomControls
             }
 
             _analyzer.SetSampleRate(sampleRate);
-            _audio.Push(mono.AsSpan(0, frameCount));
+            _audio.Push(mono.AsSpan(0, frameCount), sampleRate);
         }
 
         private void ResetAudioInput()
@@ -385,7 +388,6 @@ namespace AnnieMediaPlayer.CustomControls
             if (e is not RenderingEventArgs args || args.RenderingTime == _lastRenderingTime)
                 return; // 같은 프레임에서 여러 번 호출되는 경우
 
-            // 주사율이 높은 화면에서도 분석과 그리기 비용이 늘지 않도록 프레임을 건너뜁니다.
             if (_lastRenderingTime is TimeSpan previous && args.RenderingTime - previous < MinimumFrameInterval)
                 return;
 
@@ -1521,28 +1523,49 @@ namespace AnnieMediaPlayer.CustomControls
             }
         }
 
+        // 오디오 출력에 보낸 샘플을 모아 두고, 지금 들리는 위치 직전의 구간을 꺼냅니다.
+        // 출력 장치에 쌓인 잔량을 추적합니다: 조각을 받을 때마다 잔량 = (직전 잔량 − 그 뒤 흐른 시간) + 새 조각.
+        //   들리는 위치 = 받은 데이터 끝 − 잔량 + 마지막 조각을 받은 뒤 흐른 시간
+        // 조각이 드문드문(약 100ms 간격) 와도 분석 구간이 매 프레임 연속으로 움직이고,
+        // 재생 시작이나 탐색 직후처럼 출력 버퍼를 한 번에 채우는 경우도 같은 방식으로 맞춰집니다.
         private sealed class AudioRingBuffer
         {
+            // 오디오 출력 스레드가 잠금을 오래 기다리지 않도록 제한합니다.
+            private static readonly TimeSpan PushLockTimeout = TimeSpan.FromMilliseconds(2);
+
             private readonly float[] _buffer;
             private readonly object _sync = new();
-            private int _write;
+            private long _written;
+            private long _lastPushTimestamp;
+            private long _queuedAtPush;
+            private int _sampleRate = 48000;
 
             public AudioRingBuffer(int size) => _buffer = new float[size];
 
-            // 오디오 출력 스레드에서 호출됩니다. UI 스레드가 잠금을 쥔 채 CPU를 받지 못하면
-            // 오디오 출력까지 멈추므로, 잠금을 바로 얻지 못하면 이번 샘플은 시각화에서 건너뜁니다.
-            public void Push(ReadOnlySpan<float> samples)
+            // 오디오 출력 스레드에서 호출됩니다. 잠금을 제때 얻지 못하면 이번 조각은 시각화에서 건너뜁니다.
+            public void Push(ReadOnlySpan<float> samples, int sampleRate)
             {
-                if (!Monitor.TryEnter(_sync))
+                if (!Monitor.TryEnter(_sync, PushLockTimeout))
                     return;
 
                 try
                 {
+                    var now = Stopwatch.GetTimestamp();
+                    var remaining = 0L;
+                    if (_lastPushTimestamp != 0)
+                        remaining = Math.Max(0, _queuedAtPush - SamplesSince(_lastPushTimestamp, now));
+
+                    var write = (int)(_written % _buffer.Length);
                     foreach (var sample in samples)
                     {
-                        _buffer[_write] = sample;
-                        _write = (_write + 1) % _buffer.Length;
+                        _buffer[write] = sample;
+                        write = (write + 1) % _buffer.Length;
                     }
+
+                    _written += samples.Length;
+                    _sampleRate = sampleRate;
+                    _queuedAtPush = remaining + samples.Length;
+                    _lastPushTimestamp = now;
                 }
                 finally
                 {
@@ -1554,9 +1577,25 @@ namespace AnnieMediaPlayer.CustomControls
             {
                 lock (_sync)
                 {
-                    var start = (_write + _buffer.Length - output.Length) % _buffer.Length;
+                    var end = _written;
+                    if (_lastPushTimestamp != 0)
+                    {
+                        var elapsed = SamplesSince(_lastPushTimestamp, Stopwatch.GetTimestamp());
+                        var heard = _written - _queuedAtPush + elapsed;
+                        // 잔량을 다 쓰고 잠시(50ms) 더 기다려도 새 조각이 없으면 출력이 끊긴 것으로 보고
+                        // 무음 구간으로 계속 이동해, 직전 스펙트럼에 멈추지 않고 자연스럽게 잦아들게 합니다.
+                        var grace = _sampleRate / 20;
+                        end = elapsed <= _queuedAtPush + grace ? Math.Min(heard, _written) : heard - grace;
+                    }
+
+                    // 아직 받지 않았거나 이미 덮어쓴 구간은 무음으로 채웁니다.
+                    var oldest = Math.Max(0, _written - _buffer.Length);
+                    var start = end - output.Length;
                     for (var i = 0; i < output.Length; i++)
-                        output[i] = _buffer[(start + i) % _buffer.Length];
+                    {
+                        var index = start + i;
+                        output[i] = index < oldest || index >= _written ? 0f : _buffer[(int)(index % _buffer.Length)];
+                    }
                 }
             }
 
@@ -1565,9 +1604,14 @@ namespace AnnieMediaPlayer.CustomControls
                 lock (_sync)
                 {
                     Array.Clear(_buffer);
-                    _write = 0;
+                    _written = 0;
+                    _lastPushTimestamp = 0;
+                    _queuedAtPush = 0;
                 }
             }
+
+            private long SamplesSince(long timestamp, long now) =>
+                (long)(Stopwatch.GetElapsedTime(timestamp, now).TotalSeconds * _sampleRate);
         }
 
         #endregion
