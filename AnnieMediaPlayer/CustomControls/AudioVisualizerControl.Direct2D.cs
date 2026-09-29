@@ -46,6 +46,13 @@ namespace AnnieMediaPlayer.CustomControls
         private int _gpuFailureCount;
         private long _gpuFirstFailureTimestamp;
 
+        private static readonly TimeSpan FrontBufferRetryInitialDelay = TimeSpan.FromSeconds(2);
+        private static readonly TimeSpan FrontBufferRetryMaxDelay = TimeSpan.FromSeconds(60);
+        private static readonly TimeSpan FrontBufferRetryGrace = TimeSpan.FromSeconds(1);
+        private long _frontBufferLostTimestamp;
+        private long _frontBufferRetryStartTimestamp;
+        private TimeSpan _frontBufferRetryDelay;
+
         private void InitializeGpuLayer()
         {
             _gpuImage.Source = _gpuImageSource;
@@ -82,9 +89,8 @@ namespace AnnieMediaPlayer.CustomControls
                 return false;
             }
 
-            // 장치가 손실된 동안에는 그리지 않고 복구를 기다립니다.
-            if (!_gpuImageSource.IsFrontBufferAvailable)
-                return true;
+            if (!IsFrontBufferReady())
+                return false;
 
             try
             {
@@ -114,7 +120,14 @@ namespace AnnieMediaPlayer.CustomControls
                     return false;
                 }
 
-                if (result == GpuFrameResult.Presented && _gpuImage.Visibility != Visibility.Visible)
+                if (result == GpuFrameResult.Skipped)
+                {
+                    // GPU 화면이 보이는 중이면 이전 프레임을 유지하고,
+                    // 아직 한 번도 표시하지 않았으면(새로 만든 렌더러) 이번 프레임은 WPF 렌더러로 그립니다.
+                    return _gpuImage.Visibility == Visibility.Visible;
+                }
+
+                if (_gpuImage.Visibility != Visibility.Visible)
                 {
                     ClearLayers();
                     ClearModeTransition();
@@ -129,6 +142,51 @@ namespace AnnieMediaPlayer.CustomControls
                 RecordGpuFailure(ex.ToString());
                 return false;
             }
+        }
+
+        // GPU 전면 버퍼를 쓸 수 없는 동안(장치 손실 등)에는 WPF 렌더러로 그립니다.
+        // GPU 이미지를 화면에서 내리면 복구 알림(IsFrontBufferAvailableChanged)이 오지 않을 수 있으므로,
+        // 간격을 늘려 가며 한 번씩 다시 시도하고, 시도한 직후에는 알림이 도착할 때까지 잠시 상태 값을 무시합니다.
+        private bool IsFrontBufferReady()
+        {
+            if (_gpuImageSource.IsFrontBufferAvailable)
+            {
+                _frontBufferLostTimestamp = 0;
+                _frontBufferRetryStartTimestamp = 0;
+                _frontBufferRetryDelay = TimeSpan.Zero;
+                return true;
+            }
+
+            if (_frontBufferRetryStartTimestamp != 0)
+            {
+                // 다시 시도한 렌더러가 살아 있으면 복구 알림을 잠시 기다립니다.
+                if (_gpu is not null && Stopwatch.GetElapsedTime(_frontBufferRetryStartTimestamp) < FrontBufferRetryGrace)
+                    return true;
+
+                // 시도가 실패해 렌더러가 해제됐거나, 기다려도 복구되지 않았으면 이번 시도는 끝냅니다.
+                // 실패한 시도마다 새 렌더러를 만들지 않도록 다음 시도까지 간격을 둡니다.
+                ScheduleFrontBufferRetry();
+            }
+            else if (_frontBufferLostTimestamp == 0)
+            {
+                ScheduleFrontBufferRetry();
+            }
+
+            if (Stopwatch.GetElapsedTime(_frontBufferLostTimestamp) < _frontBufferRetryDelay)
+                return false;
+
+            _frontBufferRetryStartTimestamp = Stopwatch.GetTimestamp();
+            return true;
+        }
+
+        private void ScheduleFrontBufferRetry()
+        {
+            ReleaseGpu();
+            _frontBufferRetryDelay = _frontBufferRetryDelay == TimeSpan.Zero
+                ? FrontBufferRetryInitialDelay
+                : TimeSpan.FromTicks(Math.Min(_frontBufferRetryDelay.Ticks * 2, FrontBufferRetryMaxDelay.Ticks));
+            _frontBufferLostTimestamp = Stopwatch.GetTimestamp();
+            _frontBufferRetryStartTimestamp = 0;
         }
 
         private void RecordGpuFailure(string reason)
