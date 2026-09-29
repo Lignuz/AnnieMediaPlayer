@@ -21,6 +21,14 @@ This software includes third-party libraries. Their respective licenses and attr
    - License: MIT License
    - Website: https://www.nuget.org/packages/System.Drawing.Common/9.0.4
 
+5. Vortice.Windows (Vortice.Direct2D1, Vortice.Direct3D11, Vortice.Direct3D9)
+   - License: MIT License
+   - Website: https://github.com/amerkoleci/Vortice.Windows
+
+6. SharpGen.Runtime, SharpGen.Runtime.COM (dependencies of Vortice.Windows)
+   - License: MIT License
+   - Website: https://github.com/SharpGenTools/SharpGenTools
+
 ---
 
 The main application source code is licensed under the GNU General Public License v3.0.  

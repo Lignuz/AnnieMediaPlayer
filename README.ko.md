@@ -13,3 +13,5 @@
 - FFmpeg.AutoGen (LGPL v3) – https://github.com/Ruslan-B/FFmpeg.AutoGen
 - FFME.Windows (Ms-PL) – https://github.com/unosquare/ffmediaelement
 - System.Drawing.Common (MIT) – https://www.nuget.org/packages/System.Drawing.Common/9.0.4
+- Vortice.Windows (MIT) – Vortice.Direct2D1, Vortice.Direct3D11, Vortice.Direct3D9 – https://github.com/amerkoleci/Vortice.Windows
+- SharpGen.Runtime (MIT) – Vortice.Windows 의존 패키지 – https://github.com/SharpGenTools/SharpGenTools
