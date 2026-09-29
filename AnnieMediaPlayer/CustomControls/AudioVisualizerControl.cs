@@ -57,6 +57,7 @@ namespace AnnieMediaPlayer.CustomControls
         private readonly AdditiveBlendEffect _outerEffect = new();
         private readonly DrawingGroup[] _additive = new DrawingGroup[AdditiveLayerCount];
         private readonly ImageBrush[] _additiveBrushes = new ImageBrush[AdditiveLayerCount];
+        private readonly DrawingContext[] _softwareAdditiveTargets = new DrawingContext[AdditiveLayerCount]; // 소프트웨어 렌더링 때 가산 레이어 대신 바탕에 그림
 
         // 시뮬레이션 상태
         private readonly List<Particle> _particles = new();
@@ -646,7 +647,9 @@ namespace AnnieMediaPlayer.CustomControls
 
                 // 바탕도 영역으로 잘라야 셰이더 입력(바탕)과 가산 레이어 이미지의 영역이 일치합니다.
                 baseDc.PushClip(new RectangleGeometry(full));
-                var additiveTargets = software ? Enumerable.Repeat(baseDc, AdditiveLayerCount).ToArray() : add;
+                if (software)
+                    Array.Fill(_softwareAdditiveTargets, baseDc);
+                var additiveTargets = software ? _softwareAdditiveTargets : add;
 
                 switch (_mode)
                 {
@@ -666,6 +669,7 @@ namespace AnnieMediaPlayer.CustomControls
                 baseDc.Pop();
                 baseDc.Close();
                 overlay.Close();
+                Array.Clear(_softwareAdditiveTargets);
             }
         }
 
