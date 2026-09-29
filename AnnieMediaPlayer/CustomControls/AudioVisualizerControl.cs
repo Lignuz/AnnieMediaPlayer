@@ -25,9 +25,10 @@ namespace AnnieMediaPlayer.CustomControls
         private const int AdditiveLayerCount = 6;
         private const int OpacityLevels = 64;
 
-        // 분석·그리기 주기. Windows 기본 타이머 해상도(15.6ms)에서는 31.25ms 간격(약 32fps)으로 동작합니다.
+        // 분석·그리기 주기. 실제 간격은 시스템 타이머 해상도를 따릅니다: 기본 해상도(15.6ms)에서는 31.25ms(약 32fps),
+        // 다른 프로그램이 해상도를 높여 둔 경우에는 16ms 에 가깝게 동작합니다.
         // 화면 합성 이벤트(초당 60번)에 맞추지 않아 WPF 도 시각화가 갱신될 때만 화면을 합성하므로 CPU 사용이 줄어듭니다.
-        private static readonly TimeSpan FrameInterval = TimeSpan.FromMilliseconds(30);
+        private static readonly TimeSpan FrameInterval = TimeSpan.FromMilliseconds(16);
 
         private static readonly FontFamily TextFont = new("Segoe UI Variable Display, Segoe UI");
         private static readonly CultureInfo TextCulture = CultureInfo.GetCultureInfo("ko-KR");
