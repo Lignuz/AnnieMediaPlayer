@@ -170,10 +170,14 @@ namespace AnnieMediaPlayer
                 return;
 
             e.Cancel = true;
-            _isClosing = true;
             OptionViewModel.Instance.UseOverlayControlChanged -= UseOverlayControlChanged;
             _explicitStopTransitionPending = false;
             FinishMediaTransition(false);
+
+            // 종료하면서 재생을 멈출 때 정지 화면으로 바뀌면 닫히기 직전에 깜빡이므로, 지금 화면을 덮어 둔 채 닫습니다.
+            if (vm.IsOpened)
+                BeginMediaTransition();
+            _isClosing = true;
 
             try
             {
@@ -480,10 +484,11 @@ namespace AnnieMediaPlayer
         // 미디어 상태 변경시 이벤트 
         private void VideoPlayerController_OnMediaStateChanged(object? sender, MediaStateChangedEventArgs e)
         {
-            if (_stopRequestedDuringOpen)
+            // 종료 중에는 화면을 정지 상태로 되돌리지 않고 그대로 닫습니다.
+            if (_stopRequestedDuringOpen || _isClosing)
                 return;
 
-            if (e.MediaState == MediaPlaybackState.Close || 
+            if (e.MediaState == MediaPlaybackState.Close ||
                 e.MediaState == MediaPlaybackState.Stop)
             {
                 if (e.MediaState == MediaPlaybackState.Stop && _explicitStopTransitionPending)
