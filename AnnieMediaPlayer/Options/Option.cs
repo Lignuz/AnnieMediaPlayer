@@ -64,6 +64,7 @@ namespace AnnieMediaPlayer.Options
             UseOpenPlay = true;
             UseLegacyAudioOut = false;
             AudioViewMode = AudioViewMode.Aura;
+            ShowLyrics = false;
             UseTransitionFade = true;
             UsePlaylistPersistence = true;
             UseContinuousPlayback = true;
@@ -83,6 +84,7 @@ namespace AnnieMediaPlayer.Options
         public bool UseOpenPlay { get => Get(); set => Set(value); }
         public bool UseLegacyAudioOut { get => Get(); set => Set(value); }
         public AudioViewMode AudioViewMode { get => Get(); set => Set(value); }
+        public bool ShowLyrics { get => Get(); set => Set(value); }
         public bool UseTransitionFade { get => Get(); set => Set(value); }
         public bool UsePlaylistPersistence { get => Get(); set => Set(value); }
         public bool UseContinuousPlayback { get => Get(); set => Set(value); }

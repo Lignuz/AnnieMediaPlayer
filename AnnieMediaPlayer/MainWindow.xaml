@@ -38,7 +38,7 @@
         <local:FileNameConverter x:Key="FileNameConverter"/>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
 
-        <!-- 오디오 화면 모드 선택 버튼 (Tag 가 True 면 선택된 모드) -->
+        <!-- 오디오 화면 위 버튼: 모드 선택·가사 켜기 (Tag 가 True 면 선택되었거나 켜진 상태) -->
         <Style x:Key="AudioModeButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="92"/>
             <Setter Property="Height" Value="28"/>
@@ -202,6 +202,13 @@
                     </controls:AudioVisualizerControl>
                     </Grid>
                     <Image x:Name="MediaTransitionImage" Stretch="Fill" Visibility="Collapsed" IsHitTestVisible="False"/>
+                    <!-- 가사 영역: 켜면 오른쪽에서 밀려 나오고, 왼쪽 화면은 남은 영역 가운데로 옮겨 갑니다 -->
+                    <Grid x:Name="LyricsRegion" HorizontalAlignment="Right" Visibility="Collapsed" Opacity="0">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="LyricsRegionShift"/>
+                        </Grid.RenderTransform>
+                        <controls:LyricsPanel x:Name="LyricsView" Margin="0,68,24,24" LineClicked="LyricsView_LineClicked"/>
+                    </Grid>
                     <!-- 오디오 화면 모드 선택 (마우스를 움직이면 잠시 나타남) -->
                     <Border x:Name="AudioModeBar" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,28"
                             Padding="5" CornerRadius="19" Background="#59101014" BorderBrush="#26FFFFFF" BorderThickness="1"
@@ -221,6 +228,21 @@
                                     Content="Ribbon" CommandParameter="{x:Static option:AudioViewMode.Ribbon}"
                                     Tag="{Binding CurrentOption.AudioViewMode, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Ribbon}"/>
                         </StackPanel>
+                    </Border>
+                    <!-- 가사 켜기/끄기 (마우스를 움직이면 잠시 나타남) -->
+                    <Border x:Name="LyricsToggleBar" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,16,24,0"
+                            Padding="5" CornerRadius="19" Background="#59101014" BorderBrush="#26FFFFFF" BorderThickness="1"
+                            Opacity="0" IsHitTestVisible="False"
+                            Visibility="{Binding IsAudioOnly, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Button Style="{StaticResource AudioModeButtonStyle}" Width="Auto" Click="LyricsToggle_Click"
+                                Tag="{Binding CurrentOption.ShowLyrics}">
+                            <StackPanel Orientation="Horizontal" Margin="14,0">
+                                <Path Width="13" Height="13" Stretch="Uniform" Margin="0,0,7,0" VerticalAlignment="Center"
+                                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                      Data="M6,1 L15,0 L15,10 A2.4,2.4 0 1 1 13.4,7.7 L13.4,3 L7.6,3.7 L7.6,11.5 A2.4,2.4 0 1 1 6,9.2 Z"/>
+                                <TextBlock Text="{DynamicResource Text.Lyrics}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                     </Border>
                     <TextBlock Name="OverlayMessage" TextWrapping="Wrap" Margin="10" FontWeight="Bold" Foreground="White" IsHitTestVisible="False">
                         <TextBlock.Effect>

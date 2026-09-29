@@ -54,6 +54,9 @@
     <sys:String x:Key="Text.UseHWAccelerator.Description">Frames decoded by the GPU are copied back to the CPU for display, so depending on the PC it may not reduce CPU usage and can slow down seeking and frame stepping. Applies to the next opened file.</sys:String>
     <sys:String x:Key="Text.UseLegacyAudioOut">Use compatibility audio output (instead of DirectSound)</sys:String>
     <sys:String x:Key="Text.AudioViewMode.Basic">Basic</sys:String>
+    <sys:String x:Key="Text.Lyrics">Lyrics</sys:String>
+    <sys:String x:Key="Text.Lyrics.None">No lyrics</sys:String>
+    <sys:String x:Key="Text.Lyrics.NoneHint">Put an .lrc file with the same name next to the song, or add lyrics to the song's tags.</sys:String>
     <sys:String x:Key="Text.UseTransitionFade">Fade between playback screens</sys:String>
     <sys:String x:Key="Text.UseOpenPlay">Start playing immediately after opening media</sys:String>
 

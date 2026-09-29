@@ -173,6 +173,10 @@ namespace AnnieMediaPlayer.CustomControls
             nameof(VisualizerMode), typeof(int), typeof(AudioVisualizerControl),
             new FrameworkPropertyMetadata(0, OnVisualizerModeChanged));
 
+        public static readonly DependencyProperty ContentRightInsetProperty = DependencyProperty.Register(
+            nameof(ContentRightInset), typeof(double), typeof(AudioVisualizerControl),
+            new FrameworkPropertyMetadata(0d));
+
         public bool IsActive
         {
             get => (bool)GetValue(IsActiveProperty);
@@ -230,6 +234,15 @@ namespace AnnieMediaPlayer.CustomControls
 
         private static void OnVisualizerModeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) =>
             ((AudioVisualizerControl)d).SetMode((int)e.NewValue);
+
+        // 오른쪽에 다른 내용(가사)이 겹칠 때 비워 둘 폭. 배경은 전체에 그리고, 커버·링·웨이브는 남은 왼쪽 영역에 맞춥니다.
+        public double ContentRightInset
+        {
+            get => (double)GetValue(ContentRightInsetProperty);
+            set => SetValue(ContentRightInsetProperty, value);
+        }
+
+        private double ContentWidth => Math.Max(_width * 0.3, _width - ContentRightInset);
 
         private static void OnIsActiveChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -664,8 +677,9 @@ namespace AnnieMediaPlayer.CustomControls
             Grain(dc, res, 1.0);
 
             // 커버: 부드러운 그림자 + 비트 펄스
-            var cs = m * 0.46 * (1 + 0.018 * s.Beat);
-            double coverX = w / 2, coverY = h * 0.44;
+            var cw = ContentWidth;
+            var cs = Math.Min(cw, h) * 0.46 * (1 + 0.018 * s.Beat);
+            double coverX = cw / 2, coverY = h * 0.44;
             FillRadial(dc, res.Shadow, coverX, coverY + cs * 0.10, cs * 0.78, cs * 0.72, 0.9);
             var rc = new Rect(coverX - cs / 2, coverY - cs / 2, cs, cs);
             DrawCoverRect(dc, res, rc, cs * 0.035);
@@ -673,9 +687,9 @@ namespace AnnieMediaPlayer.CustomControls
 
             var ty = rc.Bottom + 28 * u;
             DrawText(dc, TitleOrFileName(), 30 * u, FontWeights.SemiBold, TextAlignment.Center,
-                new Rect(w * 0.1, ty, w * 0.8, 40 * u), WithAlpha(Colors.White, 0.96f));
+                new Rect(cw * 0.1, ty, cw * 0.8, 40 * u), WithAlpha(Colors.White, 0.96f));
             DrawText(dc, ArtistLine(), 18 * u, FontWeights.Normal, TextAlignment.Center,
-                new Rect(w * 0.1, ty + 40 * u, w * 0.8, 26 * u), WithAlpha(Colors.White, 0.62f));
+                new Rect(cw * 0.1, ty + 40 * u, cw * 0.8, 26 * u), WithAlpha(Colors.White, 0.62f));
 
             // 커버 아래 미니 레벨 라인
             var lineWidth = cs * (0.25 + 0.75 * s.Level);
@@ -686,9 +700,9 @@ namespace AnnieMediaPlayer.CustomControls
         // [2] Halo — 원형 커버 + 대칭 캡슐 스펙트럼 + 비트 파티클
         private void DrawHalo(VizResources res, Spectrum s, DrawingContext dc, DrawingContext[] add, DrawingContext overlay)
         {
-            double w = _width, h = _height, u = _unit;
-            var m = Math.Min(w, h);
-            double cx = w / 2, cy = h * 0.47;
+            double w = _width, h = _height, u = _unit, cw = ContentWidth;
+            var m = Math.Min(cw, h);
+            double cx = cw / 2, cy = h * 0.47;
             var radius = m * 0.19 * (1 + 0.035 * s.Beat); // 커버 반지름
             var center = new Point(cx, cy);
 
@@ -737,23 +751,29 @@ namespace AnnieMediaPlayer.CustomControls
             Grain(overlay, res, 0.8);
             var ty = h - 158 * u;
             DrawText(overlay, TitleOrFileName(), 26 * u, FontWeights.SemiBold, TextAlignment.Center,
-                new Rect(w * 0.1, ty, w * 0.8, 36 * u), WithAlpha(Colors.White, 0.95f));
+                new Rect(cw * 0.1, ty, cw * 0.8, 36 * u), WithAlpha(Colors.White, 0.95f));
             DrawText(overlay, ArtistLine(), 16 * u, FontWeights.Normal, TextAlignment.Center,
-                new Rect(w * 0.1, ty + 34 * u, w * 0.8, 24 * u), WithAlpha(Colors.White, 0.55f));
+                new Rect(cw * 0.1, ty + 34 * u, cw * 0.8, 24 * u), WithAlpha(Colors.White, 0.55f));
         }
 
         // [3] Ribbon — 겹쳐진 발광 웨이브 (가산 혼합)
         private void DrawRibbon(VizResources res, Spectrum s, DrawingContext dc, DrawingContext[] add, DrawingContext overlay)
         {
-            double w = _width, h = _height, u = _unit;
+            double w = _width, h = _height, u = _unit, cw = ContentWidth;
             double x0 = res.RibbonX0, span = res.RibbonSpan, y0 = h * 0.56;
             dc.DrawRectangle(res.RibbonBackground, null, new Rect(0, 0, w, h));
+
+            // 웨이브 브러시는 전체 폭 기준으로 만들어 두었으므로, 내용 영역이 좁아지면 가로로 줄여 그립니다.
+            var squeeze = new ScaleTransform(cw / w, 1);
+            squeeze.Freeze();
 
             // 가산: 하단 엣지 글로우 + 중심 코어 라인
             add[0].DrawRectangle(res.EdgeGlow.Get(0.35 + 0.5 * s.Bass), null, new Rect(0, h * 0.55, w, h * 0.45));
             var coreLine = new Pen(res.WhiteFade.Get(0.25 + 0.5 * s.Level), 1.5 * u);
             coreLine.Freeze();
+            add[0].PushTransform(squeeze);
             add[0].DrawLine(coreLine, new Point(x0, y0), new Point(x0 + span, y0));
+            add[0].Pop();
 
             // 가산: 웨이브 4겹 (레이어마다 별도 입력이라 서로 더해짐)
             Span<float> energy = stackalloc float[4] { s.Bass, s.LowMid, s.Mid, s.Treble * 1.4f };
@@ -800,9 +820,11 @@ namespace AnnieMediaPlayer.CustomControls
                 edge.Freeze();
 
                 var target = add[layer + 1];
+                target.PushTransform(squeeze);
                 target.DrawGeometry(res.Ribbons[layer].Get(0.28 + 0.30 * Clamp01(energy[layer])), null, fill);
                 target.DrawGeometry(null, res.RibbonGlowPens[layer], edge);
                 target.DrawGeometry(null, res.RibbonCorePens[layer], edge);
+                target.Pop();
             }
 
             Grain(overlay, res, 0.7);
@@ -813,7 +835,7 @@ namespace AnnieMediaPlayer.CustomControls
             FillRadial(overlay, res.Shadow, margin + size / 2, margin + size / 2 + 6 * u, size * 0.8, size * 0.8, 0.7);
             DrawCoverRect(overlay, res, rc, 10 * u);
             var textLeft = rc.Right + 18 * u;
-            var textWidth = Math.Max(0, w - margin - textLeft);
+            var textWidth = Math.Max(0, cw - margin - textLeft);
             DrawText(overlay, TitleOrFileName(), 22 * u, FontWeights.SemiBold, TextAlignment.Left,
                 new Rect(textLeft, margin + 6 * u, textWidth, 32 * u), WithAlpha(Colors.White, 0.95f));
             DrawText(overlay, ArtistLine(), 15 * u, FontWeights.Normal, TextAlignment.Left,

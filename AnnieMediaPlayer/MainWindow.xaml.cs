@@ -390,10 +390,12 @@ namespace AnnieMediaPlayer
                     "artist", "performer", "album_artist", "album-artist", "albumartist") ?? string.Empty;
                 vm.AudioAlbum = FindMetadataValue(e.Info.Metadata, audioMetadata, "album") ?? string.Empty;
                 albumArtLoad = LoadCurrentAlbumArtAsync(e.Info.MediaSource);
+                LoadLyrics(e.Info.MediaSource, e.Info.Metadata, audioMetadata);
                 ShowAudioChrome();
             }
             else
             {
+                ClearLyrics();
                 _currentAlbumArtLoad?.Cancel();
                 vm.CurrentAlbumArt = null;
                 vm.CurrentAlbumArtBackdrop = null;
@@ -472,6 +474,7 @@ namespace AnnieMediaPlayer
             }
 
             vm.Position = e.Position;
+            UpdateLyricsPosition(e.Position);
         }
 
         // 미디어 상태 변경시 이벤트 

@@ -54,6 +54,9 @@
     <sys:String x:Key="Text.UseHWAccelerator.Description">GPU로 디코딩한 영상을 다시 CPU로 복사해 표시하므로, PC에 따라 CPU 사용량이 줄지 않거나 탐색과 프레임 이동이 느려질 수 있습니다. 다음에 여는 파일부터 적용됩니다.</sys:String>
     <sys:String x:Key="Text.UseLegacyAudioOut">호환 오디오 출력 사용(DirectSound 대체)</sys:String>
     <sys:String x:Key="Text.AudioViewMode.Basic">기본</sys:String>
+    <sys:String x:Key="Text.Lyrics">가사</sys:String>
+    <sys:String x:Key="Text.Lyrics.None">가사가 없습니다</sys:String>
+    <sys:String x:Key="Text.Lyrics.NoneHint">곡과 같은 이름의 .lrc 파일을 두거나 곡 태그에 가사를 넣으면 표시됩니다.</sys:String>
     <sys:String x:Key="Text.UseTransitionFade">화면 전환 시 페이드 효과</sys:String>
     <sys:String x:Key="Text.UseOpenPlay">미디어 열기 후 바로 재생 시작</sys:String>
 

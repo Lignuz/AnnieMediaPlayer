@@ -826,8 +826,9 @@ namespace AnnieMediaPlayer.CustomControls
                 Grain(t, w, h, 1f, dpiScale);
 
                 // 커버: 부드러운 그림자 + 비트 펄스
-                var cs = m * 0.46f * (1f + 0.018f * s.Beat);
-                float coverX = w / 2, coverY = h * 0.44f;
+                var cw = (float)owner.ContentWidth;
+                var cs = Math.Min(cw, h) * 0.46f * (1f + 0.018f * s.Beat);
+                float coverX = cw / 2, coverY = h * 0.44f;
                 FillRadial(_shadow!, coverX, coverY + cs * 0.10f, cs * 0.78f, cs * 0.72f, 0.9f);
                 var rc = new RawRectF(coverX - cs / 2, coverY - cs / 2, coverX + cs / 2, coverY + cs / 2);
                 CoverRect(rc, cs * 0.035f);
@@ -836,9 +837,9 @@ namespace AnnieMediaPlayer.CustomControls
 
                 var ty = rc.Bottom + 28 * u;
                 Text(owner.TitleOrFileName(), 30 * u, DWriteFontWeight.SemiBold, DWriteTextAlignment.Center,
-                    new RawRectF(w * 0.1f, ty, w * 0.9f, ty + 40 * u), 0.96f);
+                    new RawRectF(cw * 0.1f, ty, cw * 0.9f, ty + 40 * u), 0.96f);
                 Text(owner.ArtistLine(), 18 * u, DWriteFontWeight.Normal, DWriteTextAlignment.Center,
-                    new RawRectF(w * 0.1f, ty + 40 * u, w * 0.9f, ty + 66 * u), 0.62f);
+                    new RawRectF(cw * 0.1f, ty + 40 * u, cw * 0.9f, ty + 66 * u), 0.62f);
 
                 // 커버 아래 미니 레벨 라인
                 float lineWidth = cs * (0.25f + 0.75f * s.Level), ly = ty + 84 * u;
@@ -851,8 +852,9 @@ namespace AnnieMediaPlayer.CustomControls
             {
                 var palette = res.Palette;
                 _dc.Clear(ToColor4(palette.Deep, 1));
-                var m = Math.Min(w, h);
-                float cx = w / 2, cy = h * 0.47f;
+                var cw = (float)owner.ContentWidth;
+                var m = Math.Min(cw, h);
+                float cx = cw / 2, cy = h * 0.47f;
                 var radius = m * 0.19f * (1f + 0.035f * s.Beat); // 커버 반지름
 
                 Blend(true);
@@ -917,9 +919,9 @@ namespace AnnieMediaPlayer.CustomControls
                 Grain(owner._t, w, h, 0.8f, dpiScale);
                 var ty = h - 158 * u;
                 Text(owner.TitleOrFileName(), 26 * u, DWriteFontWeight.SemiBold, DWriteTextAlignment.Center,
-                    new RawRectF(w * 0.1f, ty, w * 0.9f, ty + 36 * u), 0.95f);
+                    new RawRectF(cw * 0.1f, ty, cw * 0.9f, ty + 36 * u), 0.95f);
                 Text(owner.ArtistLine(), 16 * u, DWriteFontWeight.Normal, DWriteTextAlignment.Center,
-                    new RawRectF(w * 0.1f, ty + 34 * u, w * 0.9f, ty + 58 * u), 0.55f);
+                    new RawRectF(cw * 0.1f, ty + 34 * u, cw * 0.9f, ty + 58 * u), 0.55f);
             }
 
             // [3] Ribbon — 겹쳐진 발광 웨이브 (가산 혼합)
@@ -927,7 +929,8 @@ namespace AnnieMediaPlayer.CustomControls
             {
                 var t = owner._t;
                 _dc.Clear(new Color4(0.02f, 0.02f, 0.03f, 1));
-                float x0 = w * 0.04f, span = w * 0.92f, y0 = h * 0.56f;
+                var cw = (float)owner.ContentWidth;
+                float x0 = cw * 0.04f, span = cw * 0.92f, y0 = h * 0.56f;
 
                 // 하단 엣지 글로우
                 Blend(true);
@@ -1007,9 +1010,9 @@ namespace AnnieMediaPlayer.CustomControls
                 FillRadial(_shadow!, margin + size / 2, margin + size / 2 + 6 * u, size * 0.8f, size * 0.8f, 0.7f);
                 CoverRect(rc, 10 * u);
                 Text(owner.TitleOrFileName(), 22 * u, DWriteFontWeight.SemiBold, DWriteTextAlignment.Leading,
-                    new RawRectF(rc.Right + 18 * u, margin + 6 * u, w - margin, margin + 38 * u), 0.95f);
+                    new RawRectF(rc.Right + 18 * u, margin + 6 * u, Math.Max(rc.Right + 18 * u, cw - margin), margin + 38 * u), 0.95f);
                 Text(owner.ArtistLine(), 15 * u, DWriteFontWeight.Normal, DWriteTextAlignment.Leading,
-                    new RawRectF(rc.Right + 18 * u, margin + 38 * u, w - margin, margin + 64 * u), 0.55f);
+                    new RawRectF(rc.Right + 18 * u, margin + 38 * u, Math.Max(rc.Right + 18 * u, cw - margin), margin + 64 * u), 0.55f);
             }
 
             #endregion
