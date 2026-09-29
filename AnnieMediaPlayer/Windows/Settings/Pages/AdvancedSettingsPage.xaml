@@ -16,7 +16,6 @@
             <TextBlock Text="{DynamicResource Text.UseHWAccelerator.Description}" TextWrapping="Wrap" FontSize="11" Opacity="0.7" Margin="20,0,0,5"/>
             <!-- DirectSound 문제가 있을 때 사용할 대체 오디오 출력 -->
             <CheckBox Content="{DynamicResource Text.UseLegacyAudioOut}" IsChecked="{Binding CurrentOption.UseLegacyAudioOut}" Margin="0,15,0,5"/>
-            <CheckBox Content="{DynamicResource Text.UseAudioVisualizer}" IsChecked="{Binding CurrentOption.UseAudioVisualizer}" Margin="0,15,0,5"/>
             <!-- 열기 후 바로 재생 시작 -->
             <CheckBox Content="{DynamicResource Text.UseOpenPlay}" IsChecked="{Binding CurrentOption.UseOpenPlay}" Margin="0,15,0,5"/>
 

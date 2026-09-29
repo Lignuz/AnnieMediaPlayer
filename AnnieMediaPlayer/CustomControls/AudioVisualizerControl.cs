@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
@@ -30,7 +29,6 @@ namespace AnnieMediaPlayer.CustomControls
         // 화면 합성 이벤트(초당 60번)에 맞추지 않아 WPF 도 시각화가 갱신될 때만 화면을 합성하므로 CPU 사용이 줄어듭니다.
         private static readonly TimeSpan FrameInterval = TimeSpan.FromMilliseconds(30);
 
-        private static readonly string[] ModeNames = { "Aura", "Halo", "Ribbon" };
         private static readonly FontFamily TextFont = new("Segoe UI Variable Display, Segoe UI");
         private static readonly CultureInfo TextCulture = CultureInfo.GetCultureInfo("ko-KR");
 
@@ -64,7 +62,6 @@ namespace AnnieMediaPlayer.CustomControls
         private int _mode;
         private int _modeTransitionVersion;
         private float _t;
-        private float _hudRemaining = 2.8f;
         private float _spin;
         private float _emitAccumulator;
         private int _lastBeatCount;
@@ -136,8 +133,6 @@ namespace AnnieMediaPlayer.CustomControls
                 UpdateRenderingHook();
             };
             _frameTimer.Tick += OnFrameTimerTick;
-            MouseMove += OnMouseMove;
-            MouseLeftButtonDown += OnMouseLeftButtonDown;
         }
 
         #region 의존성 프로퍼티
@@ -173,6 +168,10 @@ namespace AnnieMediaPlayer.CustomControls
         public static readonly DependencyProperty FilePathProperty = DependencyProperty.Register(
             nameof(FilePath), typeof(string), typeof(AudioVisualizerControl),
             new FrameworkPropertyMetadata(string.Empty, OnFilePathChanged));
+
+        public static readonly DependencyProperty VisualizerModeProperty = DependencyProperty.Register(
+            nameof(VisualizerMode), typeof(int), typeof(AudioVisualizerControl),
+            new FrameworkPropertyMetadata(0, OnVisualizerModeChanged));
 
         public bool IsActive
         {
@@ -222,22 +221,15 @@ namespace AnnieMediaPlayer.CustomControls
             set => SetValue(FilePathProperty, value);
         }
 
-        public int Mode => _mode;
-
-        private double _hudBottomInset;
-        public double HudBottomInset
+        // 시각화 모드 (0: Aura, 1: Halo, 2: Ribbon)
+        public int VisualizerMode
         {
-            get => _hudBottomInset;
-            set
-            {
-                var inset = Math.Max(0, value);
-                if (Math.Abs(_hudBottomInset - inset) < 0.5)
-                    return;
-
-                _hudBottomInset = inset;
-                RenderNow();
-            }
+            get => (int)GetValue(VisualizerModeProperty);
+            set => SetValue(VisualizerModeProperty, value);
         }
+
+        private static void OnVisualizerModeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) =>
+            ((AudioVisualizerControl)d).SetMode((int)e.NewValue);
 
         private static void OnIsActiveChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -247,7 +239,6 @@ namespace AnnieMediaPlayer.CustomControls
                 control.ClearModeTransition();
                 control.ReleaseGpu(); // 보이지 않는 동안 GPU 메모리를 돌려줍니다.
             }
-            control._hudRemaining = 2.8f;
             control.ResetAudioInput();
             control.UpdateRenderingHook();
             control.RenderNow();
@@ -419,7 +410,6 @@ namespace AnnieMediaPlayer.CustomControls
         private void Update(Spectrum s, float dt)
         {
             _t += dt;
-            _hudRemaining = Math.Max(0, _hudRemaining - dt);
             _spin += dt * (0.25f + 0.6f * s.Level); // 에너지가 크면 조금 빨리 회전
 
             // 비트마다 파티클 버스트 + 고역 에너지에 비례한 상시 방출
@@ -476,37 +466,16 @@ namespace AnnieMediaPlayer.CustomControls
 
         #endregion
 
-        #region 마우스 (HUD)
-
-        private void OnMouseMove(object sender, MouseEventArgs e)
-        {
-            if (IsActive)
-                _hudRemaining = Math.Max(_hudRemaining, 1.5f);
-        }
-
-        private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            if (!IsActive)
-                return;
-
-            var point = e.GetPosition(this);
-            var hit = HudHit(point.X, point.Y);
-            if (hit >= 0)
-            {
-                SetMode(hit);
-                e.Handled = true;
-            }
-        }
+        #region 모드 전환
 
         private void SetMode(int mode)
         {
-            var nextMode = (mode + ModeCount) % ModeCount;
+            var nextMode = (mode % ModeCount + ModeCount) % ModeCount;
             if (IsGpuActive)
             {
                 if (UseTransitionFade && nextMode != _mode)
                     BeginGpuTransition();
                 _mode = nextMode;
-                _hudRemaining = 2.8f;
                 RenderNow();
                 return;
             }
@@ -515,7 +484,6 @@ namespace AnnieMediaPlayer.CustomControls
             if (!UseTransitionFade)
                 ClearModeTransition();
             _mode = nextMode;
-            _hudRemaining = 2.8f;
             RenderNow();
             if (previousFrame != null)
                 FadeModeTransition(previousFrame);
@@ -576,29 +544,6 @@ namespace AnnieMediaPlayer.CustomControls
             _modeTransitionImage.Source = null;
         }
 
-        private Rect HudRect(int index)
-        {
-            double segment = 96 * _unit, height = 38 * _unit, pad = 5 * _unit;
-            var width = segment * ModeCount + pad * 2;
-            var bottomMargin = Math.Max(28 * _unit, _hudBottomInset + 12 * _unit);
-            var rect = new Rect(_width / 2 - width / 2, _height - height - bottomMargin, width, height);
-            return index < 0 ? rect : new Rect(rect.Left + pad + segment * index, rect.Top + pad, segment, height - pad * 2);
-        }
-
-        private int HudHit(double x, double y)
-        {
-            if (_hudRemaining <= 0.05f)
-                return -1;
-
-            for (var i = 0; i < ModeCount; i++)
-            {
-                if (HudRect(i).Contains(x, y))
-                    return i;
-            }
-
-            return -1;
-        }
-
         #endregion
 
         #region 그리기
@@ -657,7 +602,6 @@ namespace AnnieMediaPlayer.CustomControls
                     case 1: DrawHalo(res, s, baseDc, additiveTargets, overlay); break;
                     default: DrawRibbon(res, s, baseDc, additiveTargets, overlay); break;
                 }
-                DrawHud(overlay);
             }
             finally
             {
@@ -874,32 +818,6 @@ namespace AnnieMediaPlayer.CustomControls
                 new Rect(textLeft, margin + 6 * u, textWidth, 32 * u), WithAlpha(Colors.White, 0.95f));
             DrawText(overlay, ArtistLine(), 15 * u, FontWeights.Normal, TextAlignment.Left,
                 new Rect(textLeft, margin + 38 * u, textWidth, 26 * u), WithAlpha(Colors.White, 0.55f));
-        }
-
-        // HUD: 모드 전환 시 잠깐 나타나는 글래스 필
-        private void DrawHud(DrawingContext dc)
-        {
-            var alpha = Clamp01(_hudRemaining / 0.6f);
-            if (alpha <= 0)
-                return;
-
-            alpha = Math.Round(alpha * 32) / 32; // 텍스트 캐시가 늘어나지 않도록 단계화
-            var rect = HudRect(-1);
-            var radius = rect.Height / 2;
-            dc.DrawRoundedRectangle(Solid(WithAlpha(Colors.White, (0.08 * alpha))),
-                new Pen(Solid(WithAlpha(Colors.White, (0.14 * alpha))), 1), rect, radius, radius);
-            for (var i = 0; i < ModeCount; i++)
-            {
-                var segment = HudRect(i);
-                if (i == _mode)
-                {
-                    var r = segment.Height / 2;
-                    dc.DrawRoundedRectangle(Solid(WithAlpha(Colors.White, (0.18 * alpha))), null, segment, r, r);
-                }
-
-                DrawText(dc, $"{i + 1}  {ModeNames[i]}", 14 * _unit, i == _mode ? FontWeights.SemiBold : FontWeights.Normal,
-                    TextAlignment.Center, segment, WithAlpha(Colors.White, ((i == _mode ? 0.95 : 0.5) * alpha)));
-            }
         }
 
         private static void FillRadial(DrawingContext dc, OpacityBrushCache brush, double cx, double cy, double rx, double ry, double opacity) =>

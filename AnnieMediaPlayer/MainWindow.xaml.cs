@@ -71,7 +71,8 @@ namespace AnnieMediaPlayer
                 }
                 FinishMediaTransition(true);
             };
-            panel_control.SizeChanged += (_, _) => UpdateAudioVisualizerHudInset();
+            panel_control.SizeChanged += (_, _) => UpdateAudioChromeInset();
+            InitializeAudioView();
 
             FFMELoader.Initialize();
             if (OptionViewModel.Instance.CurrentOption.UsePlaylistPersistence)
@@ -389,6 +390,7 @@ namespace AnnieMediaPlayer
                     "artist", "performer", "album_artist", "album-artist", "albumartist") ?? string.Empty;
                 vm.AudioAlbum = FindMetadataValue(e.Info.Metadata, audioMetadata, "album") ?? string.Empty;
                 albumArtLoad = LoadCurrentAlbumArtAsync(e.Info.MediaSource);
+                ShowAudioChrome();
             }
             else
             {
@@ -420,8 +422,8 @@ namespace AnnieMediaPlayer
 
         private async Task FinishAudioTransitionWhenReadyAsync(Task albumArtLoad, string source, int version)
         {
-            // 시각화를 끈 경우에는 흐린 배경과 선명한 표지가 준비된 뒤 화면을 전환합니다.
-            if (!OptionViewModel.Instance.CurrentOption.UseAudioVisualizer)
+            // 기본 화면(앨범 아트)에서는 흐린 배경과 선명한 표지가 준비된 뒤 화면을 전환합니다.
+            if (OptionViewModel.Instance.CurrentOption.AudioViewMode == AudioViewMode.Basic)
                 await albumArtLoad;
 
             await Dispatcher.InvokeAsync(() =>
@@ -1766,8 +1768,6 @@ namespace AnnieMediaPlayer
         }
 
         private bool UseOverlayControl => OptionViewModel.Instance.CurrentOption.UseOverlayControl;
-        private void UpdateAudioVisualizerHudInset() =>
-            AudioVisualizer.HudBottomInset = UseOverlayControl ? panel_control.ActualHeight : 0;
 
         private void UseOverlayControlChanged(object? sender, EventArgs e)
         {
@@ -1781,7 +1781,7 @@ namespace AnnieMediaPlayer
                 grid_center_bottom.Visibility = Visibility.Visible;
                 Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
                 {
-                    UpdateAudioVisualizerHudInset();
+                    UpdateAudioChromeInset();
                     UpdateOverlayVisibility(Mouse.GetPosition(grid_center));
                 }));
             }
@@ -1791,7 +1791,7 @@ namespace AnnieMediaPlayer
                 MoveControl(panel_control, grid_bottom);
                 grid_center_top.Visibility = Visibility.Collapsed;
                 grid_center_bottom.Visibility = Visibility.Collapsed;
-                UpdateAudioVisualizerHudInset();
+                UpdateAudioChromeInset();
             }
         }
 

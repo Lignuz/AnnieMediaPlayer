@@ -389,7 +389,6 @@ namespace AnnieMediaPlayer.CustomControls
                         default: DrawRibbon(owner, res, s, w, h, u, dpiScaleX); break;
                     }
                     DrawTransition(w, h);
-                    DrawHud(owner, u);
                     if (_dc.EndDraw().Failure)
                         return GpuFrameResult.DeviceLost;
 
@@ -1013,38 +1012,7 @@ namespace AnnieMediaPlayer.CustomControls
                     new RawRectF(rc.Right + 18 * u, margin + 38 * u, w - margin, margin + 64 * u), 0.55f);
             }
 
-            // HUD: 모드 전환 시 잠깐 나타나는 글래스 필
-            private void DrawHud(AudioVisualizerControl owner, float u)
-            {
-                var alpha = (float)Clamp01(owner._hudRemaining / 0.6f);
-                if (alpha <= 0)
-                    return;
-
-                _dc.PrimitiveBlend = PrimitiveBlend.SourceOver;
-                var rect = ToRawRect(owner.HudRect(-1));
-                var radius = (rect.Bottom - rect.Top) / 2;
-                White(0.08f * alpha);
-                _dc.FillRoundedRectangle(new RoundedRectangle(rect, radius, radius), _solid!);
-                White(0.14f * alpha);
-                _dc.DrawRoundedRectangle(new RoundedRectangle(rect, radius, radius), _solid!, 1f);
-                for (var i = 0; i < ModeCount; i++)
-                {
-                    var segment = ToRawRect(owner.HudRect(i));
-                    if (i == owner._mode)
-                    {
-                        var r = (segment.Bottom - segment.Top) / 2;
-                        White(0.18f * alpha);
-                        _dc.FillRoundedRectangle(new RoundedRectangle(segment, r, r), _solid!);
-                    }
-
-                    Text($"{i + 1}  {ModeNames[i]}", 14 * u, i == owner._mode ? DWriteFontWeight.SemiBold : DWriteFontWeight.Normal,
-                        DWriteTextAlignment.Center, segment, (i == owner._mode ? 0.95f : 0.5f) * alpha);
-                }
-            }
-
             #endregion
-
-            private static RawRectF ToRawRect(System.Windows.Rect rect) => new((float)rect.Left, (float)rect.Top, (float)rect.Right, (float)rect.Bottom);
 
             private static Color4 ToColor4(WpfColor color, float alpha) =>
                 new(color.R / 255f, color.G / 255f, color.B / 255f, alpha);

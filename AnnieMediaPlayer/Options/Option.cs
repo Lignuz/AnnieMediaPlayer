@@ -28,6 +28,15 @@ namespace AnnieMediaPlayer.Options
         Rotate_270 = 270,
     }
 
+    // 오디오 재생 화면: 기본(앨범 아트) 또는 시각화 모드
+    public enum AudioViewMode
+    {
+        Basic = 0,
+        Aura = 1,
+        Halo = 2,
+        Ribbon = 3,
+    }
+
     public class Option : ViewModelBase
     {
         [JsonIgnore]
@@ -54,7 +63,7 @@ namespace AnnieMediaPlayer.Options
             UseHWAccelerator = false;
             UseOpenPlay = true;
             UseLegacyAudioOut = false;
-            UseAudioVisualizer = true;
+            AudioViewMode = AudioViewMode.Aura;
             UseTransitionFade = true;
             UsePlaylistPersistence = true;
             UseContinuousPlayback = true;
@@ -73,7 +82,7 @@ namespace AnnieMediaPlayer.Options
         public bool UseHWAccelerator { get => Get(); set => Set(value); }
         public bool UseOpenPlay { get => Get(); set => Set(value); }
         public bool UseLegacyAudioOut { get => Get(); set => Set(value); }
-        public bool UseAudioVisualizer { get => Get(); set => Set(value); }
+        public AudioViewMode AudioViewMode { get => Get(); set => Set(value); }
         public bool UseTransitionFade { get => Get(); set => Set(value); }
         public bool UsePlaylistPersistence { get => Get(); set => Set(value); }
         public bool UseContinuousPlayback { get => Get(); set => Set(value); }

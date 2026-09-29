@@ -8,6 +8,7 @@
         xmlns:option="clr-namespace:AnnieMediaPlayer.Options"
         xmlns:panels="clr-namespace:AnnieMediaPlayer.Windows.Panels"
         xmlns:controls="clr-namespace:AnnieMediaPlayer.CustomControls"
+        xmlns:sys="clr-namespace:System;assembly=System.Runtime"
         mc:Ignorable="d"
         MinWidth="560" MinHeight="310"
         Title="Annie Media Player" Height="600" Width="900"
@@ -37,6 +38,39 @@
         <local:FileNameConverter x:Key="FileNameConverter"/>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
 
+        <!-- 오디오 화면 모드 선택 버튼 (Tag 가 True 면 선택된 모드) -->
+        <Style x:Key="AudioModeButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="92"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Foreground" Value="#8CFFFFFF"/>
+            <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Background" Background="Transparent" CornerRadius="14">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Background" Property="Background" Value="#1AFFFFFF"/>
+                                <Setter Property="Foreground" Value="#D9FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="Tag">
+                                <Trigger.Value>
+                                    <sys:Boolean>True</sys:Boolean>
+                                </Trigger.Value>
+                                <Setter TargetName="Background" Property="Background" Value="#33FFFFFF"/>
+                                <Setter Property="Foreground" Value="#F2FFFFFF"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </local:BaseWindow.Resources>
 
     <Border>
@@ -89,7 +123,7 @@
                 </Grid>
 
                 <!-- 🎞 영상 출력 영역 -->
-                <Grid Grid.Row="1" x:Name="grid_center">
+                <Grid Grid.Row="1" x:Name="grid_center" MouseMove="grid_center_MouseMove" MouseLeave="grid_center_MouseLeave">
                     <Grid x:Name="MediaPresentation">
                     <Border Name="VideoImageContainer">
                         <ffme:MediaElement Name="ffmeMediaElement" Background="Black" LoadedBehavior="Manual" UnloadedBehavior="Manual" IsDesignPreviewEnabled="True">
@@ -112,7 +146,7 @@
                                     <MultiDataTrigger>
                                         <MultiDataTrigger.Conditions>
                                             <Condition Binding="{Binding IsAudioOnly}" Value="True" />
-                                            <Condition Binding="{Binding CurrentOption.UseAudioVisualizer}" Value="False" />
+                                            <Condition Binding="{Binding CurrentOption.AudioViewMode}" Value="{x:Static option:AudioViewMode.Basic}" />
                                         </MultiDataTrigger.Conditions>
                                         <Setter Property="Visibility" Value="Visible" />
                                     </MultiDataTrigger>
@@ -153,20 +187,41 @@
                                 <Setter Property="IsActive" Value="False" />
                                 <Setter Property="Visibility" Value="Collapsed" />
                                 <Style.Triggers>
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding IsAudioOnly}" Value="True" />
-                                            <Condition Binding="{Binding CurrentOption.UseAudioVisualizer}" Value="True" />
-                                        </MultiDataTrigger.Conditions>
+                                    <DataTrigger Binding="{Binding IsAudioOnly}" Value="True">
                                         <Setter Property="IsActive" Value="True" />
                                         <Setter Property="Visibility" Value="Visible" />
-                                    </MultiDataTrigger>
+                                    </DataTrigger>
+                                    <!-- 기본 모드에서는 시각화를 끄고 앨범 아트 화면을 보여 줍니다 (아래 트리거가 우선). -->
+                                    <DataTrigger Binding="{Binding CurrentOption.AudioViewMode}" Value="{x:Static option:AudioViewMode.Basic}">
+                                        <Setter Property="IsActive" Value="False" />
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </controls:AudioVisualizerControl.Style>
                     </controls:AudioVisualizerControl>
                     </Grid>
                     <Image x:Name="MediaTransitionImage" Stretch="Fill" Visibility="Collapsed" IsHitTestVisible="False"/>
+                    <!-- 오디오 화면 모드 선택 (마우스를 움직이면 잠시 나타남) -->
+                    <Border x:Name="AudioModeBar" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,28"
+                            Padding="5" CornerRadius="19" Background="#59101014" BorderBrush="#26FFFFFF" BorderThickness="1"
+                            Opacity="0" IsHitTestVisible="False"
+                            Visibility="{Binding IsAudioOnly, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource AudioModeButtonStyle}" Click="AudioModeButton_Click"
+                                    Content="{DynamicResource Text.AudioViewMode.Basic}" CommandParameter="{x:Static option:AudioViewMode.Basic}"
+                                    Tag="{Binding CurrentOption.AudioViewMode, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Basic}"/>
+                            <Button Style="{StaticResource AudioModeButtonStyle}" Click="AudioModeButton_Click"
+                                    Content="Aura" CommandParameter="{x:Static option:AudioViewMode.Aura}"
+                                    Tag="{Binding CurrentOption.AudioViewMode, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Aura}"/>
+                            <Button Style="{StaticResource AudioModeButtonStyle}" Click="AudioModeButton_Click"
+                                    Content="Halo" CommandParameter="{x:Static option:AudioViewMode.Halo}"
+                                    Tag="{Binding CurrentOption.AudioViewMode, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Halo}"/>
+                            <Button Style="{StaticResource AudioModeButtonStyle}" Click="AudioModeButton_Click"
+                                    Content="Ribbon" CommandParameter="{x:Static option:AudioViewMode.Ribbon}"
+                                    Tag="{Binding CurrentOption.AudioViewMode, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Ribbon}"/>
+                        </StackPanel>
+                    </Border>
                     <TextBlock Name="OverlayMessage" TextWrapping="Wrap" Margin="10" FontWeight="Bold" Foreground="White" IsHitTestVisible="False">
                         <TextBlock.Effect>
                             <DropShadowEffect Color="Black" BlurRadius="4" ShadowDepth="2" Direction="315" Opacity="0.8" />
