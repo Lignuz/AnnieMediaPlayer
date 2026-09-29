@@ -163,9 +163,12 @@
                                Stretch="Uniform"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
-                               MaxWidth="512"
-                               MaxHeight="512"
+                               MaxWidth="440"
+                               MaxHeight="440"
                                SnapsToDevicePixels="True">
+                            <Image.RenderTransform>
+                                <TranslateTransform />
+                            </Image.RenderTransform>
                             <Image.Effect>
                                 <DropShadowEffect Color="Black" BlurRadius="22" ShadowDepth="6" Direction="270" Opacity="0.5" />
                             </Image.Effect>
@@ -190,11 +193,6 @@
                                     <DataTrigger Binding="{Binding IsAudioOnly}" Value="True">
                                         <Setter Property="IsActive" Value="True" />
                                         <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                    <!-- 기본 모드에서는 시각화를 끄고 앨범 아트 화면을 보여 줍니다 (아래 트리거가 우선). -->
-                                    <DataTrigger Binding="{Binding CurrentOption.AudioViewMode}" Value="{x:Static option:AudioViewMode.Basic}">
-                                        <Setter Property="IsActive" Value="False" />
-                                        <Setter Property="Visibility" Value="Collapsed" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>

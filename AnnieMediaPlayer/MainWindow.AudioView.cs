@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using AnnieMediaPlayer.Options;
@@ -12,12 +13,19 @@ namespace AnnieMediaPlayer
     {
         private static readonly TimeSpan AudioChromeShowDuration = TimeSpan.FromSeconds(2.8);
         private static readonly Duration LyricsSlideDuration = TimeSpan.FromMilliseconds(380);
+        private const double MaximumAlbumArtSize = 440;
+        // 커버와 스펙트럼을 하나의 중심 덩어리로 보이게 하도록 커버 높이를 제한합니다.
+        private const double AlbumArtHeightRatio = 0.72;
+        private const double BasicSpectrumGap = 3;
+        private const double BasicSpectrumVerticalMargin = 19.5;
         private readonly DispatcherTimer _audioChromeHideTimer = new() { Interval = AudioChromeShowDuration };
         private bool _isAudioChromeVisible;
         private bool _isLyricsShown;
         private bool _isLyricsSliding;
         private int _lyricsSlideVersion;
         private int _lyricsLoadVersion;
+        private DispatcherOperation? _basicSpectrumBoundsUpdate;
+        private bool _basicSpectrumBoundsDirty;
 
         // 가사 영역이 차지하는 오른쪽 폭. 왼쪽 화면(앨범 아트·시각화)은 이만큼을 비우고 가운데를 맞춥니다.
         private static readonly DependencyProperty AudioContentInsetProperty = DependencyProperty.Register(
@@ -39,9 +47,29 @@ namespace AnnieMediaPlayer
             vm.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName == nameof(MainViewModel.IsAudioOnly))
+                {
                     UpdateLyricsLayout(animate: false);
+                    UpdateBasicSpectrumLayout();
+                }
+                else if (e.PropertyName == nameof(MainViewModel.CurrentAlbumArt))
+                {
+                    ScheduleBasicSpectrumBoundsUpdate();
+                }
             };
-            grid_center.SizeChanged += (_, _) => UpdateLyricsLayout(animate: false);
+            grid_center.SizeChanged += (_, _) =>
+            {
+                UpdateLyricsLayout(animate: false);
+                UpdateBasicSpectrumLayout();
+            };
+            AudioAlbumArtImage.SizeChanged += (_, _) => ScheduleBasicSpectrumBoundsUpdate();
+            AudioVisualizer.SizeChanged += (_, _) => ScheduleBasicSpectrumBoundsUpdate();
+            AudioVisualizer.LayoutUpdated += (_, _) =>
+            {
+                // 창 크기를 끌어 바꾸는 동안에도 스펙트럼이 커버를 놓치지 않도록, 레이아웃이 끝난 같은 프레임에 좌표를 맞춥니다.
+                if (_basicSpectrumBoundsDirty)
+                    UpdateBasicSpectrumBounds();
+            };
+            UpdateBasicSpectrumLayout();
             UpdateAudioChromeInset();
         }
 
@@ -69,8 +97,12 @@ namespace AnnieMediaPlayer
                 !_mediaTransitionPending && BeginMediaTransition();
 
             // 시각화를 켜기 전에 모드를 먼저 정해, 켜지는 순간 이전 모드가 보이지 않게 합니다.
+            if (mode == AudioViewMode.Basic)
+                AudioVisualizer.BasicSpectrumBounds = Rect.Empty;
             ApplyVisualizerMode(mode);
             option.AudioViewMode = mode;
+            if (mode == AudioViewMode.Basic)
+                UpdateBasicSpectrumLayout();
             if (fade)
                 FinishMediaTransition(true);
             ShowAudioChrome();
@@ -80,6 +112,90 @@ namespace AnnieMediaPlayer
         {
             if (mode != AudioViewMode.Basic)
                 AudioVisualizer.VisualizerMode = mode - AudioViewMode.Aura;
+            AudioVisualizer.IsBasicSpectrumMode = mode == AudioViewMode.Basic;
+        }
+
+        private void UpdateBasicSpectrumLayout()
+        {
+            var availableHeight = grid_center.ActualHeight;
+            if (availableHeight <= 0)
+                return;
+
+            var maxCoverHeight = Math.Min(MaximumAlbumArtSize, availableHeight * AlbumArtHeightRatio);
+            var maxHeightWithMargins = availableHeight - 2 * BasicSpectrumVerticalMargin - BasicSpectrumGap -
+                GetBasicSpectrumHeight(maxCoverHeight);
+            maxCoverHeight = Math.Min(maxCoverHeight, Math.Max(64, maxHeightWithMargins));
+
+            if (Math.Abs(AudioAlbumArtImage.MaxHeight - maxCoverHeight) > 0.5)
+                AudioAlbumArtImage.MaxHeight = maxCoverHeight;
+
+            if (AudioAlbumArtImage.RenderTransform is TranslateTransform shift)
+                shift.Y = -(GetBasicSpectrumHeight(maxCoverHeight) + BasicSpectrumGap) / 2;
+
+            ScheduleBasicSpectrumBoundsUpdate();
+        }
+
+        private static double GetBasicSpectrumHeight(double coverHeight) => Math.Clamp(coverHeight * 0.14, 20, 48);
+
+        private void ScheduleBasicSpectrumBoundsUpdate()
+        {
+            _basicSpectrumBoundsDirty = true;
+            if (_basicSpectrumBoundsUpdate?.Status == DispatcherOperationStatus.Pending)
+                return;
+
+            // 레이아웃 패스가 없는 변경(커버 교체 등)은 이 예약으로 처리합니다.
+            _basicSpectrumBoundsUpdate = Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+            {
+                _basicSpectrumBoundsUpdate = null;
+                UpdateBasicSpectrumBounds();
+            }));
+        }
+
+        private void UpdateBasicSpectrumBounds()
+        {
+            _basicSpectrumBoundsDirty = false;
+            if (!vm.IsAudioOnly || !AudioVisualizer.IsBasicSpectrumMode ||
+                AudioVisualizer.ActualWidth <= 0 || AudioVisualizer.ActualHeight <= 0)
+                return;
+
+            Rect spectrumBounds;
+
+            if (AudioAlbumArtImage.Source is System.Windows.Media.Imaging.BitmapSource source &&
+                AudioAlbumArtImage.RenderSize.Width > 0 && AudioAlbumArtImage.RenderSize.Height > 0)
+            {
+                var scale = Math.Min(AudioAlbumArtImage.RenderSize.Width / source.Width,
+                    AudioAlbumArtImage.RenderSize.Height / source.Height);
+                var imageWidth = source.Width * scale;
+                var imageHeight = source.Height * scale;
+                var imageContent = new Rect(
+                    (AudioAlbumArtImage.RenderSize.Width - imageWidth) / 2,
+                    (AudioAlbumArtImage.RenderSize.Height - imageHeight) / 2,
+                    imageWidth,
+                    imageHeight);
+                var spectrumHeight = GetBasicSpectrumHeight(imageContent.Height);
+                if (AudioAlbumArtImage.RenderTransform is TranslateTransform shift)
+                    shift.Y = -(spectrumHeight + BasicSpectrumGap) / 2;
+
+                try
+                {
+                    var imageBounds = AudioAlbumArtImage.TransformToVisual(AudioVisualizer).TransformBounds(imageContent);
+                    spectrumBounds = new Rect(imageBounds.Left, imageBounds.Bottom + BasicSpectrumGap, imageBounds.Width, spectrumHeight);
+                }
+                catch (InvalidOperationException)
+                {
+                    return;
+                }
+            }
+            else
+            {
+                var width = Math.Min(320, Math.Max(100, AudioVisualizer.ActualWidth * 0.45));
+                var spectrumHeight = GetBasicSpectrumHeight(Math.Min(MaximumAlbumArtSize, grid_center.ActualHeight * 0.7));
+                spectrumBounds = new Rect((AudioVisualizer.ActualWidth - width) / 2,
+                    AudioVisualizer.ActualHeight * 0.66, width, spectrumHeight);
+            }
+
+            if (!AudioVisualizer.BasicSpectrumBounds.Equals(spectrumBounds))
+                AudioVisualizer.BasicSpectrumBounds = spectrumBounds;
         }
 
         #endregion
@@ -168,6 +284,7 @@ namespace AnnieMediaPlayer
             // 가사가 보이면 앨범 아트가 왼쪽 영역을 꽉 채우지 않도록 여백을 함께 늘립니다.
             var margin = 40 * Math.Min(1, inset / 300);
             AudioAlbumArtImage.Margin = new Thickness(margin, margin, inset + margin, margin);
+            ScheduleBasicSpectrumBoundsUpdate();
             UpdateAudioChromeInset();
         }
 
@@ -263,7 +380,7 @@ namespace AnnieMediaPlayer
         {
             var top = UseOverlayControl ? panel_titlebar.ActualHeight : 0;
             var bottom = UseOverlayControl ? panel_control.ActualHeight : 0;
-            AudioModeBar.Margin = new Thickness(0, 0, AudioContentInset, Math.Max(28, bottom + 12));
+            AudioModeBar.Margin = new Thickness(0, 0, AudioContentInset, Math.Max(16, bottom + 12)); // 앨범 모드의 스펙트럼과 겹치지 않도록 화면 아래에 가깝게 둡니다.
             LyricsToggleBar.Margin = new Thickness(0, top + 16, 24, 0);
             LyricsView.Margin = new Thickness(0, top + 68, 24, bottom + 24);
         }

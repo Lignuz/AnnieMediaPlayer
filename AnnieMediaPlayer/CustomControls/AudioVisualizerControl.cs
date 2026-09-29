@@ -10,7 +10,8 @@ using System.Windows.Threading;
 
 namespace AnnieMediaPlayer.CustomControls
 {
-    // 오디오 시각화 컨트롤
+    // 오디오 화면 렌더러
+    //   기본 모드에서는 앨범 커버 아래에 경량 스펙트럼만 표시합니다.
     //   [1] Aura   : 커버 색으로 만든 컬러 필드 위에서 대역별 빛이 숨쉬듯 부풀고, 비트에 커버가 펄스
     //   [2] Halo   : 회전하는 원형 커버(바이닐) 둘레의 대칭 스펙트럼 + 비트 파티클
     //   [3] Ribbon : 저역~고역 웨이브 4겹이 가산 혼합으로 겹치는 발광 웨이브 + 하단 글로우
@@ -29,6 +30,9 @@ namespace AnnieMediaPlayer.CustomControls
         // 다른 프로그램이 해상도를 높여 둔 경우에는 16ms 에 가깝게 동작합니다.
         // 화면 합성 이벤트(초당 60번)에 맞추지 않아 WPF 도 시각화가 갱신될 때만 화면을 합성하므로 CPU 사용이 줄어듭니다.
         private static readonly TimeSpan FrameInterval = TimeSpan.FromMilliseconds(16);
+        private static readonly TimeSpan BasicSpectrumFrameInterval = TimeSpan.FromMilliseconds(33);
+        private static readonly SolidColorBrush BasicSpectrumBrush = Solid(Color.FromArgb(230, 255, 255, 255));
+        private static readonly SolidColorBrush BasicSpectrumShadowBrush = Solid(Color.FromArgb(64, 0, 0, 0));
 
         private static readonly FontFamily TextFont = new("Segoe UI Variable Display, Segoe UI");
         private static readonly CultureInfo TextCulture = CultureInfo.GetCultureInfo("ko-KR");
@@ -37,6 +41,8 @@ namespace AnnieMediaPlayer.CustomControls
         private readonly AudioRingBuffer _audio = new(1 << 16);
         private readonly SpectrumAnalyzer _analyzer = new();
         private readonly float[] _samples = new float[FftSize];
+        private readonly float[] _basicSpectrumBarValues = new float[BandCount];
+        private readonly float[] _basicSpectrumBarWidths = new float[BandCount];
         private float[] _monoScratch = Array.Empty<float>(); // 오디오 스레드 전용
         private volatile bool _acceptAudioSamples;
 
@@ -81,6 +87,7 @@ namespace AnnieMediaPlayer.CustomControls
         private bool _paletteDirty = true;
         private bool _sizeDirty = true;
         private VizResources? _res;
+        private Rect _basicSpectrumBounds = Rect.Empty;
         private readonly Dictionary<string, FormattedText> _textCache = new();
         private readonly Point[] _ribbonUp = new Point[RibbonPointCount];
         private readonly Point[] _ribbonDown = new Point[RibbonPointCount];
@@ -142,6 +149,14 @@ namespace AnnieMediaPlayer.CustomControls
             nameof(IsActive), typeof(bool), typeof(AudioVisualizerControl),
             new FrameworkPropertyMetadata(false, OnIsActiveChanged));
 
+        public static readonly DependencyProperty IsBasicSpectrumModeProperty = DependencyProperty.Register(
+            nameof(IsBasicSpectrumMode), typeof(bool), typeof(AudioVisualizerControl),
+            new FrameworkPropertyMetadata(false, OnBasicSpectrumModeChanged));
+
+        public static readonly DependencyProperty BasicSpectrumBoundsProperty = DependencyProperty.Register(
+            nameof(BasicSpectrumBounds), typeof(Rect), typeof(AudioVisualizerControl),
+            new FrameworkPropertyMetadata(Rect.Empty, OnBasicSpectrumBoundsChanged));
+
         public static readonly DependencyProperty UseTransitionFadeProperty = DependencyProperty.Register(
             nameof(UseTransitionFade), typeof(bool), typeof(AudioVisualizerControl),
             new FrameworkPropertyMetadata(true, OnUseTransitionFadeChanged));
@@ -164,7 +179,7 @@ namespace AnnieMediaPlayer.CustomControls
 
         public static readonly DependencyProperty IsPlayingProperty = DependencyProperty.Register(
             nameof(IsPlaying), typeof(bool), typeof(AudioVisualizerControl),
-            new FrameworkPropertyMetadata(false));
+            new FrameworkPropertyMetadata(false, OnIsPlayingChanged));
 
         public static readonly DependencyProperty FilePathProperty = DependencyProperty.Register(
             nameof(FilePath), typeof(string), typeof(AudioVisualizerControl),
@@ -182,6 +197,18 @@ namespace AnnieMediaPlayer.CustomControls
         {
             get => (bool)GetValue(IsActiveProperty);
             set => SetValue(IsActiveProperty, value);
+        }
+
+        public bool IsBasicSpectrumMode
+        {
+            get => (bool)GetValue(IsBasicSpectrumModeProperty);
+            set => SetValue(IsBasicSpectrumModeProperty, value);
+        }
+
+        public Rect BasicSpectrumBounds
+        {
+            get => (Rect)GetValue(BasicSpectrumBoundsProperty);
+            set => SetValue(BasicSpectrumBoundsProperty, value);
         }
 
         public bool UseTransitionFade
@@ -257,6 +284,37 @@ namespace AnnieMediaPlayer.CustomControls
             control.UpdateRenderingHook();
             control.RenderNow();
         }
+
+        private static void OnBasicSpectrumModeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var control = (AudioVisualizerControl)d;
+            var isBasic = (bool)e.NewValue;
+            control._frameTimer.Interval = isBasic ? BasicSpectrumFrameInterval : FrameInterval;
+            control.ClearModeTransition();
+            if (isBasic)
+            {
+                // 시각화 모드로 돌아올 때 렌더러와 자원을 다시 만드느라 전환이 늦어지지 않도록, 화면만 숨기고 GPU 렌더러와 자원은 유지합니다.
+                // (기본 모드에서는 GPU 시각화 그리기만 쉬며, 재생 중에는 33ms 마다 분석하고 WPF 로 스펙트럼을 그립니다.)
+                control._gpuImage.Visibility = Visibility.Collapsed;
+                control.ClearLayers();
+                control._particles.Clear();
+                control._emitAccumulator = 0;
+            }
+            control._lastBeatCount = control._analyzer.BeatCount;
+            control.UpdateRenderingHook();
+            control.RenderNow();
+        }
+
+        private static void OnBasicSpectrumBoundsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var control = (AudioVisualizerControl)d;
+            control._basicSpectrumBounds = (Rect)e.NewValue;
+            if (control.IsBasicSpectrumMode)
+                control.RenderNow();
+        }
+
+        private static void OnIsPlayingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) =>
+            ((AudioVisualizerControl)d).UpdateRenderingHook();
 
         private static void OnUseTransitionFadeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -407,6 +465,8 @@ namespace AnnieMediaPlayer.CustomControls
 
             AdvanceFrame(Math.Clamp(dt, 0, 0.1));
             RenderNow();
+            if (IsBasicSpectrumMode && !IsPlaying && IsBasicSpectrumAtRest())
+                _frameTimer.Stop();
         }
 
         private void AdvanceFrame(double dt)
@@ -418,7 +478,8 @@ namespace AnnieMediaPlayer.CustomControls
                 Array.Clear(_samples);
 
             var spectrum = _analyzer.Process(_samples, (float)dt);
-            Update(spectrum, (float)dt);
+            if (!IsBasicSpectrumMode)
+                Update(spectrum, (float)dt);
         }
 
         private void Update(Spectrum s, float dt)
@@ -494,7 +555,9 @@ namespace AnnieMediaPlayer.CustomControls
                 return;
             }
 
-            var previousFrame = UseTransitionFade && nextMode != _mode ? CaptureModeFrame() : null;
+            var previousFrame = !IsBasicSpectrumMode && UseTransitionFade && nextMode != _mode
+                ? CaptureModeFrame()
+                : null;
             if (!UseTransitionFade)
                 ClearModeTransition();
             _mode = nextMode;
@@ -589,6 +652,12 @@ namespace AnnieMediaPlayer.CustomControls
                 return;
             }
 
+            if (IsBasicSpectrumMode)
+            {
+                RenderBasicSpectrum(_analyzer.Spectrum);
+                return;
+            }
+
             EnsureResources();
             var res = _res!;
             var s = _analyzer.Spectrum;
@@ -648,6 +717,100 @@ namespace AnnieMediaPlayer.CustomControls
                 overlay.Close();
                 Array.Clear(_softwareAdditiveTargets);
             }
+        }
+
+        private void RenderBasicSpectrum(Spectrum spectrum)
+        {
+            _gpuImage.Visibility = Visibility.Collapsed;
+            _innerLayer.Effect = null;
+            _outerLayer.Effect = null;
+
+            var area = Rect.Intersect(_basicSpectrumBounds, new Rect(0, 0, _width, _height));
+            if (area.IsEmpty || area.Width < 12 || area.Height < 4)
+            {
+                _overlayHost.Drawing.Children.Clear();
+                return;
+            }
+
+            var barCount = Math.Clamp((int)Math.Round(area.Width / 5.5), 48, 64);
+            var pitch = area.Width / barCount;
+            if (pitch <= 0)
+            {
+                _overlayHost.Drawing.Children.Clear();
+                return;
+            }
+
+            var hasSignal = false;
+            for (var i = 0; i < barCount; i++)
+            {
+                var firstBand = i * BandCount / barCount;
+                var lastBand = Math.Max(firstBand + 1, (i + 1) * BandCount / barCount);
+                var sum = 0f;
+                for (var band = firstBand; band < lastBand; band++)
+                    sum += spectrum.Bands[band];
+
+                var value = sum / (lastBand - firstBand);
+                var previous = spectrum.Bands[Math.Max(0, firstBand - 1)];
+                var next = spectrum.Bands[Math.Min(BandCount - 1, lastBand)];
+                value = (previous + value * 2 + next) * 0.25f;
+                _basicSpectrumBarValues[i] = value;
+                hasSignal |= value >= 0.012f;
+
+                var width = value < 0.012f
+                    ? Math.Min(2.6, pitch * 0.48)
+                    : Math.Min(4.2, pitch * (0.56 + 0.2 * Math.Sqrt(Math.Clamp(value, 0, 1))));
+                if (width <= 0)
+                {
+                    _overlayHost.Drawing.Children.Clear();
+                    return;
+                }
+
+                _basicSpectrumBarWidths[i] = (float)width;
+            }
+
+            using var dc = _overlayHost.Drawing.Open();
+            if (hasSignal)
+            {
+                var baseline = new Rect(area.Left, area.Top, area.Width, 1.25);
+                dc.DrawRectangle(BasicSpectrumShadowBrush, null, new Rect(baseline.X + 0.4, baseline.Y + 0.7, baseline.Width, baseline.Height));
+                dc.DrawRectangle(BasicSpectrumBrush, null, baseline);
+            }
+
+            for (var i = 0; i < barCount; i++)
+            {
+                var value = _basicSpectrumBarValues[i];
+                var height = value < 0.012f
+                    ? 1.8
+                    : 1.8 + (area.Height - 1.8) * Math.Pow(Math.Clamp(value, 0, 1), 0.82);
+                var barWidth = _basicSpectrumBarWidths[i];
+                var x = area.Left + i * pitch + (pitch - barWidth) / 2;
+                DrawBasicSpectrumBar(dc, BasicSpectrumShadowBrush, x + 0.4, area.Top + 0.7, barWidth, height);
+                DrawBasicSpectrumBar(dc, BasicSpectrumBrush, x, area.Top, barWidth, height);
+            }
+        }
+
+        private static void DrawBasicSpectrumBar(DrawingContext dc, Brush brush, double x, double y, double width, double height)
+        {
+            var radius = width / 2;
+            if (height <= width)
+            {
+                dc.DrawEllipse(brush, null, new Point(x + radius, y + height / 2), radius, height / 2);
+                return;
+            }
+
+            dc.DrawRectangle(brush, null, new Rect(x, y, width, height - radius));
+            dc.DrawEllipse(brush, null, new Point(x + radius, y + height - radius), radius, radius);
+        }
+
+        private bool IsBasicSpectrumAtRest()
+        {
+            foreach (var value in _analyzer.Spectrum.Bands)
+            {
+                if (value >= 0.01f)
+                    return false;
+            }
+
+            return true;
         }
 
         private bool IsWpfSoftwareRendering() => TransitionTuning.IsSoftwareRendering(this);
