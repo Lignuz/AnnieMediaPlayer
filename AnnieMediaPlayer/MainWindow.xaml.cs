@@ -782,7 +782,9 @@ namespace AnnieMediaPlayer
             {
                 var dpi = VisualTreeHelper.GetDpi(MediaPresentation);
                 // 전환 화면은 잠깐만 쓰므로 큰 창에서도 스냅샷 메모리를 제한합니다.
-                var scale = Math.Min(1d, Math.Min(
+                // 블러 전환에서는 화면이 곧 흐려지므로 절반 해상도로 찍어 캡처 시간을 줄입니다.
+                var blur = TransitionTuning.ShouldUseBlur(MediaPresentation);
+                var scale = Math.Min(blur ? 0.5d : 1d, Math.Min(
                     2560d / (MediaPresentation.ActualWidth * dpi.DpiScaleX),
                     1440d / (MediaPresentation.ActualHeight * dpi.DpiScaleY)));
                 var width = (int)Math.Ceiling(MediaPresentation.ActualWidth * dpi.DpiScaleX * scale);
