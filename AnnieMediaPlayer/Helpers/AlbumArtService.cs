@@ -511,7 +511,7 @@ namespace AnnieMediaPlayer
                 foreach (var pair in metadata)
                 {
                     if (string.Equals(pair.Key, key, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(pair.Value))
-                        return pair.Value.Trim();
+                        return MetadataText.Repair(pair.Value.Trim());
                 }
             }
 

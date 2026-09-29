@@ -79,7 +79,7 @@ namespace AnnieMediaPlayer
 
                 foreach (var entry in dictionary)
                 {
-                    if (IsLyricsKey(entry.Key) && Parse(entry.Value) is Lyrics fromTag)
+                    if (IsLyricsKey(entry.Key) && Parse(MetadataText.Repair(entry.Value)) is Lyrics fromTag)
                         return fromTag;
                 }
             }

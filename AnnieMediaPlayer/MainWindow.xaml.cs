@@ -579,7 +579,7 @@ namespace AnnieMediaPlayer
                 {
                     if (string.Equals(entry.Key, key, StringComparison.OrdinalIgnoreCase) &&
                         !string.IsNullOrWhiteSpace(entry.Value))
-                        return entry.Value.Trim();
+                        return MetadataText.Repair(entry.Value.Trim());
                 }
             }
 
