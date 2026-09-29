@@ -222,7 +222,7 @@ namespace AnnieMediaPlayer.CustomControls
         {
             try
             {
-                _gpu!.BeginTransition();
+                _gpu!.BeginTransition(TransitionTuning.ShouldUseBlur(this));
             }
             catch (Exception ex)
             {
@@ -255,7 +255,6 @@ namespace AnnieMediaPlayer.CustomControls
         // Direct2D 렌더러. 그리기 순서와 수치는 WPF 렌더러와 같고, 가산 혼합은 Direct2D 의 PrimitiveBlend.Add 를 사용합니다.
         private sealed class Direct2DRenderer : IDisposable
         {
-            private static readonly TimeSpan TransitionDuration = TimeSpan.FromMilliseconds(150);
             private static readonly TimeSpan GpuWaitTimeout = TimeSpan.FromMilliseconds(100);
             private const int GpuTimeoutLimit = 3;
             private static readonly TimeSpan GpuStallLimit = TimeSpan.FromMilliseconds(500);
@@ -296,9 +295,14 @@ namespace AnnieMediaPlayer.CustomControls
             private readonly ID2D1LinearGradientBrush?[] _ribbons = new ID2D1LinearGradientBrush?[4];
             private ID2D1LinearGradientBrush? _whiteFade, _edgeGlow;
 
-            // 모드 전환 크로스페이드
+            // 모드 전환 효과 (페이드 또는 블러)
             private ID2D1Bitmap1? _transitionFrame;
             private long _transitionStart;
+            private TimeSpan _transitionDuration = TransitionTuning.FadeDuration;
+            private bool _transitionBlur;
+            private ID2D1Bitmap1? _scratch;
+            private Vortice.Direct2D1.Effects.GaussianBlur? _blurIn, _blurOut;
+            private Vortice.Direct2D1.Effects.Opacity? _opacityOut;
 
             private readonly Vector2[] _up = new Vector2[RibbonPointCount];
             private readonly Vector2[] _down = new Vector2[RibbonPointCount];
@@ -378,19 +382,34 @@ namespace AnnieMediaPlayer.CustomControls
                     var w = (float)owner._width;
                     var h = (float)owner._height;
                     var u = (float)owner._unit;
-                    _dc.Target = _target;
                     _dc.SetDpi(96f * dpiScaleX, 96f * dpiScaleY);
-                    _dc.BeginDraw();
-                    _dc.Transform = Matrix3x2.Identity;
-                    switch (owner._mode)
+                    var progress = TransitionProgress();
+                    if (_transitionFrame is not null && _transitionBlur && _scratch is not null)
                     {
-                        case 0: DrawAura(owner, res, s, w, h, u, dpiScaleX); break;
-                        case 1: DrawHalo(owner, res, s, w, h, u, dpiScaleX); break;
-                        default: DrawRibbon(owner, res, s, w, h, u, dpiScaleX); break;
+                        // 블러 전환: 새 모드를 임시 표면에 그린 뒤, 흐린 상태에서 또렷하게 옮기고 이전 화면을 흐리게 지우며 합성합니다.
+                        _dc.Target = _scratch;
+                        _dc.BeginDraw();
+                        _dc.Transform = Matrix3x2.Identity;
+                        DrawMode(owner, res, s, w, h, u, dpiScaleX);
+                        if (_dc.EndDraw().Failure)
+                            return GpuFrameResult.DeviceLost;
+
+                        _dc.Target = _target;
+                        _dc.BeginDraw();
+                        ComposeBlurTransition(progress);
+                        if (_dc.EndDraw().Failure)
+                            return GpuFrameResult.DeviceLost;
                     }
-                    DrawTransition(w, h);
-                    if (_dc.EndDraw().Failure)
-                        return GpuFrameResult.DeviceLost;
+                    else
+                    {
+                        _dc.Target = _target;
+                        _dc.BeginDraw();
+                        _dc.Transform = Matrix3x2.Identity;
+                        DrawMode(owner, res, s, w, h, u, dpiScaleX);
+                        DrawTransition(w, h, progress);
+                        if (_dc.EndDraw().Failure)
+                            return GpuFrameResult.DeviceLost;
+                    }
 
                     // 공유 표면은 장치 사이에 자동으로 동기화되지 않으므로, GPU 가 그리기를 마친 뒤에 WPF 에 알려야
                     // 덜 그려진 화면이 복사되지 않습니다. 명령을 GPU 로 보내고 완료 이벤트를 기다리므로 CPU 를 쓰지 않습니다.
@@ -413,39 +432,122 @@ namespace AnnieMediaPlayer.CustomControls
                 }
             }
 
+            private void DrawMode(AudioVisualizerControl owner, VizResources res, Spectrum s, float w, float h, float u, float dpiScale)
+            {
+                switch (owner._mode)
+                {
+                    case 0: DrawAura(owner, res, s, w, h, u, dpiScale); break;
+                    case 1: DrawHalo(owner, res, s, w, h, u, dpiScale); break;
+                    default: DrawRibbon(owner, res, s, w, h, u, dpiScale); break;
+                }
+            }
+
             // 현재 화면을 보관해 두고 다음 프레임부터 새 모드 위에서 서서히 사라지게 합니다.
-            public void BeginTransition()
+            // blur 이면 이전 화면이 뿌옇게 흐려지며 사라지고, 새 모드는 흐린 상태에서 또렷해집니다.
+            public void BeginTransition(bool blur)
             {
                 if (_target is null)
                     return;
 
                 ClearTransition();
-                _transitionFrame = _dc.CreateBitmap(new SizeI(_pixelWidth, _pixelHeight), IntPtr.Zero, 0,
-                    new BitmapProperties1(new D2DPixelFormat(DxgiFormat.B8G8R8A8_UNorm, D2DAlphaMode.Premultiplied), _dc.Dpi.Width, _dc.Dpi.Height));
+                var size = new SizeI(_pixelWidth, _pixelHeight);
+                var format = new D2DPixelFormat(DxgiFormat.B8G8R8A8_UNorm, D2DAlphaMode.Premultiplied);
+                _transitionFrame = _dc.CreateBitmap(size, IntPtr.Zero, 0, new BitmapProperties1(format, _dc.Dpi.Width, _dc.Dpi.Height));
                 _transitionFrame.CopyFromBitmap(_target);
                 _transitionStart = Stopwatch.GetTimestamp();
+                _transitionBlur = false;
+                _transitionDuration = TransitionTuning.FadeDuration;
+
+                if (!blur)
+                    return;
+
+                try
+                {
+                    _scratch = _dc.CreateBitmap(size, IntPtr.Zero, 0, new BitmapProperties1(format, _dc.Dpi.Width, _dc.Dpi.Height, BitmapOptions.Target));
+                    _blurIn = CreateBlur(_scratch);
+                    _blurOut = CreateBlur(_transitionFrame);
+                    _opacityOut = new Vortice.Direct2D1.Effects.Opacity(_dc);
+                    _opacityOut.SetInputEffect(0, _blurOut, true);
+                    _transitionBlur = true;
+                    _transitionDuration = TransitionTuning.BlurDuration;
+                }
+                catch (Exception ex)
+                {
+                    // 효과를 만들 수 없는 환경에서는 페이드로 대체합니다.
+                    PlayerDiagnostics.Write($"Visualizer blur transition unavailable: {ex.Message}");
+                    ReleaseBlurResources();
+                }
+            }
+
+            private Vortice.Direct2D1.Effects.GaussianBlur CreateBlur(ID2D1Bitmap1 input)
+            {
+                var effect = new Vortice.Direct2D1.Effects.GaussianBlur(_dc);
+                effect.SetInput(0, input, true);
+                effect.Optimization = GaussianBlurOptimization.Speed;
+                effect.BorderMode = BorderMode.Hard; // 가장자리가 투명하게 번지지 않도록
+                return effect;
             }
 
             public void ClearTransition()
             {
+                ReleaseBlurResources();
                 _transitionFrame?.Dispose();
                 _transitionFrame = null;
+                _transitionBlur = false;
             }
 
-            private void DrawTransition(float w, float h)
+            private void ReleaseBlurResources()
+            {
+                _opacityOut?.Dispose();
+                _blurOut?.Dispose();
+                _blurIn?.Dispose();
+                _scratch?.Dispose();
+                _opacityOut = null;
+                _blurOut = null;
+                _blurIn = null;
+                _scratch = null;
+                _transitionBlur = false;
+            }
+
+            // 전환 진행도 (0 → 1). 전환 중이 아니면 0 이고, 끝났으면 전환 자원을 정리합니다.
+            private float TransitionProgress()
+            {
+                if (_transitionFrame is null)
+                    return 0;
+
+                var progress = (float)(Stopwatch.GetElapsedTime(_transitionStart) / _transitionDuration);
+                if (progress >= 1)
+                {
+                    ClearTransition();
+                    return 0;
+                }
+
+                return progress;
+            }
+
+            private void DrawTransition(float w, float h, float progress)
             {
                 if (_transitionFrame is null)
                     return;
 
-                var progress = Stopwatch.GetElapsedTime(_transitionStart) / TransitionDuration;
-                if (progress >= 1)
-                {
-                    ClearTransition();
-                    return;
-                }
-
                 _dc.PrimitiveBlend = PrimitiveBlend.SourceOver;
-                _dc.DrawBitmap(_transitionFrame, new RawRectF(0, 0, w, h), (float)(1 - progress), Vortice.Direct2D1.InterpolationMode.Linear, null, null);
+                _dc.DrawBitmap(_transitionFrame, new RawRectF(0, 0, w, h), 1 - progress, Vortice.Direct2D1.InterpolationMode.Linear, null, null);
+            }
+
+            private void ComposeBlurTransition(float progress)
+            {
+                // 완만하게 시작해 부드럽게 끝나는 진행 곡선 (WPF 렌더러의 전환과 같은 곡선)
+                var e = 1 - MathF.Pow(1 - progress, 3);
+                _dc.Transform = Matrix3x2.Identity;
+                _dc.PrimitiveBlend = PrimitiveBlend.SourceOver;
+                _dc.Clear(new Color4(0, 0, 0, 0));
+
+                _blurIn!.StandardDeviation = TransitionTuning.BlurSigma * (float)TransitionTuning.IncomingBlurRatio * (1 - e);
+                _dc.DrawImage(_blurIn);
+
+                _blurOut!.StandardDeviation = TransitionTuning.BlurSigma * e;
+                _opacityOut!.Value = 1 - e;
+                _dc.DrawImage(_opacityOut!);
             }
 
             #region 장치·표면

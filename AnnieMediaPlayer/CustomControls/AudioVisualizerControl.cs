@@ -536,15 +536,33 @@ namespace AnnieMediaPlayer.CustomControls
             _modeTransitionImage.Visibility = Visibility.Visible;
 
             var version = ++_modeTransitionVersion;
-            var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(150))
+            var blur = TransitionTuning.ShouldUseBlur(this);
+            var duration = blur ? TransitionTuning.BlurDuration : TransitionTuning.FadeDuration;
+            var fade = new DoubleAnimation(1, 0, duration)
             {
-                FillBehavior = FillBehavior.HoldEnd
+                FillBehavior = FillBehavior.HoldEnd,
+                EasingFunction = blur ? TransitionTuning.Ease : null
             };
             fade.Completed += (_, _) =>
             {
                 if (version == _modeTransitionVersion)
                     ClearModeTransition();
             };
+
+            // 블러 전환: 이전 화면이 뿌옇게 흐려지며 사라지고, 그 아래의 새 모드가 드러납니다.
+            if (blur)
+            {
+                var effect = new System.Windows.Media.Effects.BlurEffect
+                {
+                    Radius = 0,
+                    KernelType = System.Windows.Media.Effects.KernelType.Gaussian,
+                    RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance
+                };
+                _modeTransitionImage.Effect = effect;
+                effect.BeginAnimation(System.Windows.Media.Effects.BlurEffect.RadiusProperty,
+                    new DoubleAnimation(0, TransitionTuning.BlurRadius, duration) { EasingFunction = TransitionTuning.Ease });
+            }
+
             _modeTransitionImage.BeginAnimation(UIElement.OpacityProperty, fade);
         }
 
@@ -553,6 +571,7 @@ namespace AnnieMediaPlayer.CustomControls
             _gpu?.ClearTransition();
             _modeTransitionVersion++;
             _modeTransitionImage.BeginAnimation(UIElement.OpacityProperty, null);
+            _modeTransitionImage.Effect = null;
             _modeTransitionImage.Opacity = 1;
             _modeTransitionImage.Visibility = Visibility.Collapsed;
             _modeTransitionImage.Source = null;
@@ -631,10 +650,7 @@ namespace AnnieMediaPlayer.CustomControls
             }
         }
 
-        private bool IsWpfSoftwareRendering() =>
-            SystemParameters.IsRemoteSession || RenderCapability.Tier >> 16 == 0 ||
-            RenderOptions.ProcessRenderMode == System.Windows.Interop.RenderMode.SoftwareOnly ||
-            PresentationSource.FromVisual(this) is System.Windows.Interop.HwndSource { CompositionTarget.RenderMode: System.Windows.Interop.RenderMode.SoftwareOnly };
+        private bool IsWpfSoftwareRendering() => TransitionTuning.IsSoftwareRendering(this);
 
         private void ClearLayers()
         {

@@ -57,7 +57,7 @@
     <sys:String x:Key="Text.Lyrics">Lyrics</sys:String>
     <sys:String x:Key="Text.Lyrics.None">No lyrics</sys:String>
     <sys:String x:Key="Text.Lyrics.NoneHint">Put an .lrc file with the same name next to the song, or add lyrics to the song's tags.</sys:String>
-    <sys:String x:Key="Text.UseTransitionFade">Fade between playback screens</sys:String>
+    <sys:String x:Key="Text.UseTransitionFade">Use transition effects between playback screens</sys:String>
     <sys:String x:Key="Text.UseOpenPlay">Start playing immediately after opening media</sys:String>
 
     <sys:String x:Key="Text.FlipSettings">Flip Settings</sys:String>

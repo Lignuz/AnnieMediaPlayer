@@ -7,6 +7,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Media3D;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
@@ -821,22 +822,50 @@ namespace AnnieMediaPlayer
             }
 
             var version = ++_mediaTransitionVersion;
-            var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(150))
+            var blur = TransitionTuning.ShouldUseBlur(this);
+            var duration = blur ? TransitionTuning.BlurDuration : TransitionTuning.FadeDuration;
+            var fade = new DoubleAnimation(1, 0, duration)
             {
-                FillBehavior = FillBehavior.HoldEnd
+                FillBehavior = FillBehavior.HoldEnd,
+                EasingFunction = blur ? TransitionTuning.Ease : null
             };
             fade.Completed += (_, _) =>
             {
                 if (version == _mediaTransitionVersion)
                     ClearMediaTransitionOverlay();
             };
+
+            // 블러 전환: 이전 화면은 뿌옇게 흐려지며 사라지고, 새 화면은 흐린 상태에서 또렷해집니다.
+            if (blur)
+            {
+                // 블러가 커지면 재생 영역 가장자리가 투명하게 번지므로, 그 뒤가 밝게 비치지 않도록 전환 동안 배경을 검게 둡니다.
+                grid_center.Background = Brushes.Black;
+                MediaTransitionImage.Effect = CreateBlurAnimation(0, TransitionTuning.BlurRadius, duration);
+                MediaPresentation.Effect = CreateBlurAnimation(TransitionTuning.BlurRadius * TransitionTuning.IncomingBlurRatio, 0, duration);
+            }
+
             MediaTransitionImage.BeginAnimation(UIElement.OpacityProperty, fade);
+        }
+
+        private static BlurEffect CreateBlurAnimation(double from, double to, Duration duration)
+        {
+            var effect = new BlurEffect
+            {
+                Radius = from,
+                KernelType = KernelType.Gaussian,
+                RenderingBias = RenderingBias.Performance
+            };
+            effect.BeginAnimation(BlurEffect.RadiusProperty, new DoubleAnimation(from, to, duration) { EasingFunction = TransitionTuning.Ease });
+            return effect;
         }
 
         private void ClearMediaTransitionOverlay()
         {
             _mediaTransitionVersion++;
             MediaTransitionImage.BeginAnimation(UIElement.OpacityProperty, null);
+            MediaTransitionImage.Effect = null;
+            MediaPresentation.Effect = null;
+            grid_center.ClearValue(Panel.BackgroundProperty);
             MediaTransitionImage.Opacity = 1;
             MediaTransitionImage.Visibility = Visibility.Collapsed;
             MediaTransitionImage.Source = null;

@@ -90,7 +90,7 @@ namespace AnnieMediaPlayer
         {
             var option = OptionViewModel.Instance.CurrentOption;
             option.ShowLyrics = !option.ShowLyrics;
-            UpdateLyricsLayout(animate: true);
+            UpdateLyricsLayout(animate: option.UseTransitionFade); // 전환 효과를 끈 경우에는 바로 나타나고 사라집니다.
             ShowAudioChrome();
         }
 
