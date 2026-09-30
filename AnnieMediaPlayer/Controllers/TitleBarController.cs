@@ -69,7 +69,10 @@ namespace AnnieMediaPlayer
                 deltaY <= SystemParameters.MinimumVerticalDragDistance)
                 return;
 
+            // PointToScreen 은 물리 픽셀을 돌려주므로, Left/Top 과 같은 DIP 단위로 바꿔서 씁니다.
             var screenPoint = window.PointToScreen(currentPoint);
+            if (PresentationSource.FromVisual(window)?.CompositionTarget is { } target)
+                screenPoint = target.TransformFromDevice.Transform(screenPoint);
 
             if (!_dragStarted)
             {
