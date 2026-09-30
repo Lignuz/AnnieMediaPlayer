@@ -27,7 +27,7 @@ namespace AnnieMediaPlayer
     [ValueConversion(typeof(double), typeof(string))]
     internal class RangeConstrainedDoubleToDoubleConverter : DependencyObject, IValueConverter
     {
-        // MathHelper.cs
+        // 컨버터 자체는 XAML 에서 쓰이지 않고, 중첩 수학 유틸리티 Clamp 만 DraggableSlider 가 참조합니다.
         internal static class MathHelper
         {
             public static double Clamp(double value, double min, double max)
@@ -37,11 +37,6 @@ namespace AnnieMediaPlayer
                 if (value > max)
                     return max;
                 return value;
-            }
-
-            public static double Mod(double value, double m)
-            {
-                return (value % m + m) % m;
             }
         }
 
@@ -99,21 +94,6 @@ namespace AnnieMediaPlayer
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, System.Globalization.CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class UseOpenPlayStringConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is true)
-                return "Play";
-            return "Pause";
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }
