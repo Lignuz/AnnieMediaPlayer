@@ -82,7 +82,9 @@ namespace AnnieMediaPlayer
                 {
                     var horizontalRatio = window.ActualWidth > 0 ? currentPoint.X / window.ActualWidth : 0.5;
                     var verticalRatio = window.ActualHeight > 0 ? currentPoint.Y / window.ActualHeight : 0.5;
-                    var pointerOffset = new Point(window.Width * horizontalRatio, window.Height * verticalRatio);
+                    // 최대화 중에는 Width/Height 가 최대화된 크기를 돌려주므로, 복원될 크기로 커서 위치를 맞춥니다.
+                    var restoreBounds = window.RestoreBounds;
+                    var pointerOffset = new Point(restoreBounds.Width * horizontalRatio, restoreBounds.Height * verticalRatio);
 
                     window.WindowState = WindowState.Normal;
                     _mouseDownPoint = pointerOffset;
