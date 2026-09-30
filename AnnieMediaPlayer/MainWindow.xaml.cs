@@ -967,11 +967,13 @@ namespace AnnieMediaPlayer
                     _mediaTransitionTimeout.Start();
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                // 상태를 되돌린 뒤 예외를 다시 던지지 않고 진단 로그에 남깁니다.
+                // 호출부(F4, Ctrl+Space, 정지 버튼)는 결과를 확인하지 않으므로 다시 던지면 예외가 사라집니다.
                 _explicitStopTransitionPending = false;
                 FinishMediaTransition(false);
-                throw;
+                PlayerDiagnostics.Write($"Stop playback failed: {ex}");
             }
         }
 
