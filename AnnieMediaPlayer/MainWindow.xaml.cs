@@ -46,10 +46,13 @@ namespace AnnieMediaPlayer
         private readonly DispatcherTimer _playlistSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
         private readonly DispatcherTimer _mediaTransitionTimeout = new() { Interval = TimeSpan.FromSeconds(3) };
         private static readonly TimeSpan PositionUpdateInterval = TimeSpan.FromMilliseconds(50);
+        private static readonly TimeSpan TaskbarProgressUpdateInterval = TimeSpan.FromMilliseconds(250);
+        private TaskbarMediaControls? _taskbarMediaControls;
         private const int AudioOnlyBlockCache = 256;
         // 코어 수만큼, 최대 8개. 스레드가 많을수록 프레임 지연과 메모리 사용이 늘어납니다.
         private static readonly int VideoDecoderThreadCount = Math.Clamp(Environment.ProcessorCount, 1, 8);
         private long _lastPositionUpdateTimestamp;
+        private long _lastTaskbarProgressTimestamp;
         private volatile bool _mediaTransitionPending;
         private volatile StreamInfo? _transitionVideoStream;
         private bool _automaticNextTransitionPending;
@@ -99,15 +102,26 @@ namespace AnnieMediaPlayer
             VideoPlayerController.OnVideoFrameRendered += VideoPlayerController_OnVideoFrameRendered;
             VideoPlayerController.OnFrameStepStateChanged += VideoPlayerController_OnFrameStepStateChanged;
             VideoPlayerController.OnSpeedIndexChanged += VideoPlayerController_OnSpeedIndexChanged;
+            vm.Playlist.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is nameof(PlaylistViewModel.CanPlayPrevious) or
+                    nameof(PlaylistViewModel.CanPlayNext) or nameof(PlaylistViewModel.HasItems))
+                    Dispatcher.BeginInvoke(UpdateTaskbarButtons);
+            };
             UpdateSetSpeedLabel();
 
             BackgroundImage.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/background01.png"));
             ThemeManager.ThemeChanged += ThemeManager_ThemeChanged;
+            LanguageManager.LanguageChanged += LanguageManager_LanguageChanged;
 
             vm.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName is nameof(MainViewModel.IsPlaying) or nameof(MainViewModel.IsAudioOnly) or nameof(MainViewModel.IsOpened))
-                    Dispatcher.BeginInvoke(UpdatePlaybackPowerRequest);
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        UpdatePlaybackPowerRequest();
+                        UpdateTaskbarMediaState();
+                    }));
             };
         }
 
@@ -121,12 +135,44 @@ namespace AnnieMediaPlayer
         {
             base.OnSourceInitialized(e);
 
+            _taskbarMediaControls ??= new TaskbarMediaControls();
             var hwndSource = PresentationSource.FromVisual(this) as HwndSource;
             hwndSource?.AddHook(WndProc);
         }
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
+            if (TaskbarMediaControls.TaskbarButtonCreatedMessage != 0 &&
+                unchecked((uint)msg) == TaskbarMediaControls.TaskbarButtonCreatedMessage)
+            {
+                if (_taskbarMediaControls?.Initialize(hwnd, vm.CanPlay, vm.IsPlaying,
+                        vm.Playlist.CanPlayPrevious, vm.Playlist.CanPlayNext) == true)
+                    UpdateTaskbarMediaState();
+
+                handled = true;
+                return IntPtr.Zero;
+            }
+
+            if (msg == 0x0111 && _taskbarMediaControls?.IsInitialized == true &&
+                TaskbarMediaControls.TryGetButtonId(wParam, out var buttonId))
+            {
+                handled = true;
+                switch (buttonId)
+                {
+                    case TaskbarMediaControls.PreviousButtonId:
+                        _ = PlayAdjacentPlaylistItemAsync(false);
+                        break;
+                    case TaskbarMediaControls.PlayPauseButtonId:
+                        _ = PlayOrOpenAsync();
+                        break;
+                    case TaskbarMediaControls.NextButtonId:
+                        _ = PlayAdjacentPlaylistItemAsync(true);
+                        break;
+                }
+
+                return IntPtr.Zero;
+            }
+
             const int WM_NCCALCSIZE = 0x0083;
             const int WM_NCACTIVATE = 0x0086;
 
@@ -145,6 +191,39 @@ namespace AnnieMediaPlayer
 
             return IntPtr.Zero;
         }
+
+        private void UpdateTaskbarMediaState()
+        {
+            UpdateTaskbarButtons();
+            _taskbarMediaControls?.UpdateStatusOverlay(vm.IsOpened, vm.IsPlaying);
+            UpdateTaskbarProgress(vm.Position, force: true);
+        }
+
+        private void UpdateTaskbarButtons() => _taskbarMediaControls?.UpdateButtons(
+            vm.CanPlay, vm.IsPlaying, vm.Playlist.CanPlayPrevious, vm.Playlist.CanPlayNext);
+
+        private void UpdateTaskbarProgress(TimeSpan position, bool force = false)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(new Action(() => UpdateTaskbarProgress(position, force)));
+                return;
+            }
+
+            if (_taskbarMediaControls?.IsInitialized != true)
+                return;
+
+            var now = System.Diagnostics.Stopwatch.GetTimestamp();
+            if (!force && _lastTaskbarProgressTimestamp != 0 &&
+                System.Diagnostics.Stopwatch.GetElapsedTime(_lastTaskbarProgressTimestamp, now) < TaskbarProgressUpdateInterval)
+                return;
+
+            _lastTaskbarProgressTimestamp = now;
+            _taskbarMediaControls.UpdateProgress(vm.IsOpened, vm.IsPlaying, position, vm.Duration);
+        }
+
+        private void LanguageManager_LanguageChanged(object? sender, EventArgs e) =>
+            Dispatcher.BeginInvoke(new Action(UpdateTaskbarMediaState));
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
@@ -174,6 +253,7 @@ namespace AnnieMediaPlayer
 
             e.Cancel = true;
             OptionViewModel.Instance.UseOverlayControlChanged -= UseOverlayControlChanged;
+            LanguageManager.LanguageChanged -= LanguageManager_LanguageChanged;
             _explicitStopTransitionPending = false;
             FinishMediaTransition(false);
 
@@ -201,6 +281,7 @@ namespace AnnieMediaPlayer
                     SavePlaylistNow();
 
                 PlaybackPowerRequest.Clear();
+                _taskbarMediaControls?.Dispose();
                 _albumArtService.Dispose();
                 _currentAlbumArtService.Dispose();
                 Close();
@@ -426,6 +507,8 @@ namespace AnnieMediaPlayer
                 var transitionVersion = _mediaTransitionVersion;
                 _ = FinishAudioTransitionWhenReadyAsync(albumArtLoad, openedSource, transitionVersion);
             }
+
+            UpdateTaskbarMediaState();
         }
 
         private async Task FinishAudioTransitionWhenReadyAsync(Task albumArtLoad, string source, int version)
@@ -464,6 +547,8 @@ namespace AnnieMediaPlayer
 
         private void VideoPlayerController_OnPositionChanged(object? sender, PositionChangedEventArgs e)
         {
+            UpdateTaskbarProgress(e.Position);
+
             // 재생 중에는 FFME 렌더링 주기(약 15ms)마다 위치가 전달됩니다.
             // 슬라이더와 시간 표시는 초당 20번이면 충분하므로 바인딩·레이아웃 갱신을 줄이고,
             // 최소화 중에는 복원될 때 한 번에 반영합니다. 일시정지·탐색·느린 재생은 바로 반영합니다.
@@ -559,6 +644,7 @@ namespace AnnieMediaPlayer
             vm.FrameIndex = 0;
             vm.IsPlaying = false;
             UpdateSpeedInfo();
+            UpdateTaskbarMediaState();
         }
 
         private bool ShouldHoldForAutomaticNextItem()
