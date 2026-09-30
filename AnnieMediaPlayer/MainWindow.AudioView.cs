@@ -18,11 +18,19 @@ namespace AnnieMediaPlayer
         private const double AlbumArtHeightRatio = 0.72;
         private const double BasicSpectrumGap = 3;
         private const double BasicSpectrumVerticalMargin = 19.5;
+        private const double AudioModeButtonDefaultWidth = 92;
+        private const double AudioModeButtonMinWidth = 48;
+        private const double AudioModeButtonDefaultHeight = 28;
+        private const double AudioModeButtonMinHeight = 20;
+        private const double AudioModeBarSideMargin = 12;
+        private const double AudioModeButtonDefaultFontSize = 14;
+        private const double AudioModeButtonMinFontSize = 9;
         private readonly DispatcherTimer _audioChromeHideTimer = new() { Interval = AudioChromeShowDuration };
         private bool _isAudioChromeVisible;
         private bool _isLyricsShown;
         private bool _isLyricsSliding;
         private int _lyricsSlideVersion;
+        private int _audioModeButtonSizingVersion;
         private int _lyricsLoadVersion;
         private DispatcherOperation? _basicSpectrumBoundsUpdate;
         private bool _basicSpectrumBoundsDirty;
@@ -60,6 +68,7 @@ namespace AnnieMediaPlayer
             {
                 UpdateLyricsLayout(animate: false);
                 UpdateBasicSpectrumLayout();
+                UpdateAudioChromeInset();
             };
             AudioAlbumArtImage.SizeChanged += (_, _) => ScheduleBasicSpectrumBoundsUpdate();
             AudioVisualizer.SizeChanged += (_, _) => ScheduleBasicSpectrumBoundsUpdate();
@@ -228,6 +237,8 @@ namespace AnnieMediaPlayer
             }
 
             _isLyricsShown = show;
+            // 모드 버튼도 가사 패널과 같은 시간·곡선으로 크기를 바꿉니다.
+            UpdateAudioModeButtonSizing(animate);
             var version = ++_lyricsSlideVersion;
             if (show)
             {
@@ -380,9 +391,75 @@ namespace AnnieMediaPlayer
         {
             var top = UseOverlayControl ? panel_titlebar.ActualHeight : 0;
             var bottom = UseOverlayControl ? panel_control.ActualHeight : 0;
-            AudioModeBar.Margin = new Thickness(0, 0, AudioContentInset, Math.Max(16, bottom + 12)); // 앨범 모드의 스펙트럼과 겹치지 않도록 화면 아래에 가깝게 둡니다.
+            AudioModeBar.Margin = new Thickness(AudioModeBarSideMargin, 0, AudioContentInset + AudioModeBarSideMargin,
+                Math.Max(16, bottom + 12)); // 앨범 모드의 스펙트럼과 겹치지 않도록 화면 아래에 가깝게 둡니다.
             LyricsToggleBar.Margin = new Thickness(0, top + 16, 24, 0);
             LyricsView.Margin = new Thickness(0, top + 68, 24, bottom + 24);
+            // 슬라이드 중에는 inset 애니메이션 프레임마다 버튼 크기를 다시 설정하지 않습니다.
+            if (!_isLyricsSliding)
+                UpdateAudioModeButtonSizing();
+        }
+
+        private void UpdateAudioModeButtonSizing(bool animate = false)
+        {
+            if (AudioModeBar.Child is not StackPanel buttons || buttons.Children.Count == 0)
+                return;
+
+            ++_audioModeButtonSizingVersion;
+
+            // 가사 영역과 양옆 여백을 제외한 공간에 맞춰 버튼의 폭·높이·글꼴을 함께 줄입니다.
+            var reservedLyricsWidth = _isLyricsShown ? LyricsRegionWidth : 0;
+            var availableWidth = Math.Max(0, grid_center.ActualWidth - reservedLyricsWidth - AudioModeBarSideMargin * 2);
+            var horizontalChrome = AudioModeBar.Padding.Left + AudioModeBar.Padding.Right +
+                AudioModeBar.BorderThickness.Left + AudioModeBar.BorderThickness.Right;
+            var buttonWidth = Math.Clamp((availableWidth - horizontalChrome) / buttons.Children.Count,
+                AudioModeButtonMinWidth, AudioModeButtonDefaultWidth);
+            var buttonHeight = Math.Clamp(AudioModeButtonDefaultHeight * buttonWidth / AudioModeButtonDefaultWidth,
+                AudioModeButtonMinHeight, AudioModeButtonDefaultHeight);
+            var fontSize = Math.Clamp(AudioModeButtonDefaultFontSize * buttonWidth / AudioModeButtonDefaultWidth,
+                AudioModeButtonMinFontSize, AudioModeButtonDefaultFontSize);
+
+            foreach (var child in buttons.Children)
+            {
+                if (child is Button button)
+                {
+                    SetAudioModeButtonValue(button, FrameworkElement.WidthProperty, button.Width, buttonWidth,
+                        animate, 0.5);
+                    SetAudioModeButtonValue(button, FrameworkElement.HeightProperty, button.Height, buttonHeight,
+                        animate, 0.1);
+                    SetAudioModeButtonValue(button, Control.FontSizeProperty, button.FontSize, fontSize,
+                        animate, 0.1);
+                }
+            }
+        }
+
+        private void SetAudioModeButtonValue(Button button, DependencyProperty property,
+            double currentValue, double targetValue, bool animate, double tolerance)
+        {
+            if (animate && Math.Abs(currentValue - targetValue) > tolerance)
+            {
+                // 첫 틱 전에도 현재 크기를 유지하고, 최신 애니메이션이 끝났을 때만 목표값을 고정합니다.
+                button.SetValue(property, currentValue);
+                var version = _audioModeButtonSizingVersion;
+                var animation = new DoubleAnimation(currentValue, targetValue, LyricsSlideDuration)
+                {
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+                    FillBehavior = FillBehavior.HoldEnd
+                };
+                animation.Completed += (_, _) =>
+                {
+                    if (version != _audioModeButtonSizingVersion)
+                        return;
+
+                    button.SetValue(property, targetValue);
+                    button.BeginAnimation(property, null);
+                };
+                button.BeginAnimation(property, animation, HandoffBehavior.SnapshotAndReplace);
+                return;
+            }
+
+            button.SetValue(property, targetValue);
+            button.BeginAnimation(property, null);
         }
 
         #endregion

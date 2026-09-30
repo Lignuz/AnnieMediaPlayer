@@ -398,7 +398,6 @@ namespace AnnieMediaPlayer
                 vm.AudioAlbum = FindMetadataValue(e.Info.Metadata, audioMetadata, "album") ?? string.Empty;
                 albumArtLoad = LoadCurrentAlbumArtAsync(e.Info.MediaSource);
                 LoadLyrics(e.Info.MediaSource, e.Info.Metadata, audioMetadata);
-                ShowAudioChrome();
             }
             else
             {
