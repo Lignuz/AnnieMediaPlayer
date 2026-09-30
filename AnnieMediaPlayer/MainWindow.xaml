@@ -11,7 +11,7 @@
         xmlns:sys="clr-namespace:System;assembly=System.Runtime"
         mc:Ignorable="d"
         MinWidth="560" MinHeight="310"
-        Title="Annie Media Player" Height="600" Width="900"
+        Title="Annie Media Player" Height="480" Width="640"
         StateChanged="Window_StateChanged"
         LocationChanged="Window_LocationChanged"
         SizeChanged="Window_SizeChanged"
