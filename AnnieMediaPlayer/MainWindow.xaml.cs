@@ -37,6 +37,8 @@ namespace AnnieMediaPlayer
         private bool _playlistSyncHeight;
         private bool _updatingPlaylistDock;
         private bool _playlistNavigationInProgress;
+        private const double DefaultPlaylistHeight = 520;
+        private const double DefaultPlaylistMinHeight = 360;
         private readonly AlbumArtService _albumArtService = new();
         private readonly Dictionary<PlaylistItemViewModel, CancellationTokenSource> _albumArtLoads = new();
         private readonly AlbumArtService _currentAlbumArtService = new();
@@ -1132,7 +1134,8 @@ namespace AnnieMediaPlayer
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.Manual,
                 Left = playlistPosition.X,
-                Top = playlistPosition.Y
+                Top = playlistPosition.Y,
+                Height = canDock ? ActualHeight : DefaultPlaylistHeight
             };
             _playlistWindow.AddFilesRequested += PlaylistPanel_AddFilesRequested;
             _playlistWindow.RemoveRequested += PlaylistPanel_RemoveRequested;
@@ -1153,7 +1156,7 @@ namespace AnnieMediaPlayer
             };
             _playlistWindow.Show();
             _playlistDocked = canDock;
-            _playlistSyncHeight = false;
+            _playlistSyncHeight = canDock;
             UpdateDockedPlaylistPosition();
             PlaylistButton.Tag = "True";
         }
@@ -1161,7 +1164,7 @@ namespace AnnieMediaPlayer
         private Point GetPlaylistInitialPosition(out bool canDock)
         {
             const double playlistWidth = 340;
-            const double playlistHeight = 520;
+            const double playlistHeight = DefaultPlaylistHeight;
             var workArea = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle).WorkingArea;
             var workTopLeft = PointFromScreen(new Point(workArea.Left, workArea.Top));
             var workBottomRight = PointFromScreen(new Point(workArea.Right, workArea.Bottom));
@@ -1180,14 +1183,16 @@ namespace AnnieMediaPlayer
             var rightSpace = workRight - (Left + ActualWidth);
             var leftSpace = Left - workLeft;
             _playlistDockedToRight = rightSpace >= playlistWidth || rightSpace >= leftSpace;
+            var dockedHeight = ActualHeight;
             canDock = (_playlistDockedToRight ? rightSpace >= playlistWidth : leftSpace >= playlistWidth) &&
-                      Top >= workTop && Top + playlistHeight <= workBottom;
+                      Top >= workTop && Top + dockedHeight <= workBottom;
 
             var preferredLeft = _playlistDockedToRight ? Left + ActualWidth : Left - playlistWidth;
+            var targetHeight = canDock ? dockedHeight : playlistHeight;
 
             return new Point(
                 Math.Clamp(preferredLeft, workLeft, Math.Max(workLeft, workRight - playlistWidth)),
-                Math.Clamp(Top, workTop, Math.Max(workTop, workBottom - playlistHeight)));
+                Math.Clamp(Top, workTop, Math.Max(workTop, workBottom - targetHeight)));
         }
 
         private void PlaylistWindow_LocationChanged(object? sender, EventArgs e)
@@ -1196,7 +1201,11 @@ namespace AnnieMediaPlayer
                 return;
 
             if (_playlistDocked && !IsPlaylistAtDockPosition())
+            {
                 _playlistDocked = false;
+                _playlistSyncHeight = false;
+                _playlistWindow.MinHeight = DefaultPlaylistMinHeight;
+            }
         }
 
         private void PlaylistWindow_MoveCompleted(object? sender, EventArgs e)
@@ -1240,8 +1249,7 @@ namespace AnnieMediaPlayer
                 return;
             }
 
-            _playlistSyncHeight = Math.Abs(_playlistWindow.ActualHeight - ActualHeight) <= 3;
-
+            _playlistSyncHeight = true;
             UpdateDockedPlaylistPosition();
         }
 
@@ -1271,6 +1279,7 @@ namespace AnnieMediaPlayer
             try
             {
                 _updatingPlaylistDock = true;
+                _playlistWindow.MinHeight = Math.Min(DefaultPlaylistMinHeight, MinHeight);
                 _playlistWindow.Left = position.X;
                 _playlistWindow.Top = position.Y;
                 if (_playlistSyncHeight)
@@ -1560,7 +1569,11 @@ namespace AnnieMediaPlayer
                 vm.Position = VideoPlayerController.CurrentPosition;
 
             if (WindowState == WindowState.Maximized && _playlistDocked && _playlistWindow?.IsVisible == true)
+            {
                 _playlistDocked = false;
+                _playlistSyncHeight = false;
+                _playlistWindow.MinHeight = DefaultPlaylistMinHeight;
+            }
 
             UpdateDockedPlaylistPosition();
         }
