@@ -98,8 +98,11 @@ namespace AnnieMediaPlayer.Options
 
 
         // 옵션 저장
+        // 저장 도중 프로그램이 종료돼도 기존 파일이 깨지지 않도록 임시 파일에 쓴 뒤 교체합니다.
+        // (재생목록 저장과 같은 방식)
         public void Save()
         {
+            string? temporaryPath = null;
             try
             {
                 var dir = Path.GetDirectoryName(OptionFilePath);
@@ -107,11 +110,22 @@ namespace AnnieMediaPlayer.Options
                     Directory.CreateDirectory(dir!);
 
                 var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(OptionFilePath, json);
+                temporaryPath = Path.Combine(dir!, $"options.{Guid.NewGuid():N}.tmp");
+                File.WriteAllText(temporaryPath, json);
+                File.Move(temporaryPath, OptionFilePath, true);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"옵션 저장 실패: {ex.Message}");
+            }
+            finally
+            {
+                if (temporaryPath != null && File.Exists(temporaryPath))
+                {
+                    try { File.Delete(temporaryPath); }
+                    catch (IOException) { }
+                    catch (UnauthorizedAccessException) { }
+                }
             }
         }
 
