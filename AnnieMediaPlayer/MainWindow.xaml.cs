@@ -18,6 +18,7 @@ using System.Threading;
 using AnnieMediaPlayer.Options;
 using AnnieMediaPlayer.Windows.Settings;
 using AnnieMediaPlayer.Windows;
+using AnnieMediaPlayer.Windows.Info;
 using AnnieMediaPlayer.Windows.Panels;
 using FFmpeg.AutoGen;
 using Unosquare.FFME.Common;
@@ -71,6 +72,10 @@ namespace AnnieMediaPlayer
         public MainWindow()
         {
             InitializeComponent();
+
+#if DEBUG
+            DebugInfoButton.IsHitTestVisible = true;
+#endif
 
             _playlistSaveTimer.Tick += (_, _) => SavePlaylistNow();
             _mediaTransitionTimeout.Tick += (_, _) =>
@@ -2043,6 +2048,17 @@ namespace AnnieMediaPlayer
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
             win.ShowDialog();
+        }
+        private void DebugInfoButton_Click(object sender, RoutedEventArgs e)
+        {
+#if DEBUG
+            var win = new InfoWindow(checkUpdate: true)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            win.ShowDialog();
+#endif
         }
         private void ThemeToggleButton_Click(object sender, RoutedEventArgs e) => OptionViewModel.Instance.ToggleTheme();
 

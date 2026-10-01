@@ -96,7 +96,24 @@
                                LastChildFill="True" Height="40">
                         <!-- 🎨 아이콘 + 제목 묶기 -->
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
-                            <Image Source="pack://application:,,,/Resources/AnnieMediaPlayer.ico" Width="20" Height="20" Margin="0,0,6,0" />
+                            <Button x:Name="DebugInfoButton" Width="28" Height="30" Margin="0,0,6,0" Padding="0" Background="Transparent" BorderThickness="0" Focusable="False" IsHitTestVisible="False" ToolTip="Debug: app info and update check" Click="DebugInfoButton_Click">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="ButtonBackground" Background="{TemplateBinding Background}" CornerRadius="3">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="ButtonBackground" Property="Background" Value="{DynamicResource ButtonHoverBrush}" />
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter TargetName="ButtonBackground" Property="Background" Value="{DynamicResource ButtonPressedBrush}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                                <Image Source="pack://application:,,,/Resources/AnnieMediaPlayer.ico" Width="20" Height="20" />
+                            </Button>
                             <TextBlock Text="{DynamicResource Text.AppTitle}" VerticalAlignment="Center" Margin="10,0,0,0" FontWeight="Bold"/>
                         </StackPanel>
                         <!-- 오른쪽에 있는 버튼들 -->

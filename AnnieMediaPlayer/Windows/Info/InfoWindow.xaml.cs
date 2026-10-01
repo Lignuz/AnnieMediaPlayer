@@ -7,12 +7,11 @@ namespace AnnieMediaPlayer.Windows.Info
     /// </summary>
     public partial class InfoWindow : BaseWindow
     {
-        public InfoWindow()
+        public InfoWindow(bool checkUpdate = false)
         {
             InitializeComponent();
 
-            // 업데이트 확인시 true 로 설정합니다.
-            DataContext = new InfoWindowViewModel(checkUpdate: false); 
+            DataContext = new InfoWindowViewModel(checkUpdate);
         }
 
         private void Update_Click(object sender, System.Windows.RoutedEventArgs e)
