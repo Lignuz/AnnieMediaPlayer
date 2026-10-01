@@ -53,6 +53,8 @@ namespace AnnieMediaPlayer
         private static readonly int VideoDecoderThreadCount = Math.Clamp(Environment.ProcessorCount, 1, 8);
         private long _lastPositionUpdateTimestamp;
         private long _lastTaskbarProgressTimestamp;
+        private bool _updatingVolumeSlider;
+        private double _volumeBeforeMute = 1.0;
         private volatile bool _mediaTransitionPending;
         private volatile StreamInfo? _transitionVideoStream;
         private bool _automaticNextTransitionPending;
@@ -237,6 +239,7 @@ namespace AnnieMediaPlayer
             this.BeginAnimation(Window.OpacityProperty, fadeIn);
 
             InitializeOverlayControls();
+            InitializeVolumeControl();
             OptionViewModel.Instance.UseOverlayControlChanged += UseOverlayControlChanged;
             OptionViewModel.Instance.OptionChanged(OptionViewModel.Instance.DefaultOption, OptionViewModel.Instance.CurrentOption);
         }
@@ -296,7 +299,69 @@ namespace AnnieMediaPlayer
         // 마우스 휠
         private void win_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            VideoPlayerController.SetVolumeChange(e.Delta > 0);
+            VolumeSlider.Value = Math.Clamp(VolumeSlider.Value + (e.Delta > 0 ? 0.1 : -0.1), 0.0, 1.0);
+        }
+
+        private void InitializeVolumeControl()
+        {
+            var volume = Math.Clamp(VideoPlayerController.GetVolume(), 0.0, 1.0);
+            _volumeBeforeMute = volume > 0 ? volume : 1.0;
+            VolumeMuteButton.IsChecked = false;
+
+            _updatingVolumeSlider = true;
+            try
+            {
+                VolumeSlider.Value = volume;
+            }
+            finally
+            {
+                _updatingVolumeSlider = false;
+            }
+        }
+
+        private void VolumeMuteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (VolumeMuteButton.IsChecked == true)
+            {
+                if (VolumeSlider.Value > 0)
+                    _volumeBeforeMute = VolumeSlider.Value;
+                else
+                {
+                    SetVolumeSliderValue(Math.Clamp(_volumeBeforeMute, 0.01, 1.0));
+                    VideoPlayerController.SetVolume(VolumeSlider.Value);
+                }
+
+                ffmeMediaElement.IsMuted = true;
+                return;
+            }
+
+            ffmeMediaElement.IsMuted = false;
+        }
+
+        private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_updatingVolumeSlider)
+                return;
+
+            if (e.NewValue > 0)
+                _volumeBeforeMute = e.NewValue;
+
+            VolumeMuteButton.IsChecked = false;
+            VideoPlayerController.SetVolume(e.NewValue);
+            ffmeMediaElement.IsMuted = false;
+        }
+
+        private void SetVolumeSliderValue(double value)
+        {
+            _updatingVolumeSlider = true;
+            try
+            {
+                VolumeSlider.Value = value;
+            }
+            finally
+            {
+                _updatingVolumeSlider = false;
+            }
         }
 
         // 기본영역 드래그로 이동 지원

@@ -295,15 +295,42 @@
                                     </StackPanel>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                    <Viewbox Width="20" Height="20">
-                                        <Canvas Width="16" Height="16">
-                                            <Path Fill="{DynamicResource ThemeButtonFillBrush}" Data="M3.5,6.5 L6,6.5 L9,4 L9,12 L6,9.5 L3.5,9.5 Z"/>
-                                            <Path Stroke="{DynamicResource ThemeButtonFillBrush}" StrokeThickness="1" StrokeLineJoin="Round" Data="M13.5,4.5 C15,8 15,8 13.5,11.5" Visibility="{Binding ElementName=ffmeMediaElement, Path=Volume, Converter={StaticResource GreaterThanToVisibilityConverter}, ConverterParameter=0.8}"/>
-                                            <Path Stroke="{DynamicResource ThemeButtonFillBrush}" StrokeThickness="1" StrokeLineJoin="Round" Data="M12,5.5 C13,8 13,8 12,10.5" Visibility="{Binding ElementName=ffmeMediaElement, Path=Volume, Converter={StaticResource GreaterThanToVisibilityConverter}, ConverterParameter=0.4}"/>
-                                            <Path Stroke="{DynamicResource ThemeButtonFillBrush}" StrokeThickness="1" StrokeLineJoin="Round" Data="M10.5,8 C11.5,7 11.5,9 10.5,8" Visibility="{Binding ElementName=ffmeMediaElement, Path=Volume, Converter={StaticResource GreaterThanToVisibilityConverter}, ConverterParameter=0.05}"/>
-                                        </Canvas>
-                                    </Viewbox>
-                                    <local:DraggableSlider x:Name="VolumeSlider" Style="{StaticResource DraggableSliderDefaultStyle}" Width="100" Minimum="0.0" Maximum="1.0" Value="{Binding ElementName=ffmeMediaElement, Path=Volume}"/>
+                                    <ToggleButton x:Name="VolumeMuteButton" Width="28" Height="30"
+                                                  Margin="0,0,4,0" Padding="2"
+                                                  Click="VolumeMuteButton_Click" IsChecked="False">
+                                        <ToggleButton.Style>
+                                            <Style TargetType="ToggleButton" BasedOn="{StaticResource MinimalToggleButtonStyle}">
+                                                <Setter Property="ToolTip" Value="{DynamicResource Text.Mute}"/>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Setter Property="ToolTip" Value="{DynamicResource Text.Unmute}"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ToggleButton.Style>
+                                        <Viewbox Width="20" Height="20">
+                                            <Canvas Width="16" Height="16">
+                                                <Path Fill="{DynamicResource ThemeButtonFillBrush}" Data="M3.5,6.5 L6,6.5 L9,4 L9,12 L6,9.5 L3.5,9.5 Z"/>
+                                                <Canvas Width="16" Height="16">
+                                                    <Path Stroke="{DynamicResource ThemeButtonFillBrush}" StrokeThickness="1" StrokeLineJoin="Round" Data="M13.5,4.5 C15,8 15,8 13.5,11.5" Visibility="{Binding ElementName=ffmeMediaElement, Path=Volume, Converter={StaticResource GreaterThanToVisibilityConverter}, ConverterParameter=0.65}"/>
+                                                    <Path Stroke="{DynamicResource ThemeButtonFillBrush}" StrokeThickness="1" StrokeLineJoin="Round" Data="M12,5.5 C13,8 13,8 12,10.5" Visibility="{Binding ElementName=ffmeMediaElement, Path=Volume, Converter={StaticResource GreaterThanToVisibilityConverter}, ConverterParameter=0.25}"/>
+                                                    <Path Stroke="{DynamicResource ThemeButtonFillBrush}" StrokeThickness="1" StrokeLineJoin="Round" Data="M10.5,8 C11.5,7 11.5,9 10.5,8" Visibility="{Binding ElementName=ffmeMediaElement, Path=Volume, Converter={StaticResource GreaterThanToVisibilityConverter}, ConverterParameter=0.02}"/>
+                                                <Canvas.Style>
+                                                    <Style TargetType="Canvas">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding ElementName=VolumeMuteButton, Path=IsChecked}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Canvas.Style>
+                                                </Canvas>
+                                                <Path Stroke="{DynamicResource ThemeButtonFillBrush}" StrokeThickness="1.15" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                      Data="M11.7,6.1 L14,8 M14,6.1 L11.7,8" Visibility="{Binding ElementName=VolumeMuteButton, Path=IsChecked, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                            </Canvas>
+                                        </Viewbox>
+                                    </ToggleButton>
+                                    <local:DraggableSlider x:Name="VolumeSlider" Style="{StaticResource DraggableSliderDefaultStyle}" Width="100" Minimum="0.0" Maximum="1.0" ValueChanged="VolumeSlider_ValueChanged"/>
                                 </StackPanel>
                             </DockPanel>
 
