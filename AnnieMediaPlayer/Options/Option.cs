@@ -37,6 +37,14 @@ namespace AnnieMediaPlayer.Options
         Ribbon = 3,
     }
 
+    public enum PlaylistPlaybackMode
+    {
+        Sequential = 0,
+        Playlist = 1,
+        Track = 2,
+        CurrentTrackOnly = 3,
+    }
+
     public class Option : ViewModelBase
     {
         [JsonIgnore]
@@ -67,7 +75,8 @@ namespace AnnieMediaPlayer.Options
             ShowLyrics = false;
             UseTransitionFade = true;
             UsePlaylistPersistence = true;
-            UseContinuousPlayback = true;
+            PlaylistPlaybackMode = PlaylistPlaybackMode.Sequential;
+            ShufflePlayback = false;
 
             UseFlipHorizontal = false;
             UseFlipVertical = false;
@@ -87,7 +96,8 @@ namespace AnnieMediaPlayer.Options
         public bool ShowLyrics { get => Get(); set => Set(value); }
         public bool UseTransitionFade { get => Get(); set => Set(value); }
         public bool UsePlaylistPersistence { get => Get(); set => Set(value); }
-        public bool UseContinuousPlayback { get => Get(); set => Set(value); }
+        public PlaylistPlaybackMode PlaylistPlaybackMode { get => Get(); set => Set(value); }
+        public bool ShufflePlayback { get => Get(); set => Set(value); }
 
         [JsonIgnore]
         public bool UseFlipHorizontal { get => Get(); set => Set(value); }
@@ -140,6 +150,22 @@ namespace AnnieMediaPlayer.Options
                     var option = JsonSerializer.Deserialize<Option>(json);
                     if (option != null)
                     {
+                        using var document = JsonDocument.Parse(json);
+                        var root = document.RootElement;
+                        // 이전 연속 재생 옵션을 새 재생 모드로 이어받습니다.
+                        if (root.ValueKind == JsonValueKind.Object &&
+                            !root.TryGetProperty(nameof(PlaylistPlaybackMode), out _) &&
+                            root.TryGetProperty("UseContinuousPlayback", out var continuousPlayback) &&
+                            (continuousPlayback.ValueKind == JsonValueKind.True || continuousPlayback.ValueKind == JsonValueKind.False))
+                        {
+                            option.PlaylistPlaybackMode = continuousPlayback.GetBoolean()
+                                ? PlaylistPlaybackMode.Sequential
+                                : PlaylistPlaybackMode.CurrentTrackOnly;
+                        }
+
+                        if (!Enum.IsDefined(option.PlaylistPlaybackMode))
+                            option.PlaylistPlaybackMode = PlaylistPlaybackMode.Sequential;
+
                         return option;
                     }
                 }

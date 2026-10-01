@@ -28,6 +28,13 @@
     <sys:String x:Key="Text.Playlist.Previous">이전 항목 재생</sys:String>
     <sys:String x:Key="Text.Playlist.Next">다음 항목 재생</sys:String>
     <sys:String x:Key="Text.Playlist.Current">현재 항목</sys:String>
+    <sys:String x:Key="Text.Playback.Shuffle.On">셔플 재생: 켜짐</sys:String>
+    <sys:String x:Key="Text.Playback.Shuffle.Off">셔플 재생: 꺼짐</sys:String>
+    <sys:String x:Key="Text.Playback.Mode">재생 모드</sys:String>
+    <sys:String x:Key="Text.Playback.Sequential">전체 재생 후 정지</sys:String>
+    <sys:String x:Key="Text.Playback.RepeatPlaylist">전체 재생 반복</sys:String>
+    <sys:String x:Key="Text.Playback.RepeatTrack">한 곡 반복</sys:String>
+    <sys:String x:Key="Text.Playback.CurrentTrackOnly">한 곡 재생 후 정지</sys:String>
 
     <sys:String x:Key="Text.OpenDialogTitle">미디어 파일 열기</sys:String>
     <sys:String x:Key="Text.OpenDialogFilter">미디어 파일|*.mp4;*.avi;*.mov;*.mkv;*.wmv;*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg;*.opus;*.wma;*.aiff;*.aif|비디오 파일 (*.mp4;*.avi;*.mov;*.mkv;*.wmv)|*.mp4;*.avi;*.mov;*.mkv;*.wmv|오디오 파일 (*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg;*.opus;*.wma;*.aiff;*.aif)|*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg;*.opus;*.wma;*.aiff;*.aif|모든 파일 (*.*)|*.*</sys:String>
@@ -50,7 +57,6 @@
     <sys:String x:Key="Text.Layout.OverlayControlToggle">화면 위 오버레이 컨트롤 표시 및 자동 숨김</sys:String>
     <sys:String x:Key="Text.SeekFramePreview">탐색 프레임 미리보기</sys:String>
     <sys:String x:Key="Text.UsePlaylistPersistence">프로그램 종료 후 재생목록 유지</sys:String>
-    <sys:String x:Key="Text.UseContinuousPlayback">재생목록 연속 재생</sys:String>
 
     <sys:String x:Key="Text.UseHWAccelerator">하드웨어 가속 사용</sys:String>
     <sys:String x:Key="Text.UseHWAccelerator.Description">GPU로 디코딩한 영상을 다시 CPU로 복사해 표시하므로, PC에 따라 CPU 사용량이 줄지 않거나 탐색과 프레임 이동이 느려질 수 있습니다. 다음에 여는 파일부터 적용됩니다.</sys:String>

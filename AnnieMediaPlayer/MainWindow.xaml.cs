@@ -93,6 +93,13 @@ namespace AnnieMediaPlayer
             foreach (var item in vm.Playlist.Items)
                 QueueAlbumArtLoad(item);
 
+            OptionViewModel.Instance.CurrentOption.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is nameof(Option.PlaylistPlaybackMode) or nameof(Option.ShufflePlayback))
+                    ConfigurePlaylistPlayback();
+            };
+            ConfigurePlaylistPlayback();
+
             VideoPlayerController.Initialize(ffmeMediaElement);
             ffmeMediaElement.RenderingAudio += FfmeMediaElement_RenderingAudio;
             VideoPlayerController.OnMediaOpening += VideoPlayerController_OnMediaOpening;
@@ -204,6 +211,13 @@ namespace AnnieMediaPlayer
         private void UpdateTaskbarButtons() => _taskbarMediaControls?.UpdateButtons(
             vm.CanPlay, vm.IsPlaying, vm.Playlist.CanPlayPrevious, vm.Playlist.CanPlayNext);
 
+        private void ConfigurePlaylistPlayback()
+        {
+            var option = OptionViewModel.Instance.CurrentOption;
+            vm.Playlist.ConfigurePlayback(option.PlaylistPlaybackMode, option.ShufflePlayback);
+            UpdateTaskbarButtons();
+        }
+
         private void UpdateTaskbarProgress(TimeSpan position, bool force = false)
         {
             if (!Dispatcher.CheckAccess())
@@ -225,7 +239,10 @@ namespace AnnieMediaPlayer
         }
 
         private void LanguageManager_LanguageChanged(object? sender, EventArgs e) =>
-            Dispatcher.BeginInvoke(new Action(UpdateTaskbarMediaState));
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                UpdateTaskbarMediaState();
+            }));
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
@@ -716,10 +733,9 @@ namespace AnnieMediaPlayer
         {
             var currentItem = vm.Playlist.CurrentItem;
             return ffmeMediaElement.HasMediaEnded &&
-                OptionViewModel.Instance.CurrentOption.UseContinuousPlayback &&
                 currentItem != null &&
                 string.Equals(currentItem.FilePath, _openedPlaylistSource, StringComparison.OrdinalIgnoreCase) &&
-                vm.Playlist.GetNextItem() != null;
+                vm.Playlist.GetNextItem(automaticAdvance: true) != null;
         }
 
         private static string? FindMetadataValue(
@@ -1204,7 +1220,7 @@ namespace AnnieMediaPlayer
                 if (_skipNextAutoAdvance)
                     return;
 
-                if (_openingMedia || !OptionViewModel.Instance.CurrentOption.UseContinuousPlayback)
+                if (_openingMedia)
                     return;
 
                 var currentItem = vm.Playlist.CurrentItem;
@@ -1212,7 +1228,7 @@ namespace AnnieMediaPlayer
                     !string.Equals(currentItem.FilePath, _openedPlaylistSource, StringComparison.OrdinalIgnoreCase))
                     return;
 
-                await PlayAdjacentPlaylistItemAsync(true);
+                await PlayAdjacentPlaylistItemAsync(true, automaticAdvance: true);
             }
             finally
             {
@@ -1226,7 +1242,7 @@ namespace AnnieMediaPlayer
             }
         }
 
-        private async Task PlayAdjacentPlaylistItemAsync(bool forward)
+        private async Task PlayAdjacentPlaylistItemAsync(bool forward, bool automaticAdvance = false)
         {
             if (_playlistNavigationInProgress)
                 return;
@@ -1236,7 +1252,9 @@ namespace AnnieMediaPlayer
             {
                 while (true)
                 {
-                    var item = forward ? vm.Playlist.GetNextItem() : vm.Playlist.GetPreviousItem();
+                    var item = forward
+                        ? vm.Playlist.GetNextItem(automaticAdvance)
+                        : vm.Playlist.GetPreviousItem();
                     if (item == null)
                         return;
 

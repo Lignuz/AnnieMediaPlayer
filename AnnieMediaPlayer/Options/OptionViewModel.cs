@@ -99,7 +99,8 @@ namespace AnnieMediaPlayer.Options
                 case nameof(Option.ShowLyrics):
                 case nameof(Option.UseTransitionFade):
                 case nameof(Option.UsePlaylistPersistence):
-                case nameof(Option.UseContinuousPlayback):
+                case nameof(Option.PlaylistPlaybackMode):
+                case nameof(Option.ShufflePlayback):
                 case nameof(Option.UseFlipHorizontal):
                 case nameof(Option.UseFlipVertical):
                 case nameof(Option.RotateAngle):

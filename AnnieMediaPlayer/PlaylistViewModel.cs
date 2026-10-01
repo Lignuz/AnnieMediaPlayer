@@ -2,6 +2,7 @@
 using System.IO;
 using System.Windows.Media.Imaging;
 using AnnieMediaPlayer.Helpers;
+using AnnieMediaPlayer.Options;
 
 namespace AnnieMediaPlayer
 {
@@ -38,16 +39,71 @@ namespace AnnieMediaPlayer
     public sealed class PlaylistViewModel : ViewModelBase
     {
         private PlaylistItemViewModel? _currentItem;
+        private readonly List<PlaylistItemViewModel> _shuffleOrder = new();
+        private readonly Random _shuffleRandom = new();
+        private PlaylistPlaybackMode _playbackMode = PlaylistPlaybackMode.Sequential;
+        private bool _shuffleEnabled;
 
         public ObservableCollection<PlaylistItemViewModel> Items { get; } = new();
         public bool HasItems => Items.Count > 0;
-        public bool CanPlayPrevious => CurrentItem != null && Items.IndexOf(CurrentItem) > 0;
-        public bool CanPlayNext => Items.Count > 0 &&
-            (CurrentItem == null || Items.IndexOf(CurrentItem) < Items.Count - 1);
+        public bool CanPlayPrevious => CurrentItem != null &&
+            (GetAdjacentIndex(false) >= 0 || (_playbackMode == PlaylistPlaybackMode.Playlist && Items.Count > 0));
+        public bool CanPlayNext => Items.Count > 0 && GetNextItem() != null;
 
         public PlaylistViewModel()
         {
-            Items.CollectionChanged += (_, _) => NotifyPlaylistStateChanged();
+            Items.CollectionChanged += Items_CollectionChanged;
+        }
+
+        private void Items_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            if (_shuffleEnabled)
+            {
+                var playlistItems = Items.ToHashSet();
+                var remaining = _shuffleOrder.Where(playlistItems.Contains).ToList();
+                var knownItems = remaining.ToHashSet();
+                foreach (var item in Items.Where(item => knownItems.Add(item)))
+                {
+                    var currentIndex = remaining.IndexOf(CurrentItem!);
+                    var insertFrom = CurrentItem == null ? 0 : Math.Max(0, currentIndex + 1);
+                    var insertAt = _shuffleRandom.Next(insertFrom, remaining.Count + 1);
+                    remaining.Insert(insertAt, item);
+                }
+
+                _shuffleOrder.Clear();
+                _shuffleOrder.AddRange(remaining);
+            }
+
+            NotifyPlaylistStateChanged();
+        }
+
+        public void ConfigurePlayback(PlaylistPlaybackMode playbackMode, bool shuffleEnabled)
+        {
+            _playbackMode = Enum.IsDefined(playbackMode) ? playbackMode : PlaylistPlaybackMode.Sequential;
+            if (_shuffleEnabled != shuffleEnabled)
+            {
+                _shuffleEnabled = shuffleEnabled;
+                RebuildShuffleOrder();
+            }
+            NotifyPlaylistStateChanged();
+        }
+
+        private void RebuildShuffleOrder()
+        {
+            _shuffleOrder.Clear();
+            if (!_shuffleEnabled)
+                return;
+
+            var remaining = Items.Where(item => !ReferenceEquals(item, CurrentItem)).ToList();
+            for (var index = remaining.Count - 1; index > 0; index--)
+            {
+                var swapIndex = _shuffleRandom.Next(index + 1);
+                (remaining[index], remaining[swapIndex]) = (remaining[swapIndex], remaining[index]);
+            }
+
+            if (CurrentItem != null && Items.Contains(CurrentItem))
+                _shuffleOrder.Add(CurrentItem);
+            _shuffleOrder.AddRange(remaining);
         }
 
         public PlaylistItemViewModel? CurrentItem
@@ -154,14 +210,24 @@ namespace AnnieMediaPlayer
             CurrentItem = item;
         }
 
-        public PlaylistItemViewModel? GetNextItem()
+        public PlaylistItemViewModel? GetNextItem(bool automaticAdvance = false)
         {
-            if (CurrentItem == null)
-                return Items.FirstOrDefault();
+            if (automaticAdvance && _playbackMode == PlaylistPlaybackMode.CurrentTrackOnly)
+                return null;
 
-            var currentIndex = Items.IndexOf(CurrentItem);
-            return currentIndex >= 0 && currentIndex + 1 < Items.Count
-                ? Items[currentIndex + 1]
+            if (automaticAdvance && _playbackMode == PlaylistPlaybackMode.Track && CurrentItem != null)
+                return CurrentItem;
+
+            if (CurrentItem == null)
+                return GetPlaybackOrder().FirstOrDefault();
+
+            var order = GetPlaybackOrder();
+            var nextIndex = GetAdjacentIndex(true);
+            if (nextIndex >= 0)
+                return order[nextIndex];
+
+            return _playbackMode == PlaylistPlaybackMode.Playlist && order.Count > 0
+                ? order[0]
                 : null;
         }
 
@@ -170,8 +236,31 @@ namespace AnnieMediaPlayer
             if (CurrentItem == null)
                 return null;
 
-            var currentIndex = Items.IndexOf(CurrentItem);
-            return currentIndex > 0 ? Items[currentIndex - 1] : null;
+            var order = GetPlaybackOrder();
+            var previousIndex = GetAdjacentIndex(false);
+            if (previousIndex >= 0)
+                return order[previousIndex];
+
+            return _playbackMode == PlaylistPlaybackMode.Playlist && order.Count > 0
+                ? order[^1]
+                : null;
+        }
+
+        private IList<PlaylistItemViewModel> GetPlaybackOrder() =>
+            _shuffleEnabled ? _shuffleOrder : Items;
+
+        private int GetAdjacentIndex(bool forward)
+        {
+            if (CurrentItem == null)
+                return -1;
+
+            var order = GetPlaybackOrder();
+            var currentIndex = order.IndexOf(CurrentItem);
+            if (currentIndex < 0)
+                return -1;
+
+            var adjacentIndex = currentIndex + (forward ? 1 : -1);
+            return adjacentIndex >= 0 && adjacentIndex < order.Count ? adjacentIndex : -1;
         }
     }
 }

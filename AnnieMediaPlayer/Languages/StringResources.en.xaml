@@ -28,6 +28,13 @@
     <sys:String x:Key="Text.Playlist.Previous">Play previous item</sys:String>
     <sys:String x:Key="Text.Playlist.Next">Play next item</sys:String>
     <sys:String x:Key="Text.Playlist.Current">Current item</sys:String>
+    <sys:String x:Key="Text.Playback.Shuffle.On">Shuffle: On</sys:String>
+    <sys:String x:Key="Text.Playback.Shuffle.Off">Shuffle: Off</sys:String>
+    <sys:String x:Key="Text.Playback.Mode">Playback mode</sys:String>
+    <sys:String x:Key="Text.Playback.Sequential">Play all tracks once</sys:String>
+    <sys:String x:Key="Text.Playback.RepeatPlaylist">Repeat all tracks</sys:String>
+    <sys:String x:Key="Text.Playback.RepeatTrack">Repeat current track</sys:String>
+    <sys:String x:Key="Text.Playback.CurrentTrackOnly">Play current track once, then stop</sys:String>
 
     <sys:String x:Key="Text.OpenDialogTitle">Open Media File</sys:String>
     <sys:String x:Key="Text.OpenDialogFilter">Media Files|*.mp4;*.avi;*.mov;*.mkv;*.wmv;*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg;*.opus;*.wma;*.aiff;*.aif|Video Files (*.mp4;*.avi;*.mov;*.mkv;*.wmv)|*.mp4;*.avi;*.mov;*.mkv;*.wmv|Audio Files (*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg;*.opus;*.wma;*.aiff;*.aif)|*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg;*.opus;*.wma;*.aiff;*.aif|All Files (*.*)|*.*</sys:String>
@@ -50,7 +57,6 @@
     <sys:String x:Key="Text.Layout.OverlayControlToggle">Show overlay controls on media and auto-hide</sys:String>
     <sys:String x:Key="Text.SeekFramePreview">Seek Frame Preview</sys:String>
     <sys:String x:Key="Text.UsePlaylistPersistence">Keep playlist between sessions</sys:String>
-    <sys:String x:Key="Text.UseContinuousPlayback">Automatically play the next playlist item</sys:String>
 
     <sys:String x:Key="Text.UseHWAccelerator">Use hardware acceleration</sys:String>
     <sys:String x:Key="Text.UseHWAccelerator.Description">Frames decoded by the GPU are copied back to the CPU for display, so depending on the PC it may not reduce CPU usage and can slow down seeking and frame stepping. Applies to the next opened file.</sys:String>

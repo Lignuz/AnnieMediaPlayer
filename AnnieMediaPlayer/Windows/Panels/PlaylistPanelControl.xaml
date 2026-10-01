@@ -3,6 +3,37 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:AnnieMediaPlayer"
              MinWidth="280">
+    <UserControl.Resources>
+        <Geometry x:Key="PlaybackSequentialIconData">M2,6 H18 M14.5,2.5 L18,6 L14.5,9.5 M2,14 H18 M14.5,10.5 L18,14 L14.5,17.5</Geometry>
+        <Geometry x:Key="PlaybackShuffleIconData">M2,5 H5 C9,5 12,15 16,15 H19 M16,12 L19,15 L16,18 M2,15 H5 C7,15 8,12.5 9,11 M13,7 C14,5.7 15,5 16,5 H19 M16,2 L19,5 L16,8</Geometry>
+        <Geometry x:Key="PlaylistRepeatIconData">M13,3 H7 C5.3,3 4,4.3 4,6 V14 C4,15.7 5.3,17 7,17 H13 C14.7,17 16,15.7 16,14 V7 M13,10 L16,7 L19,10</Geometry>
+        <Style x:Key="PlaybackModeToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{DynamicResource TitleTextBrush}"/>
+            <Setter Property="Focusable" Value="True"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Grid>
+                            <Border x:Name="HoverSurface" Background="Transparent" CornerRadius="4"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="3"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="HoverSurface" Property="Background" Value="{DynamicResource ButtonHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
     <Border Margin="8" Padding="12"
             Background="{DynamicResource BackgroundBrush}"
             BorderBrush="{DynamicResource BorderBrush}"
@@ -56,6 +87,40 @@
                     </DockPanel>
                 </Border>
             </StackPanel>
+
+            <Border DockPanel.Dock="Bottom" Margin="3,8,3,0" Padding="0,8,0,0"
+                    BorderBrush="{DynamicResource DataGridBorderBrush}" BorderThickness="0,1,0,0">
+                <DockPanel LastChildFill="False">
+                    <TextBlock DockPanel.Dock="Left" Text="{DynamicResource Text.Playback.Mode}"
+                               VerticalAlignment="Center" Opacity="0.75"/>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <ToggleButton x:Name="RepeatModeButton" Style="{StaticResource PlaybackModeToggleButtonStyle}" Width="44" Height="30"
+                                      Click="RepeatModeButton_Click">
+                            <Grid Width="32" Height="24">
+                                <Path x:Name="RepeatModeIcon" Data="{StaticResource PlaylistRepeatIconData}"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
+                                      StrokeThickness="1.1" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                      Width="20" Height="20" HorizontalAlignment="Left" VerticalAlignment="Top" Stretch="Uniform"/>
+                                <Border Width="15" HorizontalAlignment="Right" VerticalAlignment="Bottom" Padding="1,0"
+                                        Background="Transparent">
+                                    <TextBlock x:Name="RepeatModeBadge" Text="x" HorizontalAlignment="Center"
+                                               FontSize="10.5" FontWeight="SemiBold"
+                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"/>
+                                </Border>
+                            </Grid>
+                        </ToggleButton>
+                        <ToggleButton x:Name="ShufflePlaybackButton" Style="{StaticResource PlaybackModeToggleButtonStyle}" Width="28" Height="30"
+                                      IsChecked="{Binding CurrentOption.ShufflePlayback, Mode=TwoWay}"
+                                      ToolTip="{DynamicResource Text.Playback.Shuffle.Off}"
+                                      AutomationProperties.Name="{DynamicResource Text.Playback.Shuffle.Off}">
+                            <Path x:Name="ShufflePlaybackIcon" Data="{StaticResource PlaybackSequentialIconData}"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
+                                  StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                  Width="17" Height="17" Stretch="Uniform"/>
+                        </ToggleButton>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
 
             <Grid x:Name="PlaylistHost" Margin="0,10,0,0">
                 <ListBox x:Name="PlaylistList"

@@ -1,6 +1,9 @@
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using AnnieMediaPlayer.Options;
 
 namespace AnnieMediaPlayer.Windows.Panels
 {
@@ -23,6 +26,77 @@ namespace AnnieMediaPlayer.Windows.Panels
         public PlaylistPanelControl()
         {
             InitializeComponent();
+            Loaded += PlaylistPanelControl_Loaded;
+            Unloaded += PlaylistPanelControl_Unloaded;
+            UpdatePlaybackModeButton();
+        }
+
+        private void PlaylistPanelControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            OptionViewModel.Instance.CurrentOption.PropertyChanged += CurrentOption_PropertyChanged;
+            LanguageManager.LanguageChanged += LanguageManager_LanguageChanged;
+            UpdatePlaybackModeButton();
+        }
+
+        private void PlaylistPanelControl_Unloaded(object sender, RoutedEventArgs e)
+        {
+            OptionViewModel.Instance.CurrentOption.PropertyChanged -= CurrentOption_PropertyChanged;
+            LanguageManager.LanguageChanged -= LanguageManager_LanguageChanged;
+        }
+
+        private void CurrentOption_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName is nameof(Option.PlaylistPlaybackMode) or nameof(Option.ShufflePlayback))
+                UpdatePlaybackModeButton();
+        }
+
+        private void LanguageManager_LanguageChanged(object? sender, EventArgs e) => UpdatePlaybackModeButton();
+
+        private void UpdatePlaybackModeButton()
+        {
+            var mode = OptionViewModel.Instance.CurrentOption.PlaylistPlaybackMode;
+            RepeatModeButton.IsChecked = mode != PlaylistPlaybackMode.Sequential;
+            RepeatModeBadge.Text = mode switch
+            {
+                PlaylistPlaybackMode.CurrentTrackOnly => "1x",
+                PlaylistPlaybackMode.Track => "1",
+                PlaylistPlaybackMode.Playlist => "∞",
+                _ => "x",
+            };
+
+            var resourceKey = mode switch
+            {
+                PlaylistPlaybackMode.Playlist => "Text.Playback.RepeatPlaylist",
+                PlaylistPlaybackMode.Track => "Text.Playback.RepeatTrack",
+                PlaylistPlaybackMode.CurrentTrackOnly => "Text.Playback.CurrentTrackOnly",
+                _ => "Text.Playback.Sequential",
+            };
+            var label = LanguageManager.GetResourceString(resourceKey);
+            RepeatModeButton.ToolTip = label;
+            AutomationProperties.SetName(RepeatModeButton, label);
+
+            var shuffleEnabled = OptionViewModel.Instance.CurrentOption.ShufflePlayback;
+            ShufflePlaybackIcon.Data = (Geometry)FindResource(shuffleEnabled
+                ? "PlaybackShuffleIconData"
+                : "PlaybackSequentialIconData");
+            var shuffleResourceKey = shuffleEnabled
+                ? "Text.Playback.Shuffle.On"
+                : "Text.Playback.Shuffle.Off";
+            var shuffleLabel = LanguageManager.GetResourceString(shuffleResourceKey);
+            ShufflePlaybackButton.ToolTip = shuffleLabel;
+            AutomationProperties.SetName(ShufflePlaybackButton, shuffleLabel);
+        }
+
+        private void RepeatModeButton_Click(object sender, RoutedEventArgs e)
+        {
+            var option = OptionViewModel.Instance.CurrentOption;
+            option.PlaylistPlaybackMode = option.PlaylistPlaybackMode switch
+            {
+                PlaylistPlaybackMode.CurrentTrackOnly => PlaylistPlaybackMode.Track,
+                PlaylistPlaybackMode.Track => PlaylistPlaybackMode.Sequential,
+                PlaylistPlaybackMode.Sequential => PlaylistPlaybackMode.Playlist,
+                _ => PlaylistPlaybackMode.CurrentTrackOnly,
+            };
         }
 
         private void AddButton_Click(object sender, RoutedEventArgs e) => AddFilesRequested?.Invoke(this, EventArgs.Empty);
