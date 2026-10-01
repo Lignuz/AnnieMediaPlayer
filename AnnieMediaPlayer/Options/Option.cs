@@ -45,6 +45,20 @@ namespace AnnieMediaPlayer.Options
         CurrentTrackOnly = 3,
     }
 
+    public sealed class WindowPlacementSettings
+    {
+        public bool HasBounds { get; set; }
+        public double Left { get; set; }
+        public double Top { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public bool IsMaximized { get; set; }
+        public bool IsVisible { get; set; }
+        public bool IsDocked { get; set; }
+        public bool DockedToRight { get; set; }
+        public bool SyncHeight { get; set; }
+    }
+
     public class Option : ViewModelBase
     {
         [JsonIgnore]
@@ -75,6 +89,9 @@ namespace AnnieMediaPlayer.Options
             ShowLyrics = false;
             UseTransitionFade = true;
             UsePlaylistPersistence = true;
+            RememberWindowPositions = true;
+            MainWindowPlacement = new WindowPlacementSettings();
+            PlaylistWindowPlacement = new WindowPlacementSettings();
             PlaylistPlaybackMode = PlaylistPlaybackMode.Sequential;
             ShufflePlayback = false;
 
@@ -96,6 +113,9 @@ namespace AnnieMediaPlayer.Options
         public bool ShowLyrics { get => Get(); set => Set(value); }
         public bool UseTransitionFade { get => Get(); set => Set(value); }
         public bool UsePlaylistPersistence { get => Get(); set => Set(value); }
+        public bool RememberWindowPositions { get => Get(); set => Set(value); }
+        public WindowPlacementSettings MainWindowPlacement { get; set; } = new();
+        public WindowPlacementSettings PlaylistWindowPlacement { get; set; } = new();
         public PlaylistPlaybackMode PlaylistPlaybackMode { get => Get(); set => Set(value); }
         public bool ShufflePlayback { get => Get(); set => Set(value); }
 
@@ -150,6 +170,8 @@ namespace AnnieMediaPlayer.Options
                     var option = JsonSerializer.Deserialize<Option>(json);
                     if (option != null)
                     {
+                        option.MainWindowPlacement ??= new WindowPlacementSettings();
+                        option.PlaylistWindowPlacement ??= new WindowPlacementSettings();
                         using var document = JsonDocument.Parse(json);
                         var root = document.RootElement;
                         // 이전 연속 재생 옵션을 새 재생 모드로 이어받습니다.

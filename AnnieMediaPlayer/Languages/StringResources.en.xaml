@@ -57,6 +57,7 @@
     <sys:String x:Key="Text.Layout.OverlayControlToggle">Show overlay controls on media and auto-hide</sys:String>
     <sys:String x:Key="Text.SeekFramePreview">Seek Frame Preview</sys:String>
     <sys:String x:Key="Text.UsePlaylistPersistence">Keep playlist between sessions</sys:String>
+    <sys:String x:Key="Text.RememberWindowPositions">Remember window positions</sys:String>
 
     <sys:String x:Key="Text.UseHWAccelerator">Use hardware acceleration</sys:String>
     <sys:String x:Key="Text.UseHWAccelerator.Description">Frames decoded by the GPU are copied back to the CPU for display, so depending on the PC it may not reduce CPU usage and can slow down seeking and frame stepping. Applies to the next opened file.</sys:String>

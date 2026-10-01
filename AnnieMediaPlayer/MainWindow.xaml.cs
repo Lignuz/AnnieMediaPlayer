@@ -36,7 +36,10 @@ namespace AnnieMediaPlayer
         private bool _playlistDockedToRight;
         private bool _playlistSyncHeight;
         private bool _updatingPlaylistDock;
+        private bool _restoringPlaylistDock;
         private bool _playlistNavigationInProgress;
+        private const double DefaultMainWindowWidth = 640;
+        private const double DefaultMainWindowHeight = 480;
         private const double DefaultPlaylistHeight = 520;
         private const double DefaultPlaylistMinHeight = 360;
         private readonly AlbumArtService _albumArtService = new();
@@ -144,9 +147,137 @@ namespace AnnieMediaPlayer
         {
             base.OnSourceInitialized(e);
 
+            RestoreMainWindowPlacement();
+
             _taskbarMediaControls ??= new TaskbarMediaControls();
             var hwndSource = PresentationSource.FromVisual(this) as HwndSource;
             hwndSource?.AddHook(WndProc);
+        }
+
+        private void RestoreMainWindowPlacement()
+        {
+            var option = OptionViewModel.Instance.CurrentOption;
+            var placement = option.MainWindowPlacement;
+            if (!option.RememberWindowPositions || !placement.HasBounds)
+                return;
+
+            if (!double.IsFinite(placement.Left) || !double.IsFinite(placement.Top) ||
+                !double.IsFinite(placement.Width) || !double.IsFinite(placement.Height) ||
+                placement.Width < MinWidth || placement.Height < MinHeight ||
+                placement.Width > 20000 || placement.Height > 20000)
+            {
+                ApplyDefaultMainWindowPlacement();
+                return;
+            }
+
+            WindowStartupLocation = WindowStartupLocation.Manual;
+            WindowState = WindowState.Normal;
+            Left = placement.Left;
+            Top = placement.Top;
+            Width = placement.Width;
+            Height = placement.Height;
+
+            if (!IsWindowPlacementVisible(this))
+            {
+                ApplyDefaultMainWindowPlacement();
+                return;
+            }
+
+            if (placement.IsMaximized)
+                WindowState = WindowState.Maximized;
+        }
+
+        private void ApplyDefaultMainWindowPlacement()
+        {
+            WindowState = WindowState.Normal;
+            Width = DefaultMainWindowWidth;
+            Height = DefaultMainWindowHeight;
+            Left = double.NaN;
+            Top = double.NaN;
+            WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        }
+
+        private void SaveWindowPlacements()
+        {
+            var option = OptionViewModel.Instance.CurrentOption;
+            var playlistPlacement = option.PlaylistWindowPlacement;
+            if (!option.RememberWindowPositions)
+            {
+                playlistPlacement.IsVisible = false;
+                return;
+            }
+
+            var mainBounds = WindowState == WindowState.Normal
+                ? double.IsFinite(Left) && double.IsFinite(Top) && double.IsFinite(Width) && double.IsFinite(Height)
+                    ? new Rect(Left, Top, Width, Height)
+                    : Rect.Empty
+                : RestoreBounds;
+            if (!mainBounds.IsEmpty && double.IsFinite(mainBounds.Left) && double.IsFinite(mainBounds.Top) &&
+                double.IsFinite(mainBounds.Width) && double.IsFinite(mainBounds.Height))
+            {
+                var mainPlacement = option.MainWindowPlacement;
+                mainPlacement.Left = mainBounds.Left;
+                mainPlacement.Top = mainBounds.Top;
+                mainPlacement.Width = mainBounds.Width;
+                mainPlacement.Height = mainBounds.Height;
+                mainPlacement.IsMaximized = WindowState == WindowState.Maximized;
+                mainPlacement.HasBounds = true;
+            }
+
+            if (_playlistWindow != null)
+                SavePlaylistPlacement(_playlistWindow, _playlistWindow.IsVisible);
+            else
+                playlistPlacement.IsVisible = false;
+        }
+
+        private void SavePlaylistPlacement(PlaylistWindow window, bool isVisible)
+        {
+            var option = OptionViewModel.Instance.CurrentOption;
+            var placement = option.PlaylistWindowPlacement;
+            placement.IsVisible = option.RememberWindowPositions && isVisible;
+            if (!option.RememberWindowPositions)
+                return;
+
+            if (double.IsFinite(window.Left) && double.IsFinite(window.Top) &&
+                double.IsFinite(window.Width) && double.IsFinite(window.Height))
+            {
+                placement.Left = window.Left;
+                placement.Top = window.Top;
+                placement.Width = window.Width;
+                placement.Height = window.Height;
+                placement.HasBounds = true;
+            }
+
+            placement.IsDocked = ReferenceEquals(window, _playlistWindow) && _playlistDocked;
+            placement.DockedToRight = _playlistDockedToRight;
+            placement.SyncHeight = _playlistSyncHeight;
+        }
+
+        private static bool IsWindowPlacementVisible(Window window)
+        {
+            var handle = new WindowInteropHelper(window).Handle;
+            if (handle == IntPtr.Zero || !GetWindowRect(handle, out var rect))
+                return false;
+
+            var width = rect.Right - rect.Left;
+            var height = rect.Bottom - rect.Top;
+            if (width <= 0 || height <= 0)
+                return false;
+
+            foreach (var screen in System.Windows.Forms.Screen.AllScreens)
+            {
+                var workArea = screen.WorkingArea;
+                if (width > workArea.Width || height > workArea.Height)
+                    continue;
+
+                var visibleWidth = Math.Min(rect.Right, workArea.Right) - Math.Max(rect.Left, workArea.Left);
+                var visibleHeight = Math.Min(rect.Bottom, workArea.Bottom) - Math.Max(rect.Top, workArea.Top);
+                if (visibleWidth >= Math.Min(width * 0.5, 240) &&
+                    visibleHeight >= Math.Min(height * 0.5, 120))
+                    return true;
+            }
+
+            return false;
         }
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -259,6 +390,10 @@ namespace AnnieMediaPlayer
             InitializeVolumeControl();
             OptionViewModel.Instance.UseOverlayControlChanged += UseOverlayControlChanged;
             OptionViewModel.Instance.OptionChanged(OptionViewModel.Instance.DefaultOption, OptionViewModel.Instance.CurrentOption);
+
+            var option = OptionViewModel.Instance.CurrentOption;
+            if (option.RememberWindowPositions && option.PlaylistWindowPlacement.IsVisible)
+                TogglePlaylistWindow();
         }
 
         private bool _isClosing;
@@ -304,6 +439,7 @@ namespace AnnieMediaPlayer
                 _taskbarMediaControls?.Dispose();
                 _albumArtService.Dispose();
                 _currentAlbumArtService.Dispose();
+                SaveWindowPlacements();
                 Close();
             }
         }
@@ -1281,6 +1417,7 @@ namespace AnnieMediaPlayer
             if (_playlistWindow?.IsVisible == true)
             {
                 _playlistWindow.Hide();
+                OptionViewModel.Instance.CurrentOption.PlaylistWindowPlacement.IsVisible = false;
                 PlaylistButton.Tag = "False";
                 Activate();
                 return;
@@ -1289,6 +1426,8 @@ namespace AnnieMediaPlayer
             if (_playlistWindow != null)
             {
                 _playlistWindow.Show();
+                var option = OptionViewModel.Instance.CurrentOption;
+                option.PlaylistWindowPlacement.IsVisible = option.RememberWindowPositions;
                 if (_playlistDocked)
                     UpdateDockedPlaylistPosition();
                 PlaylistButton.Tag = "True";
@@ -1296,15 +1435,34 @@ namespace AnnieMediaPlayer
                 return;
             }
 
+            var optionForWindow = OptionViewModel.Instance.CurrentOption;
+            var savedPlacement = optionForWindow.PlaylistWindowPlacement;
+            var savedMinHeight = savedPlacement.IsDocked
+                ? Math.Min(DefaultPlaylistMinHeight, MinHeight)
+                : DefaultPlaylistMinHeight;
+            var useSavedPlacement = optionForWindow.RememberWindowPositions && savedPlacement.HasBounds &&
+                double.IsFinite(savedPlacement.Left) && double.IsFinite(savedPlacement.Top) &&
+                double.IsFinite(savedPlacement.Height) && savedPlacement.Height >= savedMinHeight &&
+                savedPlacement.Height <= 20000 &&
+                !(WindowState == WindowState.Maximized && savedPlacement.IsDocked);
             var playlistPosition = GetPlaylistInitialPosition(out var canDock);
+            if (useSavedPlacement)
+            {
+                playlistPosition = new Point(savedPlacement.Left, savedPlacement.Top);
+                canDock = false;
+            }
+
             _playlistWindow = new PlaylistWindow
             {
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.Manual,
                 Left = playlistPosition.X,
                 Top = playlistPosition.Y,
-                Height = canDock ? ActualHeight : DefaultPlaylistHeight
+                Height = useSavedPlacement ? savedPlacement.Height : canDock ? ActualHeight : DefaultPlaylistHeight,
+                Opacity = useSavedPlacement ? 0 : 1
             };
+            if (useSavedPlacement && savedPlacement.IsDocked)
+                _playlistWindow.MinHeight = Math.Min(DefaultPlaylistMinHeight, MinHeight);
             _playlistWindow.AddFilesRequested += PlaylistPanel_AddFilesRequested;
             _playlistWindow.RemoveRequested += PlaylistPanel_RemoveRequested;
             _playlistWindow.ClearRequested += PlaylistPanel_ClearRequested;
@@ -1317,16 +1475,82 @@ namespace AnnieMediaPlayer
             _playlistWindow.ToggleRequested += (_, _) => TogglePlaylistWindow();
             _playlistWindow.Closed += (_, _) =>
             {
+                if (!_isClosing && _playlistWindow != null)
+                    SavePlaylistPlacement(_playlistWindow, false);
+                if (!_isClosing)
+                    OptionViewModel.Instance.CurrentOption.PlaylistWindowPlacement.IsVisible = false;
                 _playlistDocked = false;
                 _playlistSyncHeight = false;
                 _playlistWindow = null;
                 PlaylistButton.Tag = "False";
             };
             _playlistWindow.Show();
-            _playlistDocked = canDock;
-            _playlistSyncHeight = canDock;
-            UpdateDockedPlaylistPosition();
+            if (useSavedPlacement && IsWindowPlacementVisible(_playlistWindow))
+            {
+                _playlistDocked = savedPlacement.IsDocked;
+                _playlistDockedToRight = savedPlacement.DockedToRight;
+                _playlistSyncHeight = savedPlacement.SyncHeight;
+
+                if (_playlistDocked)
+                    UpdateDockedPlaylistPosition();
+            }
+            else
+            {
+                if (useSavedPlacement)
+                {
+                    playlistPosition = GetPlaylistInitialPosition(out canDock);
+                    _playlistWindow.Left = playlistPosition.X;
+                    _playlistWindow.Top = playlistPosition.Y;
+                    _playlistWindow.Height = canDock ? ActualHeight : DefaultPlaylistHeight;
+                }
+
+                _playlistDocked = canDock;
+                _playlistDockedToRight = canDock && _playlistDockedToRight;
+                _playlistSyncHeight = canDock;
+                UpdateDockedPlaylistPosition();
+            }
+            _restoringPlaylistDock = _playlistDocked && useSavedPlacement;
+            if (_restoringPlaylistDock)
+            {
+                _playlistWindow.ContentRendered += PlaylistWindow_ContentRendered;
+                var window = _playlistWindow;
+                Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle,
+                    new Action(() => CompletePlaylistWindowRestore(window)));
+            }
+            else
+                _playlistWindow.Opacity = 1;
+            OptionViewModel.Instance.CurrentOption.PlaylistWindowPlacement.IsVisible =
+                OptionViewModel.Instance.CurrentOption.RememberWindowPositions;
             PlaylistButton.Tag = "True";
+        }
+
+        private void PlaylistWindow_ContentRendered(object? sender, EventArgs e)
+        {
+            if (sender is PlaylistWindow window)
+                CompletePlaylistWindowRestore(window);
+        }
+
+        private void CompletePlaylistWindowRestore(PlaylistWindow window)
+        {
+            if (!ReferenceEquals(window, _playlistWindow) || !_restoringPlaylistDock)
+                return;
+
+            window.ContentRendered -= PlaylistWindow_ContentRendered;
+
+            if (_playlistDocked)
+                UpdateDockedPlaylistPosition();
+
+            window.Opacity = 1;
+            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() =>
+            {
+                if (!ReferenceEquals(window, _playlistWindow))
+                    return;
+
+                if (_playlistDocked)
+                    UpdateDockedPlaylistPosition();
+
+                _restoringPlaylistDock = false;
+            }));
         }
 
         private Point GetPlaylistInitialPosition(out bool canDock)
@@ -1365,7 +1589,7 @@ namespace AnnieMediaPlayer
 
         private void PlaylistWindow_LocationChanged(object? sender, EventArgs e)
         {
-            if (_updatingPlaylistDock || _playlistWindow == null)
+            if (_updatingPlaylistDock || _restoringPlaylistDock || _playlistWindow == null)
                 return;
 
             if (_playlistDocked && !IsPlaylistAtDockPosition())

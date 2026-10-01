@@ -53,6 +53,9 @@
             <!-- 재생목록 유지 -->
             <CheckBox Content="{DynamicResource Text.UsePlaylistPersistence}" IsChecked="{Binding CurrentOption.UsePlaylistPersistence}" Margin="0,15,0,5"/>
 
+            <!-- 창 위치 기억 -->
+            <CheckBox Content="{DynamicResource Text.RememberWindowPositions}" IsChecked="{Binding CurrentOption.RememberWindowPositions}" Margin="0,15,0,5"/>
+
         </StackPanel>
     </Grid>
 </UserControl>
