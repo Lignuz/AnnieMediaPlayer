@@ -76,6 +76,9 @@ namespace AnnieMediaPlayer
             }
         }
 
+        // 업데이트 뷰모델 인스턴스
+        public UpdaterViewModel updateVm => (UpdaterViewModel)App.Current.FindResource("UpdaterVm");
+
         // 현재 옵션 
         public Option CurrentOption => OptionViewModel.Instance.CurrentOption;
 

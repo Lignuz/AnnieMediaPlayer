@@ -9,6 +9,12 @@ namespace AnnieMediaPlayer
     {
         public static void HandleKeyDown(MainWindow window, KeyEventArgs e)
         {
+            if (e.Key == Key.F1)
+            {
+                window.ShowInfoWindow();
+                e.Handled = true;
+            }
+
             if (e.Key == Key.Enter)
             {
                 // 최대화-일반 모드 토글

@@ -20,6 +20,9 @@
             <!-- 옵션 뷰모델 -->
             <ObjectDataProvider x:Key="OptionVm" ObjectType="{x:Type option:OptionViewModel}" MethodName="get_Instance" />
 
+            <!-- 업데이터 뷰모델 -->
+            <local:UpdaterViewModel x:Key="UpdaterVm"/>
+
             <!-- 컨버터 -->
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
             <local:TimeSpanToSecondsConverter x:Key="TimeSpanToSecondsConverter" />

@@ -9,6 +9,7 @@
 [Oo]bj/
 .obj-localverify/
 /build-visualizer-verify/
+/AnnieMediaPlayer/update-settings.json
 
 # Test outputs and local helper tools
 TestResults/

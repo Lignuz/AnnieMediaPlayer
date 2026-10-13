@@ -29,6 +29,10 @@
 	  <Resource Include="Resources\AnnieMediaPlayer.ico" />
 	</ItemGroup>
 
+	<ItemGroup Condition="Exists('update-settings.json')">
+	  <None Update="update-settings.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<None Remove="Resources\AnnieMediaPlayer.png" />
 		<None Remove="Resources\background01.png" />

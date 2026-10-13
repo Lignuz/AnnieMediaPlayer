@@ -73,10 +73,6 @@ namespace AnnieMediaPlayer
         {
             InitializeComponent();
 
-#if DEBUG
-            DebugInfoButton.IsHitTestVisible = true;
-#endif
-
             _playlistSaveTimer.Tick += (_, _) => SavePlaylistNow();
             _mediaTransitionTimeout.Tick += (_, _) =>
             {
@@ -399,6 +395,26 @@ namespace AnnieMediaPlayer
             var option = OptionViewModel.Instance.CurrentOption;
             if (option.RememberWindowPositions && option.PlaylistWindowPlacement.IsVisible)
                 TogglePlaylistWindow();
+
+            _ = CheckUpdateAtStartupAsync();
+        }
+
+        // 시작할 때 한 번만 확인하고, 새 버전이 있으면 알림창을 바로 보여 줍니다.
+        // 정보 창에서 확인하는 경우에는 정보 창의 업데이트 버튼으로 알림창을 엽니다.
+        private async Task CheckUpdateAtStartupAsync()
+        {
+            if (!UpdaterViewModel.IsConfigured)
+                return;
+
+            await vm.updateVm.CheckUpdateAsync();
+
+            if (_isClosing || vm.updateVm.UpdateCheckState != UpdateCheckState.Available ||
+                OwnedWindows.OfType<InfoWindow>().Any())
+                return;
+
+            UpdaterWindow win = new UpdaterWindow();
+            win.Owner = this;
+            win.ShowDialog();
         }
 
         private bool _isClosing;
@@ -2049,16 +2065,21 @@ namespace AnnieMediaPlayer
             };
             win.ShowDialog();
         }
-        private void DebugInfoButton_Click(object sender, RoutedEventArgs e)
+        private void InfoButton_Click(object sender, RoutedEventArgs e)
         {
-#if DEBUG
-            var win = new InfoWindow(checkUpdate: true)
+            ShowInfoWindow();
+        }
+
+        public void ShowInfoWindow()
+        {
+            var checkUpdate = UpdaterViewModel.IsConfigured &&
+                vm.updateVm.UpdateCheckState is UpdateCheckState.None or UpdateCheckState.Error;
+            var win = new InfoWindow(checkUpdate)
             {
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
             win.ShowDialog();
-#endif
         }
         private void ThemeToggleButton_Click(object sender, RoutedEventArgs e) => OptionViewModel.Instance.ToggleTheme();
 

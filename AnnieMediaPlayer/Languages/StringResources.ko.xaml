@@ -127,13 +127,18 @@
     <sys:String x:Key="Text.Shortcut.CtrlH.Description">화면을 좌우로 반전하거나 원래 상태로 되돌립니다.</sys:String>
 
     <sys:String x:Key="Text.Info.Update">업데이트</sys:String>
+    <sys:String x:Key="Text.Info.Tooltip">프로그램 정보 및 업데이트 확인</sys:String>
     <sys:String x:Key="Text.Info.ProjectPage">프로젝트 페이지</sys:String>
     <sys:String x:Key="Text.Info.Copyright">저작권 정보</sys:String>
     <sys:String x:Key="Text.Info.Copyright.Description" xml:space="preserve">Copyright 2025 Annie Choi&#10;GPL v3 라이선스로 배포됩니다.</sys:String>    
-    <sys:String x:Key="Text.Info.Version.Update.Check.Ready">업데이트를 준비 중입니다.</sys:String>
+    <sys:String x:Key="Text.Info.Version.Local">현재 버전</sys:String>
+    <sys:String x:Key="Text.Info.Version.Online">최신 버전</sys:String>
     <sys:String x:Key="Text.Info.Version.Update.Check.CheckUpdate">업데이트를 확인하는 중입니다.</sys:String>
     <sys:String x:Key="Text.Info.Version.Update.Check.Available">새로운 버전이 있습니다.</sys:String>
     <sys:String x:Key="Text.Info.Version.Update.Check.NotAvailable">최신 버전입니다.</sys:String>
     <sys:String x:Key="Text.Info.Version.Update.Check.Error">업데이트 확인에 실패했습니다.</sys:String>
+    <sys:String x:Key="Text.Info.Version.Update.Download.Failed">업데이트 파일 다운로드에 실패하였습니다.</sys:String>
+    <sys:String x:Key="Text.Info.Version.Update.Execute.Failed">업데이트 파일 실행에 오류가 발생하였습니다.</sys:String>
+    <sys:String x:Key="Text.Info.Version.Update.Execute.Admin.Failed">관리자 권한 요청이 거부되었습니다.</sys:String>
 
 </ResourceDictionary>
