@@ -1501,6 +1501,7 @@ namespace AnnieMediaPlayer
             _playlistWindow.RemoveRequested += PlaylistPanel_RemoveRequested;
             _playlistWindow.ClearRequested += PlaylistPanel_ClearRequested;
             _playlistWindow.PlayPauseRequested += (_, _) => _ = PlayOrOpenAsync();
+            _playlistWindow.NextRequested += (_, _) => _ = PlayAdjacentPlaylistItemAsync(true);
             _playlistWindow.ItemMoveRequested += PlaylistPanel_ItemMoveRequested;
             _playlistWindow.ItemActivated += PlaylistPanel_ItemActivated;
             _playlistWindow.LocationChanged += PlaylistWindow_LocationChanged;

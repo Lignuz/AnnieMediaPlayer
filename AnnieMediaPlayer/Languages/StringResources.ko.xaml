@@ -28,6 +28,9 @@
     <sys:String x:Key="Text.Playlist.Previous">이전 항목 재생</sys:String>
     <sys:String x:Key="Text.Playlist.Next">다음 항목 재생</sys:String>
     <sys:String x:Key="Text.Playlist.Current">현재 항목</sys:String>
+    <sys:String x:Key="Text.Playlist.SelectCurrent">목록에서 현재 항목 선택</sys:String>
+    <sys:String x:Key="Text.Playlist.OpenInExplorer">탐색기에서 열기</sys:String>
+    <sys:String x:Key="Text.Playlist.OpenInExplorerFailed">탐색기에서 파일을 선택할 수 없습니다. 파일 위치와 접근 권한을 확인해 주세요.</sys:String>
     <sys:String x:Key="Text.Message.Volume">볼륨: {0}%</sys:String>
     <sys:String x:Key="Text.Message.FileOpened">파일 열기: {0}</sys:String>
     <sys:String x:Key="Text.Playback.Shuffle.On">셔플 재생: 켜짐</sys:String>

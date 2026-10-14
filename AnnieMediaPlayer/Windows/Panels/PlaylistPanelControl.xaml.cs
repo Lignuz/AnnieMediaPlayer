@@ -3,6 +3,8 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.IO;
+using System.Runtime.InteropServices;
 using AnnieMediaPlayer.Options;
 
 namespace AnnieMediaPlayer.Windows.Panels
@@ -13,6 +15,7 @@ namespace AnnieMediaPlayer.Windows.Panels
         public event EventHandler<IReadOnlyList<PlaylistItemViewModel>>? RemoveRequested;
         public event EventHandler? ClearRequested;
         public event EventHandler? PlayPauseRequested;
+        public event EventHandler? NextRequested;
         public event EventHandler<(IReadOnlyList<PlaylistItemViewModel> Items, int TargetIndex)>? ItemMoveRequested;
         public event EventHandler<PlaylistItemViewModel>? ItemActivated;
         private Point _dragStartPoint;
@@ -103,6 +106,48 @@ namespace AnnieMediaPlayer.Windows.Panels
         private void RemoveButton_Click(object sender, RoutedEventArgs e) => RemoveRequested?.Invoke(this, SelectedItems);
         private void ClearButton_Click(object sender, RoutedEventArgs e) => ClearRequested?.Invoke(this, EventArgs.Empty);
         private void PlayPauseButton_Click(object sender, RoutedEventArgs e) => PlayPauseRequested?.Invoke(this, EventArgs.Empty);
+        private void NextButton_Click(object sender, RoutedEventArgs e) => NextRequested?.Invoke(this, EventArgs.Empty);
+
+        private void CurrentItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm && vm.Playlist.CurrentItem is { } item && PlaylistList.Items.Contains(item))
+            {
+                PlaylistList.SelectedItems.Clear();
+                PlaylistList.SelectedItem = item;
+                PlaylistList.ScrollIntoView(item);
+                PlaylistList.Focus();
+            }
+        }
+
+        private void PlaylistList_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (ItemsControl.ContainerFromElement(PlaylistList, e.OriginalSource as DependencyObject) is ListBoxItem container)
+            {
+                if (!container.IsSelected)
+                {
+                    PlaylistList.SelectedItems.Clear();
+                    container.IsSelected = true;
+                }
+                container.Focus();
+            }
+        }
+
+        private async void OpenInExplorer_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not MenuItem { DataContext: PlaylistItemViewModel item })
+                return;
+            try
+            {
+                await FileExplorer.ShowFileAsync(item.FilePath);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or COMException or ArgumentException)
+            {
+                PlayerDiagnostics.Write($"Could not select file in Explorer: {ex}");
+                if (IsLoaded)
+                    MessageBox.Show(Window.GetWindow(this), LanguageManager.GetResourceString("Text.Playlist.OpenInExplorerFailed"),
+                        LanguageManager.GetResourceString("Text.Error"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
 
         private void PlaylistList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -174,6 +219,12 @@ namespace AnnieMediaPlayer.Windows.Panels
 
         private void PlaylistList_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            if (e.ChangedButton != MouseButton.Left)
+            {
+                e.Handled = true;
+                return;
+            }
+
             if (ItemsControl.ContainerFromElement(PlaylistList, e.OriginalSource as DependencyObject) is ListBoxItem container &&
                 container.DataContext is PlaylistItemViewModel item)
                 ItemActivated?.Invoke(this, item);

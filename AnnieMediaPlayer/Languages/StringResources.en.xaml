@@ -28,6 +28,9 @@
     <sys:String x:Key="Text.Playlist.Previous">Play previous item</sys:String>
     <sys:String x:Key="Text.Playlist.Next">Play next item</sys:String>
     <sys:String x:Key="Text.Playlist.Current">Current item</sys:String>
+    <sys:String x:Key="Text.Playlist.SelectCurrent">Select the current item in the playlist</sys:String>
+    <sys:String x:Key="Text.Playlist.OpenInExplorer">Show in File Explorer</sys:String>
+    <sys:String x:Key="Text.Playlist.OpenInExplorerFailed">Could not select the file in Explorer. Check its location and access permissions.</sys:String>
     <sys:String x:Key="Text.Message.Volume">Volume: {0}%</sys:String>
     <sys:String x:Key="Text.Message.FileOpened">Opened: {0}</sys:String>
     <sys:String x:Key="Text.Playback.Shuffle.On">Shuffle: On</sys:String>
