@@ -29,11 +29,17 @@ namespace AnnieMediaPlayer
         private static readonly TimeSpan MockCheckDelay = TimeSpan.FromSeconds(3);
         private const long MaximumInstallerBytes = 512L * 1024 * 1024; // 이보다 큰 파일은 설치 파일로 보지 않습니다.
 
-        private HttpClient httpClient;
+        private readonly HttpClient httpClient;
+        private readonly Func<ProcessStartInfo, Process?> _startInstaller;
 
-        public UpdaterViewModel()
+        public UpdaterViewModel() : this(new HttpClient { Timeout = Timeout.InfiniteTimeSpan }, Process.Start)
         {
-            httpClient = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
+        }
+
+        internal UpdaterViewModel(HttpClient client, Func<ProcessStartInfo, Process?> startInstaller)
+        {
+            httpClient = client;
+            _startInstaller = startInstaller;
             httpClient.DefaultRequestHeaders.Add("User-Agent", "AMPUpdater/1.0");
 
             UpdateCheckState = UpdateCheckState.None;
@@ -113,88 +119,106 @@ namespace AnnieMediaPlayer
         }
 
 
-        public async Task DownloadAndInstallUpdateAsync()
+        public async Task DownloadAndInstallUpdateAsync(CancellationToken cancellationToken = default)
         {
             var settings = UpdateSettings.Current;
-            if (settings is null)
+            if (settings is null || IsDownloading || cancellationToken.IsCancellationRequested)
                 return;
 
-            ErrorMessage = string.Empty;
-            string url = settings.InstallerUrl;
-
-            // 임시 폴더에 파일 다운로드
-            string tempPath = Path.GetTempPath();
-            string fileName = Path.GetFileName(new Uri(url).AbsolutePath);
-            if (string.IsNullOrWhiteSpace(fileName))
-                fileName = "AnnieMediaPlayerSetup.exe";
-            string filePath = Path.Combine(tempPath, fileName);
-
-            var downloaded = false;
+            IsDownloading = true;
             try
             {
-                using var stall = new CancellationTokenSource(StallTimeout);
-                using (var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, stall.Token))
+                ErrorMessage = string.Empty;
+                string url = settings.InstallerUrl;
+
+                // 임시 폴더에 파일 다운로드
+                string tempPath = Path.GetTempPath();
+                string fileName = Path.GetFileName(new Uri(url).AbsolutePath);
+                if (string.IsNullOrWhiteSpace(fileName))
+                    fileName = "AnnieMediaPlayerSetup.exe";
+                string filePath = Path.Combine(tempPath, $"AnnieMediaPlayerUpdate-{Guid.NewGuid():N}-{fileName}");
+
+                var downloaded = false;
+                try
                 {
-                    response.EnsureSuccessStatusCode();
-                    EnsureHttps(response);
-
-                    var totalBytes = response.Content.Headers.ContentLength ?? 0;
-                    if (totalBytes > MaximumInstallerBytes)
-                        throw new IOException("The installer exceeds the permitted download size.");
-
-                    ProgressValue = 0.0;
-                    ProgressVisibility = Visibility.Visible;
-                    IsProgressIndeterminate = totalBytes <= 0; // 파일 크기를 모르면 진행률 대신 막대를 움직입니다.
-                    var downloadedBytes = 0L;
-
-                    int bufsize = 8192; // 8KB 버퍼 크기
-                    using (var contentStream = await response.Content.ReadAsStreamAsync(stall.Token))
-                    using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, bufsize, true))
+                    using var stall = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    stall.CancelAfter(StallTimeout);
+                    using (var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, stall.Token))
                     {
-                        var buffer = new byte[bufsize];
-                        int bytesRead;
+                        response.EnsureSuccessStatusCode();
+                        EnsureHttps(response);
 
-                        while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length, stall.Token)) > 0)
+                        var totalBytes = response.Content.Headers.ContentLength ?? 0;
+                        if (totalBytes > MaximumInstallerBytes)
+                            throw new IOException("The installer exceeds the permitted download size.");
+
+                        ProgressValue = 0.0;
+                        ProgressVisibility = Visibility.Visible;
+                        IsProgressIndeterminate = totalBytes <= 0; // 파일 크기를 모르면 진행률 대신 막대를 움직입니다.
+                        var downloadedBytes = 0L;
+
+                        int bufsize = 8192; // 8KB 버퍼 크기
+                        using (var contentStream = await response.Content.ReadAsStreamAsync(stall.Token))
+                        using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, bufsize, true))
                         {
-                            stall.CancelAfter(StallTimeout);
-                            downloadedBytes += bytesRead;
-                            if (downloadedBytes > MaximumInstallerBytes)
-                                throw new IOException("The installer exceeds the permitted download size.");
+                            var buffer = new byte[bufsize];
+                            int bytesRead;
 
-                            await fileStream.WriteAsync(buffer, 0, bytesRead, stall.Token);
-
-                            if (totalBytes > 0)
+                            while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length, stall.Token)) > 0)
                             {
-                                var progress = (double)downloadedBytes / totalBytes * 100;
-                                ProgressValue = progress;
+                                stall.CancelAfter(StallTimeout);
+                                downloadedBytes += bytesRead;
+                                if (downloadedBytes > MaximumInstallerBytes)
+                                    throw new IOException("The installer exceeds the permitted download size.");
+
+                                await fileStream.WriteAsync(buffer, 0, bytesRead, stall.Token);
+
+                                if (totalBytes > 0)
+                                {
+                                    var progress = (double)downloadedBytes / totalBytes * 100;
+                                    ProgressValue = progress;
+                                }
                             }
                         }
                     }
+
+                    cancellationToken.ThrowIfCancellationRequested();
+                    downloaded = true;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    // 창을 닫아 취소한 경우에는 실패 안내를 표시하지 않습니다.
+                }
+                catch (Exception ex) when (ex is HttpRequestException or IOException or UnauthorizedAccessException or OperationCanceledException)
+                {
+                    // 다운로드 실패 메시지 표시
+                    ErrorMessage = LanguageManager.GetResourceString("Text.Info.Version.Update.Download.Failed");
                 }
 
-                downloaded = true;
-            }
-            catch (Exception ex) when (ex is HttpRequestException or IOException or UnauthorizedAccessException or OperationCanceledException)
-            {
-                // 다운로드 실패 메시지 표시
-                ErrorMessage = LanguageManager.GetResourceString("Text.Info.Version.Update.Download.Failed");
-            }
+                if (!downloaded || cancellationToken.IsCancellationRequested)
+                {
+                    ResetDownloadProgress();
+                    TryDeleteFile(filePath);
+                    return;
+                }
 
-            if (!downloaded)
-            {
-                ProgressValue = 0.0;
-                IsProgressIndeterminate = false;
-                ProgressVisibility = Visibility.Hidden;
-                TryDeleteFile(filePath);
-                return;
+                InstallUpdate(filePath, cancellationToken);
             }
-
-            // 현재 앱 종료 후 업데이트 설치
-            InstallUpdateAsync(filePath);
+            finally
+            {
+                IsDownloading = false;
+            }
         }
 
-        private void InstallUpdateAsync(string updateFilePath)
+        private void InstallUpdate(string updateFilePath, CancellationToken cancellationToken)
         {
+            // 다운로드 완료와 설치 호출 사이에 창을 닫았을 때도 설치를 시작하지 않습니다.
+            if (cancellationToken.IsCancellationRequested)
+            {
+                TryDeleteFile(updateFilePath);
+                ResetDownloadProgress();
+                return;
+            }
             try
             {
                 ProcessStartInfo startInfo = new ProcessStartInfo(updateFilePath)
@@ -202,7 +226,7 @@ namespace AnnieMediaPlayer
                     UseShellExecute = true, // 중요: Verb 속성을 사용하려면 true여야 합니다. .NET Core에서는 기본값이 false로 변경되었습니다.
                     Verb = "runas",         // "runas" 동사는 관리자 권한으로 실행하도록 합니다.
                 };
-                using var process = Process.Start(startInfo)
+                using var process = _startInstaller(startInfo)
                     ?? throw new InvalidOperationException("Windows did not start the installer.");
 
                 App.Current.MainWindow.Close(); // 업데이트 호출 후 애플리케이션 종료
@@ -210,9 +234,7 @@ namespace AnnieMediaPlayer
             catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
             {
                 TryDeleteFile(updateFilePath);
-                ProgressVisibility = Visibility.Hidden;
-                IsProgressIndeterminate = false;
-                ProgressValue = 0.0;
+                ResetDownloadProgress();
 
                 // 사용자가 UAC 프롬프트를 취소했을 때 발생합니다.
                 if (ex is Win32Exception { NativeErrorCode: 1223 }) // ERROR_CANCELLED
@@ -224,6 +246,13 @@ namespace AnnieMediaPlayer
                     ErrorMessage = LanguageManager.GetResourceString("Text.Info.Version.Update.Execute.Failed");
                 }
             }
+        }
+
+        private void ResetDownloadProgress()
+        {
+            ProgressVisibility = Visibility.Hidden;
+            IsProgressIndeterminate = false;
+            ProgressValue = 0.0;
         }
 
         // 서버가 다른 주소로 넘겨 보냈더라도 최종 응답이 HTTPS 인 경우에만 사용합니다.
@@ -248,6 +277,7 @@ namespace AnnieMediaPlayer
         public Visibility ProgressVisibility { get => Get(); private set => Set(value); }
         public double ProgressValue { get => Get(); set => Set(value); }
         public bool IsProgressIndeterminate { get => Get(); private set => Set(value); }
+        public bool IsDownloading { get => Get(); private set => Set(value); }
         public string ServerVersion { get => Get(); private set => Set(value); }
         public string ReleaseNote { get => Get(); set => Set(value); }
         public string ErrorMessage { get => Get(); private set => Set(value); }
