@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.IO;
 using System.Runtime.InteropServices;
 using AnnieMediaPlayer.Options;
+using AnnieMediaPlayer.Windows.Info;
 
 namespace AnnieMediaPlayer.Windows.Panels
 {
@@ -129,6 +130,15 @@ namespace AnnieMediaPlayer.Windows.Panels
                     container.IsSelected = true;
                 }
                 container.Focus();
+            }
+        }
+
+        private void FileInfo_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem { DataContext: PlaylistItemViewModel item })
+            {
+                var window = new FileInfoWindow(item.FilePath) { Owner = Window.GetWindow(this) };
+                window.ShowDialog();
             }
         }
 

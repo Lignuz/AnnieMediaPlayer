@@ -1,0 +1,138 @@
+﻿<base:BaseWindow x:Class="AnnieMediaPlayer.Windows.Info.FileInfoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:base="clr-namespace:AnnieMediaPlayer"
+        xmlns:controls="clr-namespace:AnnieMediaPlayer.CustomControls"
+        Title="{DynamicResource Text.FileInfo}" Width="640" Height="540" MinWidth="460" MinHeight="380"
+        ResizeMode="CanResizeWithGrip" Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TitleTextBrush}">
+    <base:BaseWindow.Resources>
+        <Style x:Key="InfoTabItemStyle" TargetType="TabItem">
+            <Setter Property="Foreground" Value="{DynamicResource TitleTextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource DataGridBackgroundBrush}"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="TabSurface" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"
+                                BorderBrush="{DynamicResource DataGridBorderBrush}" BorderThickness="1,1,1,0" CornerRadius="4,4,0,0">
+                            <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="TabSurface" Property="Background" Value="{DynamicResource BackgroundBrush}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabSurface" Property="Background" Value="{DynamicResource DataGridMouseOverBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="TabSurface" Property="BorderBrush" Value="{DynamicResource ThemeButtonFillBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="InfoTabControlStyle" TargetType="TabControl">
+            <Setter Property="ItemContainerStyle" Value="{StaticResource InfoTabItemStyle}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TabPanel IsItemsHost="True"/>
+                            <Border Grid.Row="1" Background="{DynamicResource BackgroundBrush}">
+                                <ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="InfoGridStyle" TargetType="DataGrid">
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="CanUserDeleteRows" Value="False"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="GridLinesVisibility" Value="None"/>
+            <Setter Property="Background" Value="{DynamicResource DataGridBackgroundBrush}"/>
+            <Setter Property="RowBackground" Value="{DynamicResource DataGridRowBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource DataGridForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DataGridBorderBrush}"/>
+            <Setter Property="ColumnHeaderStyle">
+                <Setter.Value>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="{DynamicResource BackgroundBrush}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource TitleTextBrush}"/>
+                        <Setter Property="Padding" Value="8,6"/>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </base:BaseWindow.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <controls:TitleBar TitleText="{DynamicResource Text.FileInfo}"/>
+        <TextBox Grid.Row="1" Margin="16,8" Padding="6,4" Text="{Binding FilePath, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
+                 Background="{DynamicResource DataGridBackgroundBrush}" Foreground="{DynamicResource DataGridForegroundBrush}" BorderBrush="{DynamicResource DataGridBorderBrush}"/>
+        <Grid Grid.Row="2" Margin="16,4,16,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="130"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <Image Source="{Binding AlbumArt}" Width="112" Height="112" Stretch="Uniform"/>
+                <TextBlock Text="{Binding AlbumArtDescription}" FontSize="11" TextWrapping="Wrap" TextAlignment="Center" Margin="0,5,0,0"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                <ItemsControl ItemsSource="{Binding Summary}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="85"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Name}" Opacity="0.7"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Grid>
+        <TabControl Grid.Row="3" Margin="16,0,16,8" Style="{StaticResource InfoTabControlStyle}">
+            <TabItem Header="{DynamicResource Text.FileInfo.Tags}">
+                <DataGrid Style="{StaticResource InfoGridStyle}" ItemsSource="{Binding Tags}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="{DynamicResource Text.FileInfo.Source}" Binding="{Binding Source}" Width="100"/>
+                        <DataGridTextColumn Header="{DynamicResource Text.FileInfo.Name}" Binding="{Binding Name}" Width="130"/>
+                        <DataGridTextColumn Header="{DynamicResource Text.FileInfo.Value}" Binding="{Binding Value}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+            <TabItem Header="{DynamicResource Text.FileInfo.Streams}">
+                <DataGrid Style="{StaticResource InfoGridStyle}" ItemsSource="{Binding Streams}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="#" Binding="{Binding Index}" Width="35"/>
+                        <DataGridTextColumn Header="{DynamicResource Text.FileInfo.Type}" Binding="{Binding Type}" Width="75"/>
+                        <DataGridTextColumn Header="{DynamicResource Text.FileInfo.Codec}" Binding="{Binding Codec}" Width="90"/>
+                        <DataGridTextColumn Header="{DynamicResource Text.FileInfo.Details}" Binding="{Binding Details}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+        </TabControl>
+        <TextBlock Grid.Row="4" Text="{Binding Status}" TextWrapping="Wrap" Margin="16,0,16,14" FontSize="11" Opacity="0.8"/>
+    </Grid>
+</base:BaseWindow>
