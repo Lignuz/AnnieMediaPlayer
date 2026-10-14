@@ -8,6 +8,20 @@ Key features include:
 - Slow-motion playback (down to one frame every 100 seconds)
 - FFmpeg decoding via FFME (Unosquare.FFME.Windows)
 
+## Update configuration
+
+Update checks are disabled when no update settings file is present. To enable them for a build, copy the template into the application project and fill in the HTTPS endpoints:
+
+```powershell
+Copy-Item update-settings.example.json AnnieMediaPlayer/update-settings.json
+```
+
+Set `ManifestUrl` to an endpoint that returns JSON such as `{"Version":"1.0.0.0","ReleaseNotes":"Release notes"}`. The app adds the installed version as a `version` query parameter. Set `InstallerUrl` to a direct HTTPS download of the Windows installer. The installer must be no larger than 512 MiB.
+
+Build or publish with `AnnieMediaPlayer/update-settings.json` present. The project copies it next to the output executable; the distributed application also needs this file beside its executable. The template contains no real endpoints, and the actual settings file is ignored by Git. Do not commit it. Builds without the file continue to work, but do not check for or install updates.
+
+The updater launches the downloaded installer with administrator privileges. It requires HTTPS but does not currently verify a SHA-256 checksum, so configure only trusted endpoints and installer files.
+
 ## License
 
 This project is licensed under the GNU General Public License v3.0.
