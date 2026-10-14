@@ -259,7 +259,7 @@
                             </StackPanel>
                         </Button>
                     </Border>
-                    <Border x:Name="CommandMessageHost" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                    <Border x:Name="CommandMessageHost" HorizontalAlignment="Left" VerticalAlignment="Top"
                             Margin="16" Padding="10,7" CornerRadius="6" Background="#CF171717" ClipToBounds="True"
                             Visibility="Collapsed" Opacity="0" IsHitTestVisible="False" Panel.ZIndex="30">
                         <TextBlock x:Name="CommandMessageText" TextWrapping="Wrap" Foreground="White"/>

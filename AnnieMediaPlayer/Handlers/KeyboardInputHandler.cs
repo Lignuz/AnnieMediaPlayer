@@ -90,7 +90,7 @@ namespace AnnieMediaPlayer
                 if (VideoPlayerController.IsOpened && VideoPlayerController.IsPaused)
                 {
                     bool next = (e.Key == Key.Right);
-                    _= VideoPlayerController.SeekStep(next);
+                    _ = window.SeekStepWithMessageAsync(next);
                 }
                 e.Handled = true;
             }
@@ -99,6 +99,7 @@ namespace AnnieMediaPlayer
                 // 기본 속도
                 VideoPlayerController.SetSpeedRatio(1.0);
                 window.UpdateSpeedInfo();
+                window.NotifySpeedChanged();
                 e.Handled = true;
             }
             else if (e.Key == Key.X)
@@ -106,6 +107,7 @@ namespace AnnieMediaPlayer
                 // 느리게
                 VideoPlayerController.SpeedDown();
                 window.UpdateSpeedInfo();
+                window.NotifySpeedChanged();
                 e.Handled = true;
             }
             else if (e.Key == Key.C)
@@ -113,6 +115,7 @@ namespace AnnieMediaPlayer
                 // 빠르게
                 VideoPlayerController.SpeedUp();
                 window.UpdateSpeedInfo();
+                window.NotifySpeedChanged();
                 e.Handled = true;
             }
             else if (e.Key == Key.R)

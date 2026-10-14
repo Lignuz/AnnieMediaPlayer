@@ -395,7 +395,7 @@ namespace AnnieMediaPlayer
 
             var option = OptionViewModel.Instance.CurrentOption;
             if (option.RememberWindowPositions && option.PlaylistWindowPlacement.IsVisible)
-                TogglePlaylistWindow();
+                TogglePlaylistWindowCore();
 
             _ = CheckUpdateAtStartupAsync();
         }
@@ -1448,6 +1448,12 @@ namespace AnnieMediaPlayer
 
         public void TogglePlaylistWindow()
         {
+            TogglePlaylistWindowCore();
+            ShowCommandMessage("Text.Message.PlaylistVisible", MessageToggle(_playlistWindow?.IsVisible == true));
+        }
+
+        private void TogglePlaylistWindowCore()
+        {
             if (_playlistWindow?.IsVisible == true)
             {
                 _playlistWindow.Hide();
@@ -1918,8 +1924,10 @@ namespace AnnieMediaPlayer
 
             if (dialog.ShowDialog() == true)
             {
+                var before = vm.Playlist.Items.Count;
                 vm.Playlist.AddFiles(dialog.FileNames);
                 SelectFirstPlaylistItemIfIdle();
+                ShowCommandMessage("Text.Message.PlaylistAdded", vm.Playlist.Items.Count - before);
             }
         }
 
@@ -1933,12 +1941,20 @@ namespace AnnieMediaPlayer
         {
             foreach (var item in items.ToList())
                 vm.Playlist.Remove(item);
+            ShowCommandMessage("Text.Message.PlaylistRemoved", items.Count);
         }
 
-        private void PlaylistPanel_ClearRequested(object? sender, EventArgs e) => vm.Playlist.Clear();
+        private void PlaylistPanel_ClearRequested(object? sender, EventArgs e)
+        {
+            vm.Playlist.Clear();
+            ShowCommandMessage("Text.Message.PlaylistCleared");
+        }
 
-        private void PlaylistPanel_ItemMoveRequested(object? sender, (IReadOnlyList<PlaylistItemViewModel> Items, int TargetIndex) move) =>
+        private void PlaylistPanel_ItemMoveRequested(object? sender, (IReadOnlyList<PlaylistItemViewModel> Items, int TargetIndex) move)
+        {
             vm.Playlist.MoveManyTo(move.Items, move.TargetIndex);
+            ShowCommandMessage("Text.Message.PlaylistMoved", move.Items.Count);
+        }
 
         private void PlaylistPanel_ItemActivated(object? sender, PlaylistItemViewModel item) =>
             _ = PlayPlaylistItemAsync(item);
@@ -1953,23 +1969,27 @@ namespace AnnieMediaPlayer
         {
             VideoPlayerController.DecreaseSpeed();
             UpdateSetSpeedLabel();
+            NotifySpeedChanged();
         }
         private void SpeedUp_Click(object sender, RoutedEventArgs e)
         {
             VideoPlayerController.IncreaseSpeed();
             UpdateSetSpeedLabel();
+            NotifySpeedChanged();
         }
 
         private void SpeedRatioDown_Click(object sender, RoutedEventArgs e)
         {
             VideoPlayerController.SpeedDown();
             UpdateSetSpeedLabel();
+            NotifySpeedChanged();
         }
 
         private void SpeedRatioUp_Click(object sender, RoutedEventArgs e)
         {
             VideoPlayerController.SpeedUp();
             UpdateSetSpeedLabel();
+            NotifySpeedChanged();
         }
 
         private void PlaybackSlider_PreviewMouseMove(object sender, MouseEventArgs e) => VideoPlayerController.OnSliderMouseHover(this, e);
@@ -1981,7 +2001,10 @@ namespace AnnieMediaPlayer
                 if (PlaybackSlider.isDragging)
                     VideoPlayerController.OnSliderDragStart(this);
                 else
+                {
                     VideoPlayerController.OnSliderDragEnd(this);
+                    ShowCommandMessage("Text.Message.Seek", MessagePosition(TimeSpan.FromSeconds(PlaybackSlider.Value)));
+                }
             }
         }
         private void PlaybackSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => VideoPlayerController.OnSliderValueChanged(this);

@@ -219,7 +219,7 @@ namespace AnnieMediaPlayer
             ShowAudioChrome();
         }
 
-        private void LyricsView_LineClicked(object? sender, TimeSpan time) => _ = VideoPlayerController.Seek(time);
+        private void LyricsView_LineClicked(object? sender, TimeSpan time) => _ = SeekWithMessageAsync(time);
 
         // 가사를 켜면 가사 영역이 오른쪽에서 밀려 나오고, 왼쪽 화면은 남은 영역의 가운데로 옮겨 갑니다.
         private void UpdateLyricsLayout(bool animate)

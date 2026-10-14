@@ -169,4 +169,26 @@
     <sys:String x:Key="Text.Info.Version.Update.Execute.Failed">An error occurred while running update file.</sys:String>
     <sys:String x:Key="Text.Info.Version.Update.Execute.Admin.Failed">Request for administrator privileges was denied.</sys:String>
 
+    <sys:String x:Key="Text.Message.On">On</sys:String>
+    <sys:String x:Key="Text.Message.Off">Off</sys:String>
+    <sys:String x:Key="Text.Message.WindowSize">Window size: {0} × {1}</sys:String>
+    <sys:String x:Key="Text.Message.Maximized">Window maximized</sys:String>
+    <sys:String x:Key="Text.Message.Restored">Window restored</sys:String>
+    <sys:String x:Key="Text.Message.AudioMode">Audio view: {0}</sys:String>
+    <sys:String x:Key="Text.Message.Lyrics">Lyrics: {0}</sys:String>
+    <sys:String x:Key="Text.Message.Rotation">Rotation: {0}°</sys:String>
+    <sys:String x:Key="Text.Message.FlipHorizontal">Horizontal flip: {0}</sys:String>
+    <sys:String x:Key="Text.Message.FlipVertical">Vertical flip: {0}</sys:String>
+    <sys:String x:Key="Text.Message.Overlay">Auto-hide controls: {0}</sys:String>
+    <sys:String x:Key="Text.Message.Theme">Theme: {0}</sys:String>
+    <sys:String x:Key="Text.Message.Speed">Playback speed: {0}×</sys:String>
+    <sys:String x:Key="Text.Message.FrameInterval">Frame interval: {0}s</sys:String>
+    <sys:String x:Key="Text.Message.Seek">Playback position: {0}</sys:String>
+    <sys:String x:Key="Text.Message.PlaylistAdded">Added {0} items to playlist</sys:String>
+    <sys:String x:Key="Text.Message.PlaylistRemoved">Removed {0} items from playlist</sys:String>
+    <sys:String x:Key="Text.Message.PlaylistCleared">Playlist cleared</sys:String>
+    <sys:String x:Key="Text.Message.PlaylistMoved">Moved {0} playlist items</sys:String>
+    <sys:String x:Key="Text.Message.Setting">{0}: {1}</sys:String>
+    <sys:String x:Key="Text.Message.Properties">Properties panel: {0}</sys:String>
+    <sys:String x:Key="Text.Message.PlaylistVisible">Playlist: {0}</sys:String>
 </ResourceDictionary>

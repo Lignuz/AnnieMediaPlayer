@@ -169,4 +169,26 @@
     <sys:String x:Key="Text.Info.Version.Update.Execute.Failed">업데이트 파일 실행에 오류가 발생하였습니다.</sys:String>
     <sys:String x:Key="Text.Info.Version.Update.Execute.Admin.Failed">관리자 권한 요청이 거부되었습니다.</sys:String>
 
+    <sys:String x:Key="Text.Message.On">켜짐</sys:String>
+    <sys:String x:Key="Text.Message.Off">꺼짐</sys:String>
+    <sys:String x:Key="Text.Message.WindowSize">창 크기: {0} × {1}</sys:String>
+    <sys:String x:Key="Text.Message.Maximized">창 최대화</sys:String>
+    <sys:String x:Key="Text.Message.Restored">창 복원</sys:String>
+    <sys:String x:Key="Text.Message.AudioMode">오디오 화면: {0}</sys:String>
+    <sys:String x:Key="Text.Message.Lyrics">가사: {0}</sys:String>
+    <sys:String x:Key="Text.Message.Rotation">회전: {0}°</sys:String>
+    <sys:String x:Key="Text.Message.FlipHorizontal">좌우 반전: {0}</sys:String>
+    <sys:String x:Key="Text.Message.FlipVertical">상하 반전: {0}</sys:String>
+    <sys:String x:Key="Text.Message.Overlay">컨트롤 자동 숨김: {0}</sys:String>
+    <sys:String x:Key="Text.Message.Theme">테마: {0}</sys:String>
+    <sys:String x:Key="Text.Message.Speed">재생 속도: {0}배속</sys:String>
+    <sys:String x:Key="Text.Message.FrameInterval">프레임 간격: {0}초</sys:String>
+    <sys:String x:Key="Text.Message.Seek">재생 위치: {0}</sys:String>
+    <sys:String x:Key="Text.Message.PlaylistAdded">재생목록에 {0}개 추가</sys:String>
+    <sys:String x:Key="Text.Message.PlaylistRemoved">재생목록에서 {0}개 삭제</sys:String>
+    <sys:String x:Key="Text.Message.PlaylistCleared">재생목록 비움</sys:String>
+    <sys:String x:Key="Text.Message.PlaylistMoved">재생목록 {0}개 항목 순서 변경</sys:String>
+    <sys:String x:Key="Text.Message.Setting">{0}: {1}</sys:String>
+    <sys:String x:Key="Text.Message.Properties">속성 패널: {0}</sys:String>
+    <sys:String x:Key="Text.Message.PlaylistVisible">재생목록: {0}</sys:String>
 </ResourceDictionary>
