@@ -29,3 +29,4 @@ Copy-Item update-settings.example.json AnnieMediaPlayer/update-settings.json
 - System.Drawing.Common (MIT) – https://www.nuget.org/packages/System.Drawing.Common/9.0.4
 - Vortice.Windows (MIT) – Vortice.Direct2D1, Vortice.Direct3D11, Vortice.Direct3D9 – https://github.com/amerkoleci/Vortice.Windows
 - SharpGen.Runtime (MIT) – Vortice.Windows 의존 패키지 – https://github.com/SharpGenTools/SharpGenTools
+- TagLibSharp (LGPL-2.1-only) – 미디어 태그와 내장 앨범 이미지 편집 – https://github.com/mono/taglib-sharp

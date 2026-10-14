@@ -3,9 +3,18 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:base="clr-namespace:AnnieMediaPlayer"
         xmlns:controls="clr-namespace:AnnieMediaPlayer.CustomControls"
-        Title="{DynamicResource Text.FileInfo}" Width="640" Height="540" MinWidth="460" MinHeight="380"
+        Title="{DynamicResource Text.FileInfo}" Width="640" Height="650" MinWidth="460" MinHeight="520"
         ResizeMode="CanResizeWithGrip" Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TitleTextBrush}">
     <base:BaseWindow.Resources>
+        <Style x:Key="EditorInputStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource DataGridBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource DataGridForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DataGridBorderBrush}"/>
+            <Setter Property="Padding" Value="6,4"/>
+        </Style>
+        <Style x:Key="EditorLabelStyle" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,10,0,4"/>
+        </Style>
         <Style x:Key="InfoTabItemStyle" TargetType="TabItem">
             <Setter Property="Foreground" Value="{DynamicResource TitleTextBrush}"/>
             <Setter Property="Background" Value="{DynamicResource DataGridBackgroundBrush}"/>
@@ -84,6 +93,7 @@
         </Grid.RowDefinitions>
         <controls:TitleBar TitleText="{DynamicResource Text.FileInfo}"/>
         <TextBox Grid.Row="1" Margin="16,8" Padding="6,4" Text="{Binding FilePath, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
+                 MaxHeight="56" VerticalScrollBarVisibility="Auto"
                  Background="{DynamicResource DataGridBackgroundBrush}" Foreground="{DynamicResource DataGridForegroundBrush}" BorderBrush="{DynamicResource DataGridBorderBrush}"/>
         <Grid Grid.Row="2" Margin="16,4,16,12">
             <Grid.ColumnDefinitions>
@@ -95,7 +105,7 @@
                 <TextBlock Text="{Binding AlbumArtDescription}" FontSize="11" TextWrapping="Wrap" TextAlignment="Center" Margin="0,5,0,0"/>
             </StackPanel>
             <StackPanel Grid.Column="1" Margin="16,0,0,0">
-                <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding FileName}" Margin="0,0,0,8"/>
                 <ItemsControl ItemsSource="{Binding Summary}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -113,6 +123,56 @@
             </StackPanel>
         </Grid>
         <TabControl Grid.Row="3" Margin="16,0,16,8" Style="{StaticResource InfoTabControlStyle}">
+            <TabItem Header="{DynamicResource Text.FileInfo.Edit}">
+                <Grid Margin="0,8,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel IsEnabled="{Binding CanEditFields}" Margin="0,0,12,0">
+                            <TextBlock Style="{StaticResource EditorLabelStyle}" Text="{DynamicResource Text.FileInfo.Title}"/>
+                            <TextBox Style="{StaticResource EditorInputStyle}" Text="{Binding EditTitle, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock Style="{StaticResource EditorLabelStyle}" Text="{DynamicResource Text.FileInfo.Artists}"/>
+                            <TextBox Style="{StaticResource EditorInputStyle}" Text="{Binding EditArtists, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock Style="{StaticResource EditorLabelStyle}" Text="{DynamicResource Text.FileInfo.AlbumArtists}"/>
+                            <TextBox Style="{StaticResource EditorInputStyle}" Text="{Binding EditAlbumArtists, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock Style="{StaticResource EditorLabelStyle}" Text="{DynamicResource Text.FileInfo.Album}"/>
+                            <TextBox Style="{StaticResource EditorInputStyle}" Text="{Binding EditAlbum, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Style="{StaticResource EditorLabelStyle}" Text="{DynamicResource Text.FileInfo.Year}"/>
+                                    <TextBox Style="{StaticResource EditorInputStyle}" Text="{Binding EditYear, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Style="{StaticResource EditorLabelStyle}" Text="{DynamicResource Text.FileInfo.Track}"/>
+                                    <TextBox Style="{StaticResource EditorInputStyle}" Text="{Binding EditTrack, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Style="{StaticResource EditorLabelStyle}" Text="{DynamicResource Text.FileInfo.Genres}"/>
+                            <TextBox Style="{StaticResource EditorInputStyle}" Text="{Binding EditGenres, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock Style="{StaticResource EditorLabelStyle}" Text="{DynamicResource Text.FileInfo.Comment}"/>
+                            <TextBox Style="{StaticResource EditorInputStyle}" Text="{Binding EditComment, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" MaxHeight="120" VerticalScrollBarVisibility="Auto"/>
+                            <TextBlock Style="{StaticResource EditorLabelStyle}" Text="{DynamicResource Text.FileInfo.Lyrics}"/>
+                            <TextBox Style="{StaticResource EditorInputStyle}" Text="{Binding EditLyrics, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="90" MaxHeight="240" VerticalScrollBarVisibility="Auto"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <TextBlock Grid.Row="1" Text="{Binding EditorStatus}" TextWrapping="Wrap" Margin="0,8"/>
+                    <DockPanel Grid.Row="2">
+                        <Button x:Name="SaveTagsButton" DockPanel.Dock="Right" Padding="16,6"
+                                Content="{DynamicResource Text.FileInfo.Save}" IsEnabled="{Binding CanSave}" Click="SaveTags_Click"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="{DynamicResource Text.FileInfo.ChangeArtwork}" Click="ChangeArtwork_Click"
+                                    IsEnabled="{Binding CanEditFields}" Margin="0,0,6,0" Padding="8,6"/>
+                            <Button Content="{DynamicResource Text.FileInfo.RemoveArtwork}" Click="RemoveArtwork_Click"
+                                    IsEnabled="{Binding CanEditFields}" Padding="8,6"
+                                    ToolTip="{DynamicResource Text.FileInfo.RemoveArtworkHelp}"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Grid>
+            </TabItem>
             <TabItem Header="{DynamicResource Text.FileInfo.Tags}">
                 <DataGrid Style="{StaticResource InfoGridStyle}" ItemsSource="{Binding Tags}">
                     <DataGrid.Columns>

@@ -100,6 +100,16 @@ namespace AnnieMediaPlayer
             return false;
         }
 
+        // 미디어를 닫아 파일 연결을 해제합니다.
+        public async Task<bool> Close()
+        {
+            if (_mediaElement != null)
+            {
+                return await _mediaElement.Close();
+            }
+            return false;
+        }
+
         // 기본 오디오 장치가 변경되었을 때 오디오 렌더러를 다시 생성합니다.
         public async Task<bool> ChangeMedia()
         {

@@ -66,6 +66,7 @@ namespace AnnieMediaPlayer
         private bool _stopRequestedDuringOpen;
         private bool _skipNextAutoAdvance;
         private bool _openingMedia;
+        private bool _reopeningForEdit;
         private int _mediaTransitionVersion;
         private int _videoTransitionReleaseQueued;
 
@@ -708,7 +709,8 @@ namespace AnnieMediaPlayer
 
             vm.IsOpened = true;
             vm.FilePath = e.Info.MediaSource;
-            ShowCommandMessage("Text.Message.FileOpened", Path.GetFileName(e.Info.MediaSource));
+            if (!_reopeningForEdit)
+                ShowCommandMessage("Text.Message.FileOpened", Path.GetFileName(e.Info.MediaSource));
             vm.IsAudioOnly = !VideoPlayerController.HasVideo;
             Task albumArtLoad = Task.CompletedTask;
             if (vm.IsAudioOnly)
@@ -1258,6 +1260,128 @@ namespace AnnieMediaPlayer
             }
         }
 
+        // 재생 중인 파일을 수정(교체)하려면 플레이어가 그 파일을 열고 있지 않아야 합니다.
+        // 잠시 파일을 닫고 작업한 뒤, 같은 위치에서 같은 상태(재생·일시정지)로 이어서 엽니다.
+        public async Task RunWithFileReleasedAsync(string filePath, Func<Task> action)
+        {
+            if (!VideoPlayerController.IsFileInUse(filePath))
+            {
+                await action();
+                return;
+            }
+
+            if (_openingMedia || _isClosing)
+                throw new InvalidOperationException("The player is changing media.");
+
+            var wasStopped = VideoPlayerController.PlaybackState == MediaPlaybackState.Stop;
+            var position = VideoPlayerController.CurrentPosition;
+            var wasPlaying = VideoPlayerController.IsPlaying ||
+                (VideoPlayerController.IsFrameStepMode && !VideoPlayerController.IsFrameStepPaused);
+            var speedRatio = VideoPlayerController.GetSpeedRatio();
+
+            _openingMedia = true;
+            _reopeningForEdit = true;
+            try
+            {
+                // 닫는 동안 정지 화면이 보이지 않도록 지금 화면을 붙잡아 둡니다.
+                if (!wasStopped && vm.IsOpened)
+                    BeginMediaTransition();
+                ffmeMediaElement.IsMuted = true;
+
+                if (!await VideoPlayerController.CloseMedia())
+                    throw new InvalidOperationException("The player could not release the file.");
+
+                try
+                {
+                    await action();
+                    // 다시 열 때 수정한 내용(앨범 이미지 포함)이 반영되도록 캐시를 비웁니다.
+                    _albumArtService.ClearCache();
+                    _currentAlbumArtService.ClearCache();
+                }
+                finally
+                {
+                    if (!wasStopped)
+                        await ReopenAfterEditAsync(filePath, position, wasPlaying, speedRatio);
+                }
+            }
+            finally
+            {
+                // 저장 중에 사용자가 음소거를 바꿨을 수 있으므로, 시작할 때의 값이 아니라 지금 버튼 상태를 따릅니다.
+                ffmeMediaElement.IsMuted = VolumeMuteButton.IsChecked == true;
+                _stopRequestedDuringOpen = false;
+                _reopeningForEdit = false;
+                _openingMedia = false;
+            }
+        }
+
+        private async Task ReopenAfterEditAsync(string filePath, TimeSpan position, bool wasPlaying, double speedRatio)
+        {
+            var opened = false;
+            try
+            {
+                opened = await VideoPlayerController.Open(filePath);
+            }
+            catch (Exception ex)
+            {
+                PlayerDiagnostics.Write($"Reopen after edit failed: {ex}");
+            }
+
+            if (await ApplyStopRequestedDuringReopenAsync())
+                return;
+
+            if (!opened)
+            {
+                if (!VideoPlayerController.IsOpened)
+                    ResetStoppedMediaUi();
+                FinishMediaTransition(false);
+                return;
+            }
+
+            if (position > TimeSpan.Zero)
+            {
+                // 키프레임이 아니라 원래 위치로 정확히 돌아갑니다.
+                var sought = await VideoPlayerController.Seek(position, keyFrame: false);
+                PlayerDiagnostics.Write($"Reopen after edit: seek to {position} -> {sought}");
+                if (await ApplyStopRequestedDuringReopenAsync())
+                    return;
+            }
+            // 새로 열면 재생 속도가 기본값으로 돌아가므로 저장 전의 배속을 되돌립니다.
+            if (Math.Abs(VideoPlayerController.GetSpeedRatio() - speedRatio) > 0.001)
+            {
+                VideoPlayerController.SetSpeedRatio(speedRatio);
+                UpdateSpeedInfo();
+            }
+            if (wasPlaying)
+            {
+                if (!VideoPlayerController.IsActuallyPlaying)
+                    await VideoPlayerController.Play();
+            }
+            else
+            {
+                await VideoPlayerController.Pause();
+            }
+
+            if (await ApplyStopRequestedDuringReopenAsync())
+                return;
+
+            if (_mediaTransitionPending)
+                _mediaTransitionTimeout.Start();
+        }
+
+        // 다시 여는 도중에 정지가 요청되었으면, 위치 이동·재생 재개가 정지를 되돌리지 않도록 정지 상태로 확정합니다.
+        private async Task<bool> ApplyStopRequestedDuringReopenAsync()
+        {
+            if (!_stopRequestedDuringOpen)
+                return false;
+
+            if (VideoPlayerController.IsOpened)
+                await VideoPlayerController.Stop();
+            await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
+            ResetStoppedMediaUi();
+            FinishMediaTransition(false);
+            return true;
+        }
+
         internal async Task StopPlaybackAsync()
         {
             if (_openingMedia)
@@ -1508,6 +1632,7 @@ namespace AnnieMediaPlayer
             _playlistWindow.ClearRequested += PlaylistPanel_ClearRequested;
             _playlistWindow.PlayPauseRequested += (_, _) => _ = PlayOrOpenAsync();
             _playlistWindow.NextRequested += (_, _) => _ = PlayAdjacentPlaylistItemAsync(true);
+            _playlistWindow.TagsSaved += (_, path) => RefreshEditedFile(path);
             _playlistWindow.ItemMoveRequested += PlaylistPanel_ItemMoveRequested;
             _playlistWindow.ItemActivated += PlaylistPanel_ItemActivated;
             _playlistWindow.LocationChanged += PlaylistWindow_LocationChanged;
@@ -1954,6 +2079,19 @@ namespace AnnieMediaPlayer
         {
             vm.Playlist.MoveManyTo(move.Items, move.TargetIndex);
             ShowCommandMessage("Text.Message.PlaylistMoved", move.Items.Count);
+        }
+
+        private void RefreshEditedFile(string filePath)
+        {
+            _albumArtService.ClearCache();
+            _currentAlbumArtService.ClearCache();
+            foreach (var item in vm.Playlist.Items.Where(item => string.Equals(item.FilePath, filePath, StringComparison.OrdinalIgnoreCase)))
+            {
+                CancelAlbumArtLoad(item);
+                item.AlbumArt = null;
+                QueueAlbumArtLoad(item);
+            }
+            ShowCommandMessage("Text.Message.TagsSaved", Path.GetFileName(filePath));
         }
 
         private void PlaylistPanel_ItemActivated(object? sender, PlaylistItemViewModel item) =>

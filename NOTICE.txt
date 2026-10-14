@@ -29,6 +29,13 @@ This software includes third-party libraries. Their respective licenses and attr
    - License: MIT License
    - Website: https://github.com/SharpGenTools/SharpGenTools
 
+7. TagLibSharp
+   - License: GNU Lesser General Public License v2.1 (LGPL-2.1-only)
+   - Copyright: Brian Nickel and other contributors
+   - Source: https://github.com/mono/taglib-sharp
+   - License text: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+   - Note: Unmodified NuGet library, dynamically linked for reading and writing media tags.
+
 ---
 
 The main application source code is licensed under the GNU General Public License v3.0.  

@@ -13,6 +13,7 @@ namespace AnnieMediaPlayer.Windows
         public event EventHandler? ClearRequested;
         public event EventHandler? PlayPauseRequested;
         public event EventHandler? NextRequested;
+        public event EventHandler<string>? TagsSaved;
         public event EventHandler<(IReadOnlyList<PlaylistItemViewModel> Items, int TargetIndex)>? ItemMoveRequested;
         public event EventHandler<PlaylistItemViewModel>? ItemActivated;
         public event EventHandler? MoveCompleted;
@@ -54,6 +55,7 @@ namespace AnnieMediaPlayer.Windows
             panel.ClearRequested += (_, e) => ClearRequested?.Invoke(this, e);
             panel.PlayPauseRequested += (_, e) => PlayPauseRequested?.Invoke(this, e);
             panel.NextRequested += (_, e) => NextRequested?.Invoke(this, e);
+            panel.TagsSaved += (_, path) => TagsSaved?.Invoke(this, path);
             panel.ItemMoveRequested += (_, move) => ItemMoveRequested?.Invoke(this, move);
             panel.ItemActivated += (_, item) => ItemActivated?.Invoke(this, item);
             StateChanged += (_, _) =>

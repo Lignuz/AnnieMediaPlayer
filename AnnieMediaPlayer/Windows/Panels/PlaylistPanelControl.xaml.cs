@@ -17,6 +17,7 @@ namespace AnnieMediaPlayer.Windows.Panels
         public event EventHandler? ClearRequested;
         public event EventHandler? PlayPauseRequested;
         public event EventHandler? NextRequested;
+        public event EventHandler<string>? TagsSaved;
         public event EventHandler<(IReadOnlyList<PlaylistItemViewModel> Items, int TargetIndex)>? ItemMoveRequested;
         public event EventHandler<PlaylistItemViewModel>? ItemActivated;
         private Point _dragStartPoint;
@@ -137,8 +138,19 @@ namespace AnnieMediaPlayer.Windows.Panels
         {
             if (sender is MenuItem { DataContext: PlaylistItemViewModel item })
             {
+                var existing = Application.Current.Windows.OfType<FileInfoWindow>()
+                    .FirstOrDefault(window => string.Equals(window.FilePath, item.FilePath, StringComparison.OrdinalIgnoreCase));
+                if (existing is not null)
+                {
+                    if (existing.WindowState == WindowState.Minimized) existing.WindowState = WindowState.Normal;
+                    existing.Show();
+                    existing.Activate();
+                    return;
+                }
                 var window = new FileInfoWindow(item.FilePath) { Owner = Window.GetWindow(this) };
-                window.ShowDialog();
+                window.TagsSaved += (_, _) => TagsSaved?.Invoke(this, item.FilePath);
+                // 편집 중에도 다른 곡으로 전환해 현재 파일의 재생 연결을 해제할 수 있게 합니다.
+                window.Show();
             }
         }
 

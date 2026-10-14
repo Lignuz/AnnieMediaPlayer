@@ -35,6 +35,7 @@ See the [LICENSE](LICENSE) file for details.
 - System.Drawing.Common (MIT) – https://www.nuget.org/packages/System.Drawing.Common/9.0.4
 - Vortice.Windows (MIT) – Vortice.Direct2D1, Vortice.Direct3D11, Vortice.Direct3D9 – https://github.com/amerkoleci/Vortice.Windows
 - SharpGen.Runtime (MIT) – dependency of Vortice.Windows – https://github.com/SharpGenTools/SharpGenTools
+- TagLibSharp (LGPL-2.1-only) – media tag and embedded artwork editing – https://github.com/mono/taglib-sharp
 
 
 📘 다른 언어로 보기: [🇰🇷 한국어](README.ko.md)

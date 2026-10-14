@@ -20,6 +20,7 @@ namespace AnnieMediaPlayer
     {
         private static FFMEPlayer _ffmePlayer = null!;
         private static MediaElement _mediaElement = null!;
+        private static string? _pendingFilePath;
 
         // 현재 상태 확인용 프로퍼티 (외부에서 접근할 때 오류 발생 가능성이 있어서 왠만하면 이벤트 핸들러로 받아온 값으로 처리하도록 합시다.)
         private static bool IsMediaValid => _ffmePlayer != null && _mediaElement != null;
@@ -48,6 +49,14 @@ namespace AnnieMediaPlayer
         }
 
         public static bool IsSliderDragging { get; private set; } = false;
+        public static bool IsFileInUse(string filePath)
+        {
+            var fullPath = System.IO.Path.GetFullPath(filePath);
+            if (_pendingFilePath is { } pending && string.Equals(pending, fullPath, StringComparison.OrdinalIgnoreCase))
+                return true;
+            return IsMediaValid && PlaybackState != MediaPlaybackState.Close && _mediaElement.Source is { IsFile: true } source &&
+                string.Equals(System.IO.Path.GetFullPath(source.LocalPath), fullPath, StringComparison.OrdinalIgnoreCase);
+        }
         public static bool IsSliderDraggingOnPlaying { get; private set; } = false;
 
         // 사용자 스피드 재생 
@@ -126,6 +135,8 @@ namespace AnnieMediaPlayer
                     return Task.FromResult(false);
 
                 _mediaChanging = true;
+                _pendingFilePath = Uri.TryCreate(filePath, UriKind.Absolute, out var sourceUri) && !sourceUri.IsFile
+                    ? null : System.IO.Path.GetFullPath(filePath);
                 _mediaVersion++;
                 _pendingSeekValue = null;
                 _previewQueue.Clear();
@@ -205,6 +216,7 @@ namespace AnnieMediaPlayer
                 lock (_seekRequestSync)
                 {
                     _mediaChanging = false;
+                    _pendingFilePath = null;
                     _mediaOpenTask = null;
                 }
                 PlayerDiagnostics.Write("Open finished.");
@@ -289,8 +301,62 @@ namespace AnnieMediaPlayer
             return await ExecuteMediaCommandAsync(() => _ffmePlayer.Stop());
         }
 
+        // 미디어를 닫아 파일 연결을 해제합니다. 열기와 같은 순서로 탐색·미리보기 작업을 정리한 뒤 닫습니다.
+        public static async Task<bool> CloseMedia()
+        {
+            if (_ffmePlayer == null) return false;
+
+            Task seekTask;
+            Task previewTask;
+            lock (_seekRequestSync)
+            {
+                if (_seekProcessingStopped || _mediaChanging)
+                    return false;
+
+                _mediaChanging = true;
+                _mediaVersion++;
+                _pendingSeekValue = null;
+                _previewQueue.Clear();
+                seekTask = _seekProcessorCompletion?.Task ?? Task.CompletedTask;
+                previewTask = _previewProcessorTask ?? Task.CompletedTask;
+            }
+
+            try
+            {
+                await seekTask;
+                await previewTask;
+
+                await _seekOperationGate.WaitAsync();
+                try
+                {
+                    var previousGrabber = ffmpegFrameGrabber;
+                    ffmpegFrameGrabber = null;
+                    previousGrabber?.Dispose();
+                    StopFrameStepMode(false);
+                    PlayerDiagnostics.Write("Closing media to release the file.");
+                    return await _ffmePlayer.Close();
+                }
+                finally
+                {
+                    _seekOperationGate.Release();
+                }
+            }
+            catch (Exception ex)
+            {
+                PlayerDiagnostics.Write($"Close failed: {ex}");
+                return false;
+            }
+            finally
+            {
+                lock (_seekRequestSync)
+                {
+                    _mediaChanging = false;
+                }
+            }
+        }
+
         // 탐색 (슬라이더에서 호출될 경우)
-        public static async Task<bool> Seek(TimeSpan position)
+        public static async Task<bool> Seek(TimeSpan position, bool keyFrame = true)
         {
             if (_ffmePlayer == null) return false;
             lock (_seekRequestSync)
@@ -311,7 +377,7 @@ namespace AnnieMediaPlayer
                 if (_ffmePlayer == null || !_ffmePlayer._mediaElement.IsSeekable)
                     return false;
 
-                return await _ffmePlayer.Seek(position);
+                return await _ffmePlayer.Seek(position, keyFrame);
             }
             finally
             {

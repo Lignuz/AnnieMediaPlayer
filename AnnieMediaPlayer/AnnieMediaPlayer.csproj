@@ -20,6 +20,7 @@
 	<ItemGroup>
 		<PackageReference Include="FFmpeg.AutoGen" Version="7.1.1" />
 		<PackageReference Include="System.Drawing.Common" Version="9.0.4" />
+		<PackageReference Include="TagLibSharp" Version="2.3.0" />
 		<PackageReference Include="Vortice.Direct2D1" Version="3.8.3" />
 		<PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
 		<PackageReference Include="Vortice.Direct3D9" Version="3.8.3" />
@@ -31,6 +32,10 @@
 
 	<ItemGroup Condition="Exists('update-settings.json')">
 	  <None Update="update-settings.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Licenses\TagLibSharp.LGPL-2.1.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
 	</ItemGroup>
 
 	<ItemGroup>
