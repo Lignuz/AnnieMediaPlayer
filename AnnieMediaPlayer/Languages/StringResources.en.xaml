@@ -28,6 +28,8 @@
     <sys:String x:Key="Text.Playlist.Previous">Play previous item</sys:String>
     <sys:String x:Key="Text.Playlist.Next">Play next item</sys:String>
     <sys:String x:Key="Text.Playlist.Current">Current item</sys:String>
+    <sys:String x:Key="Text.Message.Volume">Volume: {0}%</sys:String>
+    <sys:String x:Key="Text.Message.FileOpened">Opened: {0}</sys:String>
     <sys:String x:Key="Text.Playback.Shuffle.On">Shuffle: On</sys:String>
     <sys:String x:Key="Text.Playback.Shuffle.Off">Shuffle: Off</sys:String>
     <sys:String x:Key="Text.Playback.Mode">Playback mode</sys:String>
@@ -58,6 +60,7 @@
     <sys:String x:Key="Text.SeekFramePreview">Seek Frame Preview</sys:String>
     <sys:String x:Key="Text.UsePlaylistPersistence">Keep playlist between sessions</sys:String>
     <sys:String x:Key="Text.RememberWindowPositions">Remember window positions</sys:String>
+    <sys:String x:Key="Text.ShowCommandMessages">Show action messages</sys:String>
 
     <sys:String x:Key="Text.UseHWAccelerator">Use hardware acceleration</sys:String>
     <sys:String x:Key="Text.UseHWAccelerator.Description">Frames decoded by the GPU are copied back to the CPU for display, so depending on the PC it may not reduce CPU usage and can slow down seeking and frame stepping. Applies to the next opened file.</sys:String>

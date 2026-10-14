@@ -81,6 +81,7 @@ namespace AnnieMediaPlayer.Options
             SelectedLanguage = Languages.ko;
             UseOverlayControl = false;
             UseSeekFramePreview = false;
+            ShowCommandMessages = true;
 
             UseHWAccelerator = false;
             UseOpenPlay = true;
@@ -105,6 +106,7 @@ namespace AnnieMediaPlayer.Options
         public Languages SelectedLanguage { get => Get(); set => Set(value); }
         public bool UseOverlayControl { get => Get(); set => Set(value); }
         public bool UseSeekFramePreview { get => Get(); set => Set(value); }
+        public bool ShowCommandMessages { get => Get(); set => Set(value); }
 
         public bool UseHWAccelerator { get => Get(); set => Set(value); }
         public bool UseOpenPlay { get => Get(); set => Set(value); }

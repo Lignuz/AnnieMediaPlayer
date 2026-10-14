@@ -93,6 +93,7 @@ namespace AnnieMediaPlayer.Options
                     HandleSeekFramePreviewChanged(CurrentOption.UseSeekFramePreview);
                     break;
                 case nameof(Option.UseHWAccelerator):
+                case nameof(Option.ShowCommandMessages):
                 case nameof(Option.UseOpenPlay):
                 case nameof(Option.UseLegacyAudioOut):
                 case nameof(Option.AudioViewMode):

@@ -13,6 +13,7 @@
         <option:EnumToLocalizedStringConverter x:Key="EnumToLocalizedStringConverter"/>
     </UserControl.Resources>
     <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Orientation="Vertical">
             <TextBlock Text="{DynamicResource Text.General}" FontWeight="Bold" Margin="0,0,0,10"/>
 
@@ -56,6 +57,9 @@
             <!-- 창 위치 기억 -->
             <CheckBox Content="{DynamicResource Text.RememberWindowPositions}" IsChecked="{Binding CurrentOption.RememberWindowPositions}" Margin="0,15,0,5"/>
 
+            <CheckBox Content="{DynamicResource Text.ShowCommandMessages}" IsChecked="{Binding CurrentOption.ShowCommandMessages}" Margin="0,15,0,5"/>
+
         </StackPanel>
+        </ScrollViewer>
     </Grid>
 </UserControl>

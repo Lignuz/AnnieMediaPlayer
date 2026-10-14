@@ -395,6 +395,7 @@ namespace AnnieMediaPlayer
                 Math.Max(16, bottom + 12)); // 앨범 모드의 스펙트럼과 겹치지 않도록 화면 아래에 가깝게 둡니다.
             LyricsToggleBar.Margin = new Thickness(0, top + 16, 24, 0);
             LyricsView.Margin = new Thickness(0, top + 68, 24, bottom + 24);
+            UpdateCommandMessageLayout();
             // 슬라이드 중에는 inset 애니메이션 프레임마다 버튼 크기를 다시 설정하지 않습니다.
             if (!_isLyricsSliding)
                 UpdateAudioModeButtonSizing();

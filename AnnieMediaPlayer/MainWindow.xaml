@@ -259,11 +259,11 @@
                             </StackPanel>
                         </Button>
                     </Border>
-                    <TextBlock Name="OverlayMessage" TextWrapping="Wrap" Margin="10" FontWeight="Bold" Foreground="White" IsHitTestVisible="False">
-                        <TextBlock.Effect>
-                            <DropShadowEffect Color="Black" BlurRadius="4" ShadowDepth="2" Direction="315" Opacity="0.8" />
-                        </TextBlock.Effect>
-                    </TextBlock>
+                    <Border x:Name="CommandMessageHost" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                            Margin="16" Padding="10,7" CornerRadius="6" Background="#CF171717" ClipToBounds="True"
+                            Visibility="Collapsed" Opacity="0" IsHitTestVisible="False" Panel.ZIndex="30">
+                        <TextBlock x:Name="CommandMessageText" TextWrapping="Wrap" Foreground="White"/>
+                    </Border>
                     <panels:PropertiesPanelControl x:Name="PropertiesPanel" HorizontalAlignment="Right" Visibility="{Binding IsPropertiesPanelOpen, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                     <Grid x:Name="grid_center_top" VerticalAlignment="Top" Panel.ZIndex="20" Visibility="Collapsed" />
                     <Grid x:Name="grid_center_bottom" VerticalAlignment="Bottom" Panel.ZIndex="20" Visibility="Collapsed" />

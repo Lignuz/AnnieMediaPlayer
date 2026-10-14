@@ -72,6 +72,7 @@ namespace AnnieMediaPlayer
         public MainWindow()
         {
             InitializeComponent();
+            InitializeCommandMessages();
 
             _playlistSaveTimer.Tick += (_, _) => SavePlaylistNow();
             _mediaTransitionTimeout.Tick += (_, _) =>
@@ -506,10 +507,12 @@ namespace AnnieMediaPlayer
                 }
 
                 ffmeMediaElement.IsMuted = true;
+                ShowCommandMessage("Text.Mute");
                 return;
             }
 
             ffmeMediaElement.IsMuted = false;
+            ShowCommandMessage("Text.Unmute");
         }
 
         private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -523,6 +526,7 @@ namespace AnnieMediaPlayer
             VolumeMuteButton.IsChecked = false;
             VideoPlayerController.SetVolume(e.NewValue);
             ffmeMediaElement.IsMuted = false;
+            ShowCommandMessage("Text.Message.Volume", Math.Round(e.NewValue * 100));
         }
 
         private void SetVolumeSliderValue(double value)
@@ -704,6 +708,7 @@ namespace AnnieMediaPlayer
 
             vm.IsOpened = true;
             vm.FilePath = e.Info.MediaSource;
+            ShowCommandMessage("Text.Message.FileOpened", Path.GetFileName(e.Info.MediaSource));
             vm.IsAudioOnly = !VideoPlayerController.HasVideo;
             Task albumArtLoad = Task.CompletedTask;
             if (vm.IsAudioOnly)
@@ -1260,6 +1265,7 @@ namespace AnnieMediaPlayer
                 _stopRequestedDuringOpen = true;
                 ResetStoppedMediaUi();
                 FinishMediaTransition(true);
+                ShowCommandMessage("Text.Stop");
                 return;
             }
 
@@ -1268,6 +1274,7 @@ namespace AnnieMediaPlayer
                 _skipNextAutoAdvance = true;
                 ResetStoppedMediaUi();
                 FinishMediaTransition(true);
+                ShowCommandMessage("Text.Stop");
                 return;
             }
 
@@ -1291,6 +1298,8 @@ namespace AnnieMediaPlayer
                     // 상태 이벤트가 늦거나 누락돼도 정지 화면으로 돌아갑니다.
                     _mediaTransitionTimeout.Start();
                 }
+                if (stopped)
+                    ShowCommandMessage("Text.Stop");
             }
             catch (Exception ex)
             {
@@ -1350,7 +1359,11 @@ namespace AnnieMediaPlayer
         {
             if (VideoPlayerController.IsOpened)
             {
-                await VideoPlayerController.TogglePlayPause();
+                var wasPlaying = VideoPlayerController.IsFrameStepMode
+                    ? !VideoPlayerController.IsFrameStepPaused
+                    : VideoPlayerController.IsPlaying;
+                if (await VideoPlayerController.TogglePlayPause())
+                    ShowCommandMessage(wasPlaying ? "Text.Pause" : "Text.Play");
                 return;
             }
 
@@ -2292,36 +2305,5 @@ namespace AnnieMediaPlayer
             }
         }
 
-        // 메시지 보여주기 
-        private CancellationTokenSource? _overlayCts;
-        public async void ShowOverlayMessage(string message, int durationMs = 1500)
-        {
-            _overlayCts?.Cancel(); // 기존 표시 중지
-            _overlayCts = new CancellationTokenSource();
-            var token = _overlayCts.Token;
-
-            OverlayMessage.Text = message;
-            OverlayMessage.Visibility = Visibility.Visible;
-
-            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200));
-            OverlayMessage.BeginAnimation(UIElement.OpacityProperty, fadeIn);
-
-            try
-            {
-                await Task.Delay(durationMs, token);
-            }
-            catch (TaskCanceledException)
-            {
-                return; // 취소된 경우는 아무 처리 안 함
-            }
-
-            var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(300));
-            fadeOut.Completed += (s, e) =>
-            {
-                if (!token.IsCancellationRequested)
-                    OverlayMessage.Visibility = Visibility.Collapsed;
-            };
-            OverlayMessage.BeginAnimation(UIElement.OpacityProperty, fadeOut);
-        }
     }
 }
