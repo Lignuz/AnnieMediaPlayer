@@ -14,18 +14,27 @@ namespace AnnieMediaPlayer.Windows.Settings.Pages
 
             // Binding 으로 처리한 텍스트는 동적 변경이 안되므로 
             // 언어 변경을 감지해서 다시 설정하도록 합니다. 
-            LanguageManager.LanguageChanged += (s, e) =>
-            {
-                var option = OptionViewModel.Instance.CurrentOption;
+            LanguageManager.LanguageChanged += LanguageManager_LanguageChanged;
+            Unloaded += GeneralSettingsPage_Unloaded;
+        }
 
-                combo_languages.ItemsSource = null;
-                combo_languages.ItemsSource = option.AvailableLanguages;
-                combo_languages.SelectedItem = option.SelectedLanguage;
+        private void GeneralSettingsPage_Unloaded(object sender, System.Windows.RoutedEventArgs e)
+        {
+            // 정적 이벤트에 등록한 핸들러가 페이지를 붙잡아 두지 않도록 해제합니다.
+            LanguageManager.LanguageChanged -= LanguageManager_LanguageChanged;
+        }
 
-                combo_themes.ItemsSource = null;
-                combo_themes.ItemsSource = option.AvailableThemes;
-                combo_themes.SelectedItem = option.SelectedTheme;
-            };
+        private void LanguageManager_LanguageChanged(object? sender, EventArgs e)
+        {
+            var option = OptionViewModel.Instance.CurrentOption;
+
+            combo_languages.ItemsSource = null;
+            combo_languages.ItemsSource = option.AvailableLanguages;
+            combo_languages.SelectedItem = option.SelectedLanguage;
+
+            combo_themes.ItemsSource = null;
+            combo_themes.ItemsSource = option.AvailableThemes;
+            combo_themes.SelectedItem = option.SelectedTheme;
         }
     }
 }

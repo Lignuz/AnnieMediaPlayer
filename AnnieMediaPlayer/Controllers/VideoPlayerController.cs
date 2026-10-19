@@ -749,7 +749,9 @@ namespace AnnieMediaPlayer
             TimeSpan.FromSeconds(10),
             TimeSpan.FromSeconds(5),
             TimeSpan.FromSeconds(1),
-            TimeSpan.FromMilliseconds(33.3) // placeholder, will override with actual FPS on open
+            // 1배속(x1.0)을 나타내는 자리 표시자입니다.
+            // 1배속에서는 프레임 스텝 타이머 대신 FFME 기본 재생을 사용하므로 이 값은 프레임 스텝 간격으로 쓰이지 않습니다.
+            TimeSpan.FromMilliseconds(33.3)
         };
         private const int _normalSpeedIndex = 5; // 기본 속도 (x1.0)
         private static int _speedIndex = _normalSpeedIndex;
@@ -1140,14 +1142,24 @@ namespace AnnieMediaPlayer
             _isFrameStepPaused = startPaused;
             _frameStepTimer = new DispatcherTimer();
             _frameStepTimer.Interval = interval;
-            _frameStepTimer.Tick += async (s, e) =>
-            {
-                if (!_isFrameStepPaused)
-                    await SeekStep(true);
-            };
+            _frameStepTimer.Tick += FrameStepTimer_Tick;
             if (!startPaused)
                 _frameStepTimer.Start();
             OnFrameStepStateChanged?.Invoke(null, EventArgs.Empty);
+        }
+
+        private static async void FrameStepTimer_Tick(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (!_isFrameStepPaused)
+                    await SeekStep(true);
+            }
+            catch (Exception ex)
+            {
+                // async void 핸들러의 예외는 디스패처까지 전파되어 앱을 종료시킬 수 있으므로 여기서 막고 기록합니다.
+                PlayerDiagnostics.Write($"Frame step tick failed: {ex}");
+            }
         }
 
         public static void StopFrameStepMode(bool notify = true)
