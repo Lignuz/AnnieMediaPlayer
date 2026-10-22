@@ -72,6 +72,10 @@ namespace AnnieMediaPlayer.Options
         public Option()
         {
             InitializeOption();
+
+            // 볼륨은 설정 초기화로 되돌리지 않도록 InitializeOption 밖에서 기본값을 정합니다.
+            Volume = 1.0;
+            IsMuted = false;
         }
 
         public void InitializeOption()
@@ -91,8 +95,7 @@ namespace AnnieMediaPlayer.Options
             UseTransitionFade = true;
             UsePlaylistPersistence = true;
             RememberWindowPositions = true;
-            MainWindowPlacement = new WindowPlacementSettings();
-            PlaylistWindowPlacement = new WindowPlacementSettings();
+            // 창 위치(MainWindowPlacement·PlaylistWindowPlacement)는 설정 초기화로 지우지 않습니다.
             PlaylistPlaybackMode = PlaylistPlaybackMode.Sequential;
             ShufflePlayback = false;
 
@@ -120,6 +123,8 @@ namespace AnnieMediaPlayer.Options
         public WindowPlacementSettings PlaylistWindowPlacement { get; set; } = new();
         public PlaylistPlaybackMode PlaylistPlaybackMode { get => Get(); set => Set(value); }
         public bool ShufflePlayback { get => Get(); set => Set(value); }
+        public double Volume { get => Get(); set => Set(value); }
+        public bool IsMuted { get => Get(); set => Set(value); }
 
         [JsonIgnore]
         public bool UseFlipHorizontal { get => Get(); set => Set(value); }
@@ -189,6 +194,8 @@ namespace AnnieMediaPlayer.Options
 
                         if (!Enum.IsDefined(option.PlaylistPlaybackMode))
                             option.PlaylistPlaybackMode = PlaylistPlaybackMode.Sequential;
+
+                        option.Volume = double.IsFinite(option.Volume) ? Math.Clamp(option.Volume, 0.0, 1.0) : 1.0;
 
                         return option;
                     }

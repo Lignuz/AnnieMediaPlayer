@@ -230,4 +230,11 @@
     <sys:String x:Key="Text.Message.Setting">{0}: {1}</sys:String>
     <sys:String x:Key="Text.Message.Properties">Properties panel: {0}</sys:String>
     <sys:String x:Key="Text.Message.PlaylistVisible">Playlist: {0}</sys:String>
+    <sys:String x:Key="Text.Message.PlaybackError">Playback error: {0}</sys:String>
+    <sys:String x:Key="Text.Message.FileMissing">File not found: {0}</sys:String>
+    <sys:String x:Key="Text.Message.FileMissingSkipped">Skipped missing file: {0}</sys:String>
+    <sys:String x:Key="Text.Message.PlaybackSkipped">Skipped unplayable file: {0}</sys:String>
+    <sys:String x:Key="Text.Playlist.Missing">File not found. Check that the drive is connected and the file has not moved.</sys:String>
+    <sys:String x:Key="Text.InitializeConfirm">Reset all settings to their defaults?\nWindow positions, volume, and the playlist are kept.</sys:String>
+    <sys:String x:Key="Text.Error.Unexpected">An unexpected error occurred.\n{0}\n\nDetails were written to the log file.\n{1}</sys:String>
 </ResourceDictionary>

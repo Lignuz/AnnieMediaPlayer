@@ -1,5 +1,4 @@
 ﻿using System.Windows;
-using Microsoft.Win32;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Collections.Concurrent;
@@ -59,9 +58,6 @@ namespace AnnieMediaPlayer
         }
         public static bool IsSliderDraggingOnPlaying { get; private set; } = false;
 
-        // 사용자 스피드 재생 
-        public static bool IsCustomSpeedPlaying { get => (PlaybackState == MediaPlaybackState.Play) && (IsNormalSpeed == false); }
-
         // 이벤트 핸들러
         public static event EventHandler<MediaInitializingEventArgs>? OnMediaInitializing;
         public static event EventHandler<MediaOpeningEventArgs>? OnMediaOpening;
@@ -100,22 +96,6 @@ namespace AnnieMediaPlayer
             _ffmePlayer.OnMessageLogged += FfmePlayer_OnMessageLogged;
             _ffmePlayer.OnAudioDeviceStopped += FfmePlayer_OnAudioDeviceStopped;
             OptionViewModel.Instance.UseSeekFramePreviewChanged += OptionViewModel_UseSeekFramePreviewChanged;
-        }
-
-        // 열기 
-        public static async Task<bool> Open()
-        {
-            var dialog = new OpenFileDialog
-            {
-                Title = LanguageManager.GetResourceString("Text.OpenDialogTitle"),
-                Filter = LanguageManager.GetResourceString("Text.OpenDialogFilter")
-            };
-
-            if (dialog.ShowDialog() == true)
-            {
-                return await Open(dialog.FileName);
-            }
-            return false;
         }
 
         // 열기 
@@ -440,8 +420,8 @@ namespace AnnieMediaPlayer
         {
             if (_ffmePlayer == null) return;
 
-            double speed = _ffmePlayer.GetSpeedRatio();
-            speed += 0.1;
+            // 0.1 을 반복해 더하면 0.30000000000000004 처럼 오차가 쌓이므로 소수 첫째 자리로 맞춥니다.
+            double speed = Math.Round(_ffmePlayer.GetSpeedRatio() + 0.1, 1);
             if (speed > 4.0) speed = 4.0; // 최대 속도 제한
             _ffmePlayer.SetSpeedRatio(speed);
         }
@@ -450,8 +430,7 @@ namespace AnnieMediaPlayer
         {
             if (_ffmePlayer == null) return;
 
-            double speed = _ffmePlayer.GetSpeedRatio();
-            speed -= 0.1;
+            double speed = Math.Round(_ffmePlayer.GetSpeedRatio() - 0.1, 1);
             if (speed < 0.1) speed = 0.1; // 최소 속도 제한
             _ffmePlayer.SetSpeedRatio(speed);
         }
@@ -473,19 +452,6 @@ namespace AnnieMediaPlayer
         {
             if (_ffmePlayer == null) return 0.0;
             return _ffmePlayer.GetVolume();
-        }
-
-        public static void SetVolumeChange(bool up = true)
-        {
-            if (_ffmePlayer == null) return;
-
-            double volume = _ffmePlayer.GetVolume();
-            double setVolume = volume + (up ? 0.1 : -0.1);
-            setVolume = Math.Max(0.0, Math.Min(setVolume, 1.0)); // 볼륨 범위 제한 (0.0 ~ 1.0)
-            if (volume != setVolume)
-            {
-                _ffmePlayer.SetVolume(setVolume);
-            }
         }
 
         /////////////////////////////

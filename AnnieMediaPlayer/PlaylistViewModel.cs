@@ -19,6 +19,8 @@ namespace AnnieMediaPlayer
         public BitmapSource? FileTypeIcon { get; }
         public TimeSpan Duration { get => Get(); set => Set(value); }
         public bool IsCurrent { get => Get(); internal set => Set(value); }
+        // 재생하려 할 때 파일을 찾지 못한 항목입니다. 드라이브를 다시 연결하면 재생할 수 있으므로 목록에서 지우지 않습니다.
+        public bool IsMissing { get => Get(); set => Set(value); }
 
         private BitmapSource? _albumArt;
 
@@ -131,18 +133,30 @@ namespace AnnieMediaPlayer
             OnPropertyChanged(nameof(CanPlayNext));
         }
 
-        public void AddFiles(IEnumerable<string> filePaths)
+        public void AddFiles(IEnumerable<string> filePaths) => AddFilesCore(filePaths, requireExists: true);
+
+        // 저장해 둔 목록은 지금 연결되지 않은 외장·네트워크 드라이브의 경로도 그대로 불러옵니다.
+        // 없는 경로를 빼고 불러오면 다음 저장 때 목록에서 영구히 사라지기 때문입니다.
+        public void AddStoredFiles(IEnumerable<string> filePaths) => AddFilesCore(filePaths, requireExists: false);
+
+        private void AddFilesCore(IEnumerable<string> filePaths, bool requireExists)
         {
+            // 항목마다 목록 전체를 다시 검색하지 않도록 기존 경로를 한 번만 모아 둡니다.
+            var knownPaths = new HashSet<string>(Items.Select(item => item.FilePath), StringComparer.OrdinalIgnoreCase);
             foreach (var filePath in filePaths)
-                AddFile(filePath);
+            {
+                var fullPath = NormalizePath(filePath, requireExists);
+                if (fullPath != null && knownPaths.Add(fullPath))
+                    Items.Add(new PlaylistItemViewModel(fullPath));
+            }
         }
 
         public PlaylistItemViewModel? AddFile(string filePath)
         {
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            var fullPath = NormalizePath(filePath, requireExists: true);
+            if (fullPath == null)
                 return null;
 
-            var fullPath = Path.GetFullPath(filePath);
             var existingItem = Items.FirstOrDefault(item =>
                 string.Equals(item.FilePath, fullPath, StringComparison.OrdinalIgnoreCase));
             if (existingItem != null)
@@ -151,6 +165,21 @@ namespace AnnieMediaPlayer
             var newItem = new PlaylistItemViewModel(fullPath);
             Items.Add(newItem);
             return newItem;
+        }
+
+        private static string? NormalizePath(string? filePath, bool requireExists)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || (requireExists && !File.Exists(filePath)))
+                return null;
+
+            try
+            {
+                return Path.GetFullPath(filePath);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return null;
+            }
         }
 
         public void Remove(PlaylistItemViewModel? item)

@@ -265,6 +265,17 @@
                     <ListBox.ItemTemplate>
                         <DataTemplate DataType="{x:Type local:PlaylistItemViewModel}">
                             <Grid Margin="2,5">
+                                <Grid.Style>
+                                    <!-- 재생하려 할 때 파일을 찾지 못한 항목은 흐리게 표시합니다. -->
+                                    <Style TargetType="Grid">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsMissing}" Value="True">
+                                                <Setter Property="Opacity" Value="0.45" />
+                                                <Setter Property="ToolTip" Value="{DynamicResource Text.Playlist.Missing}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Grid.Style>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />

@@ -173,10 +173,12 @@ namespace AnnieMediaPlayer
 
                                 await fileStream.WriteAsync(buffer, 0, bytesRead, stall.Token);
 
+                                // 8KB 마다 화면을 갱신하지 않도록 진행률이 0.1% 이상 바뀔 때만 반영합니다.
                                 if (totalBytes > 0)
                                 {
-                                    var progress = (double)downloadedBytes / totalBytes * 100;
-                                    ProgressValue = progress;
+                                    var progress = Math.Round((double)downloadedBytes / totalBytes * 100, 1);
+                                    if (progress != ProgressValue)
+                                        ProgressValue = progress;
                                 }
                             }
                         }

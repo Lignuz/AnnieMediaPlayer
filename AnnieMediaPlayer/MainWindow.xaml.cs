@@ -69,6 +69,8 @@ namespace AnnieMediaPlayer
         private bool _reopeningForEdit;
         private int _mediaTransitionVersion;
         private int _videoTransitionReleaseQueued;
+        private int _playbackStopVersion;
+        private int _playlistFailureDialogSuppression;
 
         public MainWindow()
         {
@@ -91,7 +93,7 @@ namespace AnnieMediaPlayer
             FFMELoader.Initialize();
             if (OptionViewModel.Instance.CurrentOption.UsePlaylistPersistence)
             {
-                vm.Playlist.AddFiles(PlaylistStorage.Load());
+                vm.Playlist.AddStoredFiles(PlaylistStorage.Load());
                 SelectFirstPlaylistItemIfIdle();
             }
 
@@ -398,6 +400,9 @@ namespace AnnieMediaPlayer
             if (option.RememberWindowPositions && option.PlaylistWindowPlacement.IsVisible)
                 TogglePlaylistWindowCore();
 
+            if (App.StartupPaths.Count > 0)
+                _ = OpenPathsAsync(App.StartupPaths);
+
             _ = CheckUpdateAtStartupAsync();
         }
 
@@ -478,25 +483,21 @@ namespace AnnieMediaPlayer
             VolumeSlider.Value = Math.Clamp(VolumeSlider.Value + (e.Delta > 0 ? 0.1 : -0.1), 0.0, 1.0);
         }
 
+        // 마지막으로 사용한 볼륨과 음소거 상태로 시작합니다.
         private void InitializeVolumeControl()
         {
-            var volume = Math.Clamp(VideoPlayerController.GetVolume(), 0.0, 1.0);
+            var option = OptionViewModel.Instance.CurrentOption;
+            var volume = Math.Clamp(option.Volume, 0.0, 1.0);
             _volumeBeforeMute = volume > 0 ? volume : 1.0;
-            VolumeMuteButton.IsChecked = false;
-
-            _updatingVolumeSlider = true;
-            try
-            {
-                VolumeSlider.Value = volume;
-            }
-            finally
-            {
-                _updatingVolumeSlider = false;
-            }
+            VideoPlayerController.SetVolume(volume);
+            VolumeMuteButton.IsChecked = option.IsMuted;
+            ffmeMediaElement.IsMuted = option.IsMuted;
+            SetVolumeSliderValue(volume);
         }
 
         private void VolumeMuteButton_Click(object sender, RoutedEventArgs e)
         {
+            var option = OptionViewModel.Instance.CurrentOption;
             if (VolumeMuteButton.IsChecked == true)
             {
                 if (VolumeSlider.Value > 0)
@@ -505,14 +506,17 @@ namespace AnnieMediaPlayer
                 {
                     SetVolumeSliderValue(Math.Clamp(_volumeBeforeMute, 0.01, 1.0));
                     VideoPlayerController.SetVolume(VolumeSlider.Value);
+                    option.Volume = VolumeSlider.Value;
                 }
 
                 ffmeMediaElement.IsMuted = true;
+                option.IsMuted = true;
                 ShowCommandMessage("Text.Mute");
                 return;
             }
 
             ffmeMediaElement.IsMuted = false;
+            option.IsMuted = false;
             ShowCommandMessage("Text.Unmute");
         }
 
@@ -527,6 +531,9 @@ namespace AnnieMediaPlayer
             VolumeMuteButton.IsChecked = false;
             VideoPlayerController.SetVolume(e.NewValue);
             ffmeMediaElement.IsMuted = false;
+            var option = OptionViewModel.Instance.CurrentOption;
+            option.Volume = e.NewValue;
+            option.IsMuted = false;
             ShowCommandMessage("Text.Message.Volume", Math.Round(e.NewValue * 100));
         }
 
@@ -787,7 +794,15 @@ namespace AnnieMediaPlayer
                     ResetStoppedMediaUi();
                     FinishMediaTransition(false);
                 }
-                MessageBox.Show($"재생 오류: {e.ErrorException.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                PlayerDiagnostics.Write($"Media failed: {e.ErrorException}");
+                // 재생목록에서 이어 재생하는 중에는 오류 창 대신 건너뛴 항목을 알리고 다음 항목을 시도합니다.
+                if (_playlistFailureDialogSuppression > 0)
+                    return;
+
+                MessageBox.Show(
+                    string.Format(LanguageManager.GetResourceString("Text.Message.PlaybackError"), e.ErrorException.Message),
+                    LanguageManager.GetResourceString("Text.Error"), MessageBoxButton.OK, MessageBoxImage.Error);
             });
         }
 
@@ -1384,6 +1399,7 @@ namespace AnnieMediaPlayer
 
         internal async Task StopPlaybackAsync()
         {
+            _playbackStopVersion++;
             if (_openingMedia)
             {
                 _stopRequestedDuringOpen = true;
@@ -1461,14 +1477,23 @@ namespace AnnieMediaPlayer
             }
         }
 
-        private async Task PlayPlaylistItemAsync(PlaylistItemViewModel item)
+        private enum PlaylistItemPlayResult
+        {
+            Played,
+            Missing,
+            Failed,
+        }
+
+        // 없는 파일은 목록에서 지우지 않고 표시만 합니다. 외장·네트워크 드라이브를 다시 연결하면 그대로 재생할 수 있습니다.
+        private async Task<PlaylistItemPlayResult> PlayPlaylistItemAsync(PlaylistItemViewModel item)
         {
             if (string.IsNullOrWhiteSpace(item.FilePath) || !File.Exists(item.FilePath))
             {
-                vm.Playlist.Remove(item);
-                return;
+                item.IsMissing = true;
+                return PlaylistItemPlayResult.Missing;
             }
 
+            item.IsMissing = false;
             var opened = await OpenMediaWithTransitionAsync(item.FilePath);
             if (opened)
             {
@@ -1477,6 +1502,14 @@ namespace AnnieMediaPlayer
             }
             if (opened && !OptionViewModel.Instance.CurrentOption.UseOpenPlay)
                 await VideoPlayerController.Play();
+
+            return opened ? PlaylistItemPlayResult.Played : PlaylistItemPlayResult.Failed;
+        }
+
+        private async Task ActivatePlaylistItemAsync(PlaylistItemViewModel item)
+        {
+            if (await PlayPlaylistItemAsync(item) == PlaylistItemPlayResult.Missing)
+                ShowCommandMessage("Text.Message.FileMissing", item.FileName);
         }
 
         internal async Task PlayOrOpenAsync()
@@ -1492,17 +1525,8 @@ namespace AnnieMediaPlayer
             }
 
             var item = vm.Playlist.CurrentItem ?? vm.Playlist.Items.FirstOrDefault();
-            while (item != null && !File.Exists(item.FilePath))
-            {
-                var index = vm.Playlist.Items.IndexOf(item);
-                vm.Playlist.Remove(item);
-                item = vm.Playlist.Items.Count > 0
-                    ? vm.Playlist.Items[Math.Min(index, vm.Playlist.Items.Count - 1)]
-                    : null;
-            }
-
             if (item != null)
-                await PlayPlaylistItemAsync(item);
+                await PlayPlaylistItemsAsync(item, forward: true, automaticAdvance: false);
             else
                 OpenVideoFromDialog();
         }
@@ -1536,37 +1560,68 @@ namespace AnnieMediaPlayer
             }
         }
 
-        private async Task PlayAdjacentPlaylistItemAsync(bool forward, bool automaticAdvance = false)
+        private Task PlayAdjacentPlaylistItemAsync(bool forward, bool automaticAdvance = false) =>
+            PlayPlaylistItemsAsync(null, forward, automaticAdvance);
+
+        // firstItem(없으면 이웃 항목)부터 재생을 시도합니다. 없는 파일이나 열 수 없는 파일은 건너뛰고 같은 방향의 다음 항목을 시도하며,
+        // 이미 시도한 항목으로 돌아오면(전체 반복·한 곡 반복) 멈춥니다.
+        private async Task PlayPlaylistItemsAsync(PlaylistItemViewModel? firstItem, bool forward, bool automaticAdvance)
         {
-            if (_playlistNavigationInProgress)
+            if (_playlistNavigationInProgress || _openingMedia)
                 return;
 
             _playlistNavigationInProgress = true;
+            var stopVersion = _playbackStopVersion;
+            var triedItems = new HashSet<PlaylistItemViewModel>();
+            var originalItem = vm.Playlist.CurrentItem;
+            var played = false;
             try
             {
-                while (true)
+                var item = firstItem ?? GetAdjacentPlaylistItem(forward, automaticAdvance);
+                while (item != null && triedItems.Add(item))
                 {
-                    var item = forward
-                        ? vm.Playlist.GetNextItem(automaticAdvance)
-                        : vm.Playlist.GetPreviousItem();
-                    if (item == null)
-                        return;
-
-                    if (!File.Exists(item.FilePath))
+                    PlaylistItemPlayResult result;
+                    _playlistFailureDialogSuppression++;
+                    try
                     {
-                        vm.Playlist.Remove(item);
-                        continue;
+                        result = await PlayPlaylistItemAsync(item);
+                        // FFME 는 열기 실패 이벤트를 나중에 보내므로, 그 이벤트까지 처리한 뒤 오류 창 억제를 풉니다.
+                        if (result == PlaylistItemPlayResult.Failed)
+                            await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
+                    }
+                    finally
+                    {
+                        _playlistFailureDialogSuppression--;
                     }
 
-                    await PlayPlaylistItemAsync(item);
-                    return;
+                    played = result == PlaylistItemPlayResult.Played;
+                    if (played || stopVersion != _playbackStopVersion || _isClosing)
+                        return;
+
+                    PlayerDiagnostics.Write($"Playlist item skipped ({result}): {item.FilePath}");
+                    ShowCommandMessage(result == PlaylistItemPlayResult.Missing
+                        ? "Text.Message.FileMissingSkipped" : "Text.Message.PlaybackSkipped", item.FileName);
+
+                    // 열기에 실패했는데도 기존 미디어가 남아 있으면 열기 요청이 받아들여지지 않은 것이므로 더 진행하지 않습니다.
+                    if (result == PlaylistItemPlayResult.Failed && VideoPlayerController.IsOpened)
+                        return;
+
+                    // 건너뛴 항목을 기준으로 다음 항목을 찾습니다.
+                    vm.Playlist.SetCurrent(item);
+                    item = GetAdjacentPlaylistItem(forward, automaticAdvance);
                 }
             }
             finally
             {
+                // 아무것도 재생하지 못했는데 기존 미디어가 계속 재생 중이면, 현재 항목 표시를 그 미디어로 되돌립니다.
+                if (!played && VideoPlayerController.IsOpened)
+                    vm.Playlist.SetCurrent(originalItem);
                 _playlistNavigationInProgress = false;
             }
         }
+
+        private PlaylistItemViewModel? GetAdjacentPlaylistItem(bool forward, bool automaticAdvance) =>
+            forward ? vm.Playlist.GetNextItem(automaticAdvance) : vm.Playlist.GetPreviousItem();
 
         private void PlaylistButton_Click(object sender, RoutedEventArgs e) => TogglePlaylistWindow();
 
@@ -2095,7 +2150,7 @@ namespace AnnieMediaPlayer
         }
 
         private void PlaylistPanel_ItemActivated(object? sender, PlaylistItemViewModel item) =>
-            _ = PlayPlaylistItemAsync(item);
+            _ = ActivatePlaylistItemAsync(item);
         private void PreviousPlaylist_Click(object sender, RoutedEventArgs e) =>
             _ = PlayAdjacentPlaylistItemAsync(false);
         private void NextPlaylist_Click(object sender, RoutedEventArgs e) =>
@@ -2306,23 +2361,47 @@ namespace AnnieMediaPlayer
             ThemeToggleButton.IsEnabled = true;
         }
 
-        private void BaseWindow_DragEnter(object sender, DragEventArgs e)
+        private void BaseWindow_DragOver(object sender, DragEventArgs e)
         {
-
+            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+            e.Handled = true;
         }
 
         private void BaseWindow_Drop(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] paths && paths.Length > 0)
+                _ = OpenPathsAsync(paths);
+        }
+
+        // 끌어 놓거나 명령줄로 받은 파일·폴더를 엽니다.
+        // 파일 하나는 지금처럼 바로 열고, 여러 개면 모두 재생목록에 넣은 뒤 첫 항목을 재생합니다.
+        private async Task OpenPathsAsync(IReadOnlyList<string> paths)
+        {
+            List<string> files;
+            try
             {
-                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                if (files.Length > 0)
-                {
-                    // 비디오 파일 열기
-                    string filePath = files[0];
-                    _ = OpenDirectFileAsync(filePath);
-                }
+                files = await Task.Run(() => MediaFiles.Expand(paths));
             }
+            catch (Exception ex)
+            {
+                PlayerDiagnostics.Write($"Open paths failed: {ex}");
+                return;
+            }
+
+            if (files.Count == 0 || _isClosing)
+                return;
+
+            if (files.Count == 1)
+            {
+                await OpenDirectFileAsync(files[0]);
+                return;
+            }
+
+            var before = vm.Playlist.Items.Count;
+            vm.Playlist.AddFiles(files);
+            ShowCommandMessage("Text.Message.PlaylistAdded", vm.Playlist.Items.Count - before);
+            if (vm.Playlist.AddFile(files[0]) is { } firstItem)
+                await ActivatePlaylistItemAsync(firstItem);
         }
 
 
@@ -2453,19 +2532,9 @@ namespace AnnieMediaPlayer
             }
         }
 
-        private void OverlayCanvas_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
-        {
-            if ((bool)e.NewValue == false)
-            {
-                // 숨길 때에 내용을 지워줍니다.
-                OverlayCanvas.Children.Clear();
-            }
-            else
-            {
-                // 보여질 때에도 초기화 합니다. 
-                OverlayCanvas.Children.Clear();
-            }
-        }
+        // 보이거나 숨겨질 때 모두 이전 내용을 지웁니다.
+        private void OverlayCanvas_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) =>
+            OverlayCanvas.Children.Clear();
 
     }
 }

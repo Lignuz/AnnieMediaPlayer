@@ -38,7 +38,12 @@ namespace AnnieMediaPlayer.Windows.Settings
 
         private void Initialze_Click(object sender, RoutedEventArgs e)
         {
-            OptionViewModel.Instance.CurrentOption.InitializeOption();
+            var result = MessageBox.Show(this,
+                LanguageManager.GetResourceString("Text.InitializeConfirm"),
+                LanguageManager.GetResourceString("Text.Initialize"),
+                MessageBoxButton.OKCancel, MessageBoxImage.Question, MessageBoxResult.Cancel);
+            if (result == MessageBoxResult.OK)
+                OptionViewModel.Instance.CurrentOption.InitializeOption();
         }
     }
 }

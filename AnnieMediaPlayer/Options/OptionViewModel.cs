@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using System.Windows.Threading;
 
 namespace AnnieMediaPlayer.Options
 {
@@ -64,15 +65,28 @@ namespace AnnieMediaPlayer.Options
         };
 
 
+        // 종료 때만 저장하면 비정상 종료 시 바꾼 설정을 잃으므로, 변경을 잠시 모았다가 바로 저장합니다.
+        private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
+
         private OptionViewModel()
         {
+            _saveTimer.Tick += (_, _) => SaveNow();
+
             // 옵션 불러오기
             CurrentOption = Option.Load();
+        }
+
+        public void SaveNow()
+        {
+            _saveTimer.Stop();
+            CurrentOption.Save();
         }
 
         private void CurrentOption_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             CurrentOption_PropertyChanged(e.PropertyName);
+            _saveTimer.Stop();
+            _saveTimer.Start();
         }
 
         private void CurrentOption_PropertyChanged(string? propertyName)
@@ -105,6 +119,8 @@ namespace AnnieMediaPlayer.Options
                 case nameof(Option.PlaylistWindowPlacement):
                 case nameof(Option.PlaylistPlaybackMode):
                 case nameof(Option.ShufflePlayback):
+                case nameof(Option.Volume):
+                case nameof(Option.IsMuted):
                 case nameof(Option.UseFlipHorizontal):
                 case nameof(Option.UseFlipVertical):
                 case nameof(Option.RotateAngle):
